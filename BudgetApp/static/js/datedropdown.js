@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("datedropdown.js loaded ✅");  // test log
 });
 
 document.addEventListener("DOMContentLoaded", function () {

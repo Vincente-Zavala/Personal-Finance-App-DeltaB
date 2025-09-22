@@ -1,13 +1,18 @@
 from django.db import models
 
 
-
+# CATEGORY TYPE #
 class CategoryType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return f"{self.name} {self.id}"
 
+
+
+
+
+# CATEGORY #
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
@@ -15,6 +20,11 @@ class Category(models.Model):
     def __str__(self):
         return f"{self.name} {self.type}"
 
+
+
+
+
+# ACCOUNT TYPE  #
 class AccountType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
@@ -22,6 +32,10 @@ class AccountType(models.Model):
         return f"{self.name}"
 
 
+
+
+
+# ACCOUNT #
 class Account(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
@@ -31,6 +45,10 @@ class Account(models.Model):
         return f"{self.name} {self.balance} {self.type}"
 
 
+
+
+
+# TRANSACTION #
 class Transaction(models.Model):
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     note = models.CharField(max_length=255)
@@ -38,13 +56,7 @@ class Transaction(models.Model):
     categorytype = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    final_account = models.ForeignKey(
-        Account,
-        on_delete=models.CASCADE,
-        null=True,      
-        blank=True,     
-        related_name='final_transactions'
-    )
+    final_account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True, related_name='final_transactions')
     refund = models.BooleanField(default=False)
 
     def signed_amount(self, account):
@@ -106,6 +118,9 @@ class Transaction(models.Model):
 
 
 
+
+
+# BUDGET #
 class Budget(models.Model):
     month = models.PositiveSmallIntegerField()
     year = models.PositiveIntegerField()
@@ -119,6 +134,10 @@ class Budget(models.Model):
         return f"{self.month} {self.year} {self.category} {self.limit}"
 
 
+
+
+
+# ACCOUNT BALANCE HISTORY #
 class AccountBalanceHistory(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=20, decimal_places=2)
