@@ -245,8 +245,8 @@ def addtransaction(request):
         category_id = request.POST.get("categorychoice")
         category = Category.objects.get(id=category_id) if category_id else None
 
-        initial_account_id = request.POST.get("initialaccountchoice")
-        initial_account = Account.objects.get(id=initial_account_id) if initial_account_id else None
+        source_account_id = request.POST.get("sourceaccountchoice")
+        source_account = Account.objects.get(id=source_account_id) if source_account_id else None
 
         final_account_id = request.POST.get("finalaccountchoice")
         final_account = Account.objects.get(id=final_account_id) if final_account_id else None
@@ -260,7 +260,7 @@ def addtransaction(request):
                 date=date,
                 categorytype=categorytype,
                 category=category,
-                account=initial_account,
+                account=source_account,
                 refund=refund
             )
 
@@ -271,7 +271,7 @@ def addtransaction(request):
                 date=date,
                 categorytype=categorytype,
                 category=category,
-                account=initial_account,
+                account=source_account,
                 final_account=final_account,
                 refund=refund
             )
@@ -461,14 +461,14 @@ def newtransactions(request):
     accounts = accountlist()
     transactions = Transaction.objects.all().order_by('-id')[:7]
 
-    initial_accounts = accounts
+    source_accounts = accounts
     final_accounts = accounts
 
     context = {
         "categories": categories,
         "accounts": accounts,
         "transactions": transactions,
-        "initial_accounts": initial_accounts,
+        "source_accounts": source_accounts,
         "final_accounts": final_accounts,
     }
 
@@ -489,14 +489,14 @@ def alltransactions(request):
 
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
 
-    initial_accounts = accounts
+    source_accounts = accounts
     final_accounts = accounts
 
     context = {
         "categories": categories,
         "accounts": accounts,
         "transactions": transactions,
-        "initial_accounts": initial_accounts,
+        "source_accounts": source_accounts,
         "final_accounts": final_accounts,
         "date_tree": {year: dict(months) for year, months in date_tree.items()},
         "month_names": month_names,  

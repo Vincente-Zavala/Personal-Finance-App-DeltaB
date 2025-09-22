@@ -219,11 +219,11 @@
                                             </div>
                                             <div id="initialaccountfields" class="hidefield">
                                                 <fieldset  class="row mb-3">
-                                                    <legend class="col-form-label col-sm-2 pt-0">Initial Account</legend>
+                                                    <legend class="col-form-label col-sm-2 pt-0">Source Account</legend>
                                                     <div class="col-sm-10">
-                                                        {% for account in initial_accounts %}
+                                                        {% for account in source_accounts %}
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="radio" name="initialaccountchoice" value="{{ account.id }}"
+                                                            <input class="form-check-input" type="radio" name="sourceaccountchoice" value="{{ account.id }}"
                                                                 id="account{{account.id}}" data-type="{{ account.type.name }}" required>
                                                             <label class="form-check-label">
                                                                 {{ account.name }}
@@ -236,7 +236,7 @@
                                             </div>
                                             <div id="finalaccountfields" class="hidefield">
                                                 <fieldset  class="row mb-3">
-                                                    <legend class="col-form-label col-sm-2 pt-0">Final Account</legend>
+                                                    <legend class="col-form-label col-sm-2 pt-0">Destination Account</legend>
                                                     <div class="col-sm-10">
                                                         {% for account in final_accounts %}
                                                         <div class="form-check">
