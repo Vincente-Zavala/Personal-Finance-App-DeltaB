@@ -93,7 +93,7 @@
 
         <!-- Content Start -->
         <div class="content">
-            <!-- Navbar Start -->
+            <!-- Top Navbar Start -->
             <nav class="navbar navbar-expand bg-secondary navbar-dark sticky-top px-4 py-0">
                 <a href="{% url 'index' %}" class="navbar-brand d-flex d-lg-none me-4">
                     <h2 class="text-primary mb-0"><i class="fa fa-user-edit"></i></h2>
@@ -115,14 +115,16 @@
                     </div>
                 </div>
             </nav>
-            <!-- Navbar End -->
+            <!-- Top Navbar End -->
 
 
-            <!-- Sale & Revenue Start -->
+           <!-- Content Start -->
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Time Period & Accounts Start -->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
+                            <!-- Time Period Start -->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Time Period</h4>
                                 <form method="get" id="periodForm">
@@ -154,6 +156,9 @@
                                     <button type="submit" class="btn btn-primary">Apply</button>
                                 </form>
                             </div>
+                            <!-- Time Period End -->
+
+                            <!-- Accounts Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Accounts</h4>
                                 <hr>
@@ -168,9 +173,10 @@
                                     <hr>
                                 {% endfor %}
                             </div> 
+                            <!-- Accounts End-->
                         </div>
                     </div>
-                    <!-- Sale & Revenue End -->
+                    <!-- Time Period & Accounts End -->
 
 
                     <!-- Chart Start -->
@@ -219,9 +225,10 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Chart End -->
                 </div>
             </div>
-            <!-- Chart End -->
+            <!-- Content End -->
 
 
             <!-- Footer Start -->
