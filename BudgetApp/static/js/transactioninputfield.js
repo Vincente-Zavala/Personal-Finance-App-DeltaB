@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
       transfer: ["Savings Account", "Credit Card", "Investment", "Loan", "Retirement"],
   };
 
+  // INPUTS WITH FINAL ACCOUNTS
   const typeToFinalAccounts = {
       income: [],
       expense: [],
@@ -42,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const transactionType = document.getElementById("inputtransaction");
 
+  // HIDE ALL FIELDS
   function hideAllFields() {
       allFieldIds.forEach((id) => {
           const el = document.getElementById(id);
@@ -49,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-
+  // FILTER BY CATEGORY
   function filterCategoryOptions(type) {
     const container = document.getElementById("categoryfields");
     if (!container) return;
@@ -67,6 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 }
 
+    // DISPLAY FIELDS FOR TYPE
   function showFieldsForType(type) {
       hideAllFields();
       if (!type || !typeToFields[type]) return;
@@ -79,9 +82,9 @@ document.addEventListener("DOMContentLoaded", function () {
       if (type && typeToFields[type].includes("categoryfields")) {
         filterCategoryOptions(type);
     }
-    
   }
 
+  // FILTER RADIO
   function filterRadioOptions(containerId, allowedTypes) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -98,10 +101,10 @@ document.addEventListener("DOMContentLoaded", function () {
 }
 
 
-  // Initial hide
+  // INITIAL HIDE
   hideAllFields();
 
-  // Change listener
+  // CHANGE LISTENER
   if (transactionType) {
       transactionType.addEventListener("change", function () {
           showFieldsForType(this.value);
