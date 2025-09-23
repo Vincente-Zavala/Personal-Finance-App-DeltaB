@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-  // Map transaction types to fields that should be shown
+  // TRANSACTION TYPE TO FIELDS
   const typeToFields = {
       income: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
       expense: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields", "refundfields"],
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
       fee: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"]
   };
 
-  // Map transaction types to allowed account types
+  // TRANSACTION TYPE TO ACCOUNTS
   const typeToInitialAccounts = {
       income: ["Checking Account", "Savings Account", "Retirement"],
       expense: ["Checking Account", "Savings Account", "Credit Card"],
