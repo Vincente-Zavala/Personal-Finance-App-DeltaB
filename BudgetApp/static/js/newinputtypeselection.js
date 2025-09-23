@@ -6,6 +6,7 @@
 
     if (formType) {
     formType.addEventListener("change", function() {
+        
         // HIDE ALL
         sections.forEach(section => section.style.display = "none");
 
