@@ -78,8 +78,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin.html" class="dropdown-item">Sign In NU</a>
-                            <a href="signup.html" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}.html" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -117,11 +117,13 @@
             <!-- Navbar End -->
 
 
-            <!-- Sale & Revenue Start -->
+            
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Time Period & Accounts Start -->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
+                            <!-- Time Period Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Time Period</h4>
                                 <form method="get" id="periodForm">
@@ -153,12 +155,15 @@
                                     <button type="submit" class="btn btn-primary">Apply</button>
                                 </form>
                             </div>
+                            <!-- Time Period End -->
+
+                             <!-- Accounts Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Accounts</h4>
                                 <hr>
                                 {% for account in accounts %}
                                     <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                        <i class="fa {{ account_icon_map|getitem:account.type.name|default:'fa-folder' }} fa-3x text-primary"></i>
+                                        <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} fa-3x text-primary"></i>
                                         <div class="ms-3">
                                             <p class="mb-2">{{account.name}}</p>
                                             <p class="mb-2">Type:{{account.type}}</p>
@@ -168,46 +173,52 @@
                                     <hr>
                                 {% endfor %}
                             </div> 
+                            <!-- Accounts End -->
                         </div>
                     </div>
-                    <!-- Sale & Revenue End -->
+                    <!-- Time Period & Accounts End -->
 
 
-                    <!-- Recent Sales Start -->
+                    <!-- Overview Start -->
                     <div class="col-sm-12 col-xl-10">
                         <div class="row">
                             <div class="container-fluid px-4">
                                 <div class="row g-4 mb-4">
                                     {% for categorytype in categorytypes %}
                                     {% if categorytype.name == "Income" or categorytype.name == "Expense" %}
+                                    <!-- Total Income Start-->
                                     <div class="col-sm-6 col-xl-6">
                                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4 border border-light">
-                                            <i class="fa {{ type_icon_map|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
+                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
                                             <div class="ms-3">
                                                 <p class="mb-2">Total {{categorytype.name}}</p>
                                                 <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- Total Income End -->
                                     {% else %}
+                                    <!-- Total Expense Start-->
                                     <div class="col-sm-6 col-xl-3">
                                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                            <i class="fa {{ type_icon_map|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
+                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
                                             <div class="ms-3">
                                                 <p class="mb-2">Total {{categorytype.name}}</p>
                                                 <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- Total Expense End-->
                                     {% endif %}
                                     {% endfor %}
                                 </div>
                             </div>
+                            <!-- Categories Start-->
                             {% for categorytype in categorytypes %}
                             <div class="col-sm-12 col-xl-12">
                                 <div class="bg-secondary text-center rounded p-4 mb-4">
                                     <div class="d-flex align-items-center mb-4">
-                                        <i class="fa {{ type_icon_map|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
+                                        <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
                                         <h6 class="mb-0 ms-3">{{categorytype.name}}</h6>
                                     </div>
                                     <div class="table-responsive">
@@ -278,10 +289,11 @@
                                     </div>
                                 </div>
                             </div>    
+                            <!-- Categories End-->
                             {% endfor %}
                         </div>
                     </div>
-                    <!-- Recent Sales End -->
+                    <!-- Overview End -->
 
 
             <!-- Footer Start -->

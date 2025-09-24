@@ -78,8 +78,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin.html" class="dropdown-item">Sign In NU</a>
-                            <a href="signup.html" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}.html" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -117,11 +117,13 @@
             <!-- Navbar End -->
 
 
-            <!-- Sale & Revenue Start -->
+            
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Time Period & Accounts Start -->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
+                            <!-- Time Period Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Time Period</h4>
                                 <hr>
@@ -140,6 +142,9 @@
                                     <option value="3">Three</option>
                                 </select>
                             </div>
+                            <!-- Time Period End -->
+
+                            <!-- Accounts Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Accounts</h4>
                                 <hr>
@@ -154,15 +159,17 @@
                                     <hr>
                                 {% endfor %}
                             </div> 
+                            <!-- Accounts End-->
                         </div>
                     </div>
-                    <!-- Sale & Revenue End -->
+                    <!-- Time Period & Accounts End -->
 
 
                     <!-- Form Start -->
                     <div class="col-sm-12 col-xl-10">
                         <div class="d-flex flex-column gap-3">
                             <div class="row g-4">
+                                <!-- New Transactions Start -->
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary rounded h-100 p-4">
                                         <h6 class="mb-4">New Transactions</h6>
@@ -170,6 +177,7 @@
                                             {% csrf_token %}
                                             <hr>
                                             <hr>
+                                            <!-- Transaction Type Start -->
                                             <div class="row mb-3">
                                                 <label for="inputtype" class="col-sm-2 col-form-label">Transaction Type</label>
                                                 <div class="col-sm-2">
@@ -185,6 +193,7 @@
                                                 </div>
                                                 <hr>
                                             </div>
+                                            <!-- Transaction Type End -->
                                             <div id="datefields" class="hidefield">
                                                 <div class="row mb-3">
                                                     <label for="inputamount" class="col-sm-2 col-form-label">Date</label>
@@ -280,6 +289,9 @@
                                         </form>
                                     </div>
                                 </div>
+                                <!-- New Transactions End -->
+
+                                <!-- Recent Transactions Start -->
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary text-center rounded p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-4">
@@ -316,6 +328,9 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Recent Transactions End -->
+
+                                <!-- File Input Start-->
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary rounded h-100 p-4">
                                         <h6 class="mb-4">File Input</h6>
@@ -337,6 +352,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- File Input End -->
                             </div>
                         </div>
                     </div>
