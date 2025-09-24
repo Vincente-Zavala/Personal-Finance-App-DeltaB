@@ -1,4 +1,4 @@
-TYPE_ICON_MAP = {
+TYPEICONMAP = {
     "Income": "fa-dollar-sign",
     "Expense": "fa-receipt",
     "Savings": "fa-piggy-bank",

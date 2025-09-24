@@ -77,8 +77,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin.html" class="dropdown-item">Sign In NU</a>
-                            <a href="signup.html" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -119,6 +119,7 @@
             <!-- Button Start -->
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- New Category/Account Inputs -->
                     <div class="col-sm-12 col-xl-12">
                         <div class="bg-secondary rounded h-100 p-4">
                             <h6 class="mb-4">New Category/Account Inputs</h6>
@@ -182,14 +183,16 @@
                             </form>
                         </div>
                     </div>
+                    <!-- New Category/Account Input End-->
                 </div>
             </div>
             <!--END INPUT FORM-->
-
+ 
 
             
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Category Types Start-->
                     <div class="col-sm-12 col-xl-6">
                         <div class="row g-4">
                             <div class="col-sm-12 col-xl-12">
@@ -234,6 +237,7 @@
                             {% endfor %}
                         </div>
                     </div>
+                    <!-- Account Type Start-->
                     <div class="col-sm-12 col-xl-6">
                         <div class="row g-4">
                             <div class="col-sm-12 col-xl-12">
@@ -278,6 +282,7 @@
                             {% endfor %}
                         </div>
                     </div>
+                    <!-- Account Type End -->
                 </div>
             </div>
             <!-- Button End -->
