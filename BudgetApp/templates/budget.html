@@ -78,8 +78,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin.html" class="dropdown-item">Sign In NU</a>
-                            <a href="signup.html" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -118,9 +118,10 @@
 
 
 
-            <!-- Sale & Revenue Start -->
+            <!-- Budget Start -->
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Time Period Start-->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
                             <div class="bg-secondary rounded h-100 p-3">
@@ -170,10 +171,10 @@
                             </div> 
                         </div>
                     </div>
-                    <!-- Sale & Revenue End -->
+                    <!-- Time Period End -->
 
 
-                    <!-- Table Start -->
+                    <!--  Edit Budget Start -->
                     <div class="col-sm-12 col-xl-10">
                         <div class="row g-4">
                             {% for categorytype in categorytypes %}
@@ -209,7 +210,7 @@
                                     </table>
                                 </div>
                             </div>
-                            <!-- Modal -->
+                            <!--  Edit Income Limits Modal Start -->
                             <div class="modal fade" id="editModal{{ categorytype.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ categorytype.id }}" aria-hidden="true">
                                 <div class="modal-dialog modal-lg">
                                 <div class="modal-content bg-dark text-light">
@@ -251,13 +252,14 @@
                                 </div>
                                 </div>
                             </div>
-                            <!--End Modal-->  
+                            <!-- Edit Income Limits Modal End-->  
                             {% endfor %}
                         </div>
                     </div>
+                    <!--Edit Budget End-->
                 </div>
             </div>
-            <!-- Table End -->
+            <!-- Budget End-->
 
 
             <!-- Footer Start -->

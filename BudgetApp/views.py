@@ -561,7 +561,11 @@ def color(request):
 def element(request):
     return render(request, 'element.html')
 
+def signup(request):
+    return render(request, 'signup.html')
 
+def signin(request):
+    return render(request, 'signin.html')
 
 ## --------------------LiSTS NEED UPDATING-------------------- ##
 def categorylist():

@@ -78,8 +78,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin.html" class="dropdown-item">Sign In NU</a>
-                            <a href="signup.html" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -117,9 +117,10 @@
             <!-- Navbar End -->
 
 
-            <!-- Sale & Revenue Start -->
+            
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
+                    <!-- Account Balance Start -->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
                             <div class="bg-secondary rounded h-100 p-3">
@@ -138,10 +139,10 @@
                             </div> 
                         </div>
                     </div>
-                    <!-- Sale & Revenue End -->
+                    <!-- Account Balance End -->
 
 
-                    <!-- Form Start -->
+                    <!-- Recent Transactions Start -->
                     <div class="col-sm-12 col-xl-10">
                         <div class="d-flex flex-column gap-3">
                             <div class="row g-4">
@@ -183,7 +184,7 @@
                                                 {% endfor %}
                                             </table>
                                         </div>
-                                        <!-- Modal -->
+                                        <!-- Filters Start -->
                                         <div class="modal fade" id="filterModalTransactions" tabindex="-1" aria-labelledby="filterModalTransactions" aria-hidden="true">
                                             <div class="modal-dialog modal-lg">
                                             <div class="modal-content bg-dark text-light">
@@ -290,13 +291,13 @@
                                             </div>
                                             </div>
                                         </div>
-                                        <!--End Modal-->  
+                                        <!-- Filters End -->  
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- Form End -->
+                    <!-- Recent Transactions End -->
 
 
             <!-- Footer Start -->
