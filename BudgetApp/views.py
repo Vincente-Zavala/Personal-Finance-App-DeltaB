@@ -85,7 +85,7 @@ def categorytransactionsum(category, selected_year, selected_month):
             date__month=selected_month,
         )
         for tx in txs:
-            total += abs(tx.signed_amount(tx.account))
+            total += abs(tx.signed_amount(tx.sourceaccount))
         return total
 
 
@@ -260,7 +260,7 @@ def addtransaction(request):
                 date=date,
                 categorytype=categorytype,
                 category=category,
-                account=source_account,
+                sourceaccount=source_account,
                 refund=refund
             )
 
@@ -271,8 +271,8 @@ def addtransaction(request):
                 date=date,
                 categorytype=categorytype,
                 category=category,
-                account=source_account,
-                final_account=final_account,
+                sourceaccount=source_account,
+                destinationaccount=final_account,
                 refund=refund
             )
 
@@ -331,12 +331,6 @@ def transactionsum(request):
         "selected_year": selected_year,
         "date_tree": date_tree,
     }
-
-    print("")
-
-    print("CHARTS DATA (VIEW):", charts_data)
-
-
 
     return render(request, "index.html", context)
 
