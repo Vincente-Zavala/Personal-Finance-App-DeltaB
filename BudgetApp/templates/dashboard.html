@@ -79,8 +79,8 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="signin" class="dropdown-item">Sign In NU</a>
-                            <a href="signup" class="dropdown-item">Sign Up NU</a>
+                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404" class="dropdown-item">404 Error NU</a>
                             <a href="blank" class="dropdown-item">Blank Page NU</a>
                         </div>
@@ -118,7 +118,7 @@
             <!-- Top Navbar End -->
 
 
-           <!-- Content Start -->
+           
             <div class="container-fluid pt-4 px-4">
                 <div class="row g-4">
                     <!-- Time Period & Accounts Start -->
@@ -164,7 +164,7 @@
                                 <hr>
                                 {% for account in accounts %}
                                     <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                        <i class="fa {{ account_icon_map|getitem:account.type.name|default:'fa-folder' }} fa-3x text-primary"></i>
+                                        <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} fa-3x text-primary"></i>
                                         <div class="ms-3">
                                             <p class="mb-2">{{account.name}}</p>
                                             <h6 class="mb-0">${{account.balance}}</h6>
@@ -188,7 +188,7 @@
                                     {% if categorytype.name == "Income" or categorytype.name == "Expense" %}
                                     <div class="col-sm-6 col-xl-6">
                                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4 border border-light">
-                                            <i class="fa {{ type_icon_map|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
+                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
                                             <div class="ms-3">
                                                 <p class="mb-2">Total {{categorytype.name}}</p>
                                                 <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
@@ -198,7 +198,7 @@
                                     {% else %}
                                     <div class="col-sm-6 col-xl-3">
                                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                            <i class="fa {{ type_icon_map|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
+                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
                                             <div class="ms-3">
                                                 <p class="mb-2">Total {{categorytype.name}}</p>
                                                 <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
@@ -228,7 +228,7 @@
                     <!-- Chart End -->
                 </div>
             </div>
-            <!-- Content End -->
+            
 
 
             <!-- Footer Start -->
