@@ -10,7 +10,7 @@ def recalculatebalance(account, from_date):
         Transaction.objects.filter(
             date__gte=from_date
         ).filter(
-            models.Q(account=account) | models.Q(final_account=account)
+            models.Q(sourceaccount=account) | models.Q(destinationaccount=account)
         ).order_by("date")
     )
 
@@ -54,15 +54,15 @@ def recalculatebalance(account, from_date):
 
 @receiver(post_save, sender=Transaction)
 def update_balance_on_save(sender, instance, created, **kwargs):
-    recalculatebalance(instance.account, instance.date)
+    recalculatebalance(instance.sourceaccount, instance.date)
 
-    if instance.final_account:
-        recalculatebalance(instance.final_account, instance.date)
+    if instance.destinationaccount:
+        recalculatebalance(instance.destinationaccount, instance.date)
 
 
 @receiver(post_delete, sender=Transaction)
 def update_balance_on_delete(sender, instance, **kwargs):
-    recalculatebalance(instance.account, instance.date)
+    recalculatebalance(instance.sourceaccount, instance.date)
 
-    if instance.final_account:
-        recalculatebalance(instance.final_account, instance.date)
+    if instance.destinationaccount:
+        recalculatebalance(instance.destinationaccount, instance.date)
