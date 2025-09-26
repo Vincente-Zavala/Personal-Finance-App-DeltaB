@@ -37,8 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "BudgetApp"
+    "BudgetApp",
 ]
+
+
+AUTH_USER_MODEL = 'BudgetApp.CustomUser'
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -14,8 +15,13 @@ urlpatterns = [
     path('addinput/', views.addinput, name='addinput'),
     path('element/', views.element, name='element'),
     path("edit-limits/<int:pk>/", views.edit_categorytype_limits, name="edit_categorytype_limits"),
+    path("signup/", views.signup, name='signup'),
+    path("signin/", views.signin, name='signin'),
     path("filtertransactions", views.filtertransactions, name="filtertransactions"),
+<<<<<<< HEAD
     path("signup/", views.signup, name="signup"),
     path("signin/", views.signin, name="signin"),
     path("home/", views.home, name="home")
+=======
+>>>>>>> b0e7cba3a70491a0302432f89af1963de2cf3ddc
 ]

@@ -1,4 +1,19 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+
+
+
+
+# USERS #
+class CustomUser(AbstractUser):
+    pass
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} {self.username} ({self.email})"
+
+
+
 
 
 # CATEGORY TYPE #
@@ -148,4 +163,3 @@ class AccountBalanceHistory(models.Model):
 
     def __str__(self):
         return f"{self.account.name} balance on {self.date}: {self.balance}"
-

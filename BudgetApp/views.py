@@ -552,8 +552,6 @@ def tasks(request):
 def color(request):
     return render(request, 'color.html')
 
-def element(request):
-    return render(request, 'element.html')
 
 def signup(request):
     return render(request, 'signup.html')
@@ -561,8 +559,15 @@ def signup(request):
 def signin(request):
     return render(request, 'signin.html')
 
+<<<<<<< HEAD
 def home(request):
     return render(request, 'home.html')
+=======
+def element(request):
+    return render(request, 'element.html')
+
+
+>>>>>>> b0e7cba3a70491a0302432f89af1963de2cf3ddc
 
 ## --------------------LiSTS NEED UPDATING-------------------- ##
 def categorylist():
