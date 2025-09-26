@@ -559,15 +559,14 @@ def signup(request):
 def signin(request):
     return render(request, 'signin.html')
 
-<<<<<<< HEAD
-def home(request):
-    return render(request, 'home.html')
-=======
 def element(request):
     return render(request, 'element.html')
 
 
->>>>>>> b0e7cba3a70491a0302432f89af1963de2cf3ddc
+def home(request):
+    return render(request, "home.html")
+
+
 
 ## --------------------LiSTS NEED UPDATING-------------------- ##
 def categorylist():
