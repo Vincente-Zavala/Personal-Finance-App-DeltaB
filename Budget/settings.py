@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     "BudgetApp",
 ]
 
-
+LOGIN_URL = 'signin'
+LOGIN_REDIRECT_URL = 'index'
 AUTH_USER_MODEL = 'BudgetApp.CustomUser'
 
 
