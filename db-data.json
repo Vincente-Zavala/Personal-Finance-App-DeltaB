@@ -1,0 +1,931 @@
+[
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 1,
+    "fields": {
+        "name": "Income"
+    }
+},
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 2,
+    "fields": {
+        "name": "Expense"
+    }
+},
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 3,
+    "fields": {
+        "name": "Savings"
+    }
+},
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 4,
+    "fields": {
+        "name": "Investment"
+    }
+},
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 5,
+    "fields": {
+        "name": "Debt"
+    }
+},
+{
+    "model": "BudgetApp.categorytype",
+    "pk": 6,
+    "fields": {
+        "name": "Transfer"
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 1,
+    "fields": {
+        "name": "Pay Check",
+        "type": 1
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 2,
+    "fields": {
+        "name": "Rent",
+        "type": 2
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 3,
+    "fields": {
+        "name": "Emergency Fund",
+        "type": 3
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 4,
+    "fields": {
+        "name": "Crypto",
+        "type": 4
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 5,
+    "fields": {
+        "name": "CC Payment",
+        "type": 5
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 6,
+    "fields": {
+        "name": "Balance Change",
+        "type": 6
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 7,
+    "fields": {
+        "name": "Pay Check 2",
+        "type": 1
+    }
+},
+{
+    "model": "BudgetApp.category",
+    "pk": 8,
+    "fields": {
+        "name": "Utilities",
+        "type": 2
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 1,
+    "fields": {
+        "name": "Checking Account"
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 2,
+    "fields": {
+        "name": "Savings Account"
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 3,
+    "fields": {
+        "name": "Credit Card"
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 4,
+    "fields": {
+        "name": "Loan"
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 5,
+    "fields": {
+        "name": "Investment"
+    }
+},
+{
+    "model": "BudgetApp.accounttype",
+    "pk": 6,
+    "fields": {
+        "name": "Retirement"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 1,
+    "fields": {
+        "name": "Chase",
+        "type": 1,
+        "balance": "110.00"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 2,
+    "fields": {
+        "name": "Chase Savings",
+        "type": 2,
+        "balance": "-35.00"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 3,
+    "fields": {
+        "name": "Discover",
+        "type": 3,
+        "balance": "53.00"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 4,
+    "fields": {
+        "name": "HH Loans",
+        "type": 4,
+        "balance": "-35.00"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 5,
+    "fields": {
+        "name": "Coinbase",
+        "type": 5,
+        "balance": "15.00"
+    }
+},
+{
+    "model": "BudgetApp.account",
+    "pk": 6,
+    "fields": {
+        "name": "Transamerica",
+        "type": 6,
+        "balance": "20.00"
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 23,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 1,
+        "category": 1,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 24,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 1,
+        "category": 1,
+        "sourceaccount": 2,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 25,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 1,
+        "category": 1,
+        "sourceaccount": 6,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 26,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 27,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 2,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 28,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 3,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 29,
+    "fields": {
+        "amount": "10.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 3,
+        "category": 3,
+        "sourceaccount": 1,
+        "destinationaccount": 2,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 30,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 4,
+        "category": 4,
+        "sourceaccount": 1,
+        "destinationaccount": 5,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 31,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 4,
+        "category": 4,
+        "sourceaccount": 2,
+        "destinationaccount": 5,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 32,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 4,
+        "category": 4,
+        "sourceaccount": 3,
+        "destinationaccount": 5,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 33,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 1,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 34,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 2,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 35,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 3,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 36,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 1,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 37,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 2,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 38,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 3,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 39,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 2,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 40,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 2,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 41,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 2,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 42,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 43,
+    "fields": {
+        "amount": "200.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 1,
+        "category": 1,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 44,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 5,
+        "category": 5,
+        "sourceaccount": 1,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 45,
+    "fields": {
+        "amount": "50.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 3,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 46,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 47,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 48,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 49,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 50,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 4,
+        "destinationaccount": 1,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 51,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 4,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 52,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-02",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 4,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 53,
+    "fields": {
+        "amount": "10.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 4,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 54,
+    "fields": {
+        "amount": "10.00",
+        "note": "Test",
+        "date": "2025-09-02",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 4,
+        "destinationaccount": 3,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 55,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-02",
+        "categorytype": 6,
+        "category": 6,
+        "sourceaccount": 3,
+        "destinationaccount": 4,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 56,
+    "fields": {
+        "amount": "5.00",
+        "note": "Test",
+        "date": "2025-09-01",
+        "categorytype": 1,
+        "category": 1,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 57,
+    "fields": {
+        "amount": "69.00",
+        "note": "discord kittens",
+        "date": "2025-09-03",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 58,
+    "fields": {
+        "amount": "40.00",
+        "note": "FK",
+        "date": "2025-09-01",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 59,
+    "fields": {
+        "amount": "6.00",
+        "note": "ent",
+        "date": "2025-09-02",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 60,
+    "fields": {
+        "amount": "20.00",
+        "note": "Test",
+        "date": "2025-09-04",
+        "categorytype": 1,
+        "category": 7,
+        "sourceaccount": 1,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 61,
+    "fields": {
+        "amount": "3.00",
+        "note": "dfdfd",
+        "date": "2025-09-03",
+        "categorytype": 2,
+        "category": 2,
+        "sourceaccount": 3,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.transaction",
+    "pk": 62,
+    "fields": {
+        "amount": "35.00",
+        "note": "Test",
+        "date": "2025-09-13",
+        "categorytype": 2,
+        "category": 8,
+        "sourceaccount": 3,
+        "destinationaccount": null,
+        "refund": false
+    }
+},
+{
+    "model": "BudgetApp.budget",
+    "pk": 1,
+    "fields": {
+        "month": 2,
+        "year": 2025,
+        "category": 1,
+        "limit": "35.00"
+    }
+},
+{
+    "model": "BudgetApp.budget",
+    "pk": 2,
+    "fields": {
+        "month": 9,
+        "year": 2025,
+        "category": 1,
+        "limit": "30.00"
+    }
+},
+{
+    "model": "BudgetApp.budget",
+    "pk": 3,
+    "fields": {
+        "month": 9,
+        "year": 2025,
+        "category": 2,
+        "limit": "250.00"
+    }
+},
+{
+    "model": "BudgetApp.budget",
+    "pk": 4,
+    "fields": {
+        "month": 9,
+        "year": 2025,
+        "category": 7,
+        "limit": "35.00"
+    }
+},
+{
+    "model": "BudgetApp.budget",
+    "pk": 5,
+    "fields": {
+        "month": 9,
+        "year": 2025,
+        "category": 3,
+        "limit": "30.00"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 1,
+    "fields": {
+        "account": 1,
+        "balance": "165.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 2,
+    "fields": {
+        "account": 2,
+        "balance": "-35.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 3,
+    "fields": {
+        "account": 6,
+        "balance": "20.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 4,
+    "fields": {
+        "account": 3,
+        "balance": "20.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 5,
+    "fields": {
+        "account": 5,
+        "balance": "15.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 6,
+    "fields": {
+        "account": 4,
+        "balance": "-40.00",
+        "date": "2025-09-01"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 7,
+    "fields": {
+        "account": 4,
+        "balance": "-35.00",
+        "date": "2025-09-02"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 8,
+    "fields": {
+        "account": 3,
+        "balance": "15.00",
+        "date": "2025-09-02"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 9,
+    "fields": {
+        "account": 1,
+        "balance": "90.00",
+        "date": "2025-09-03"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 10,
+    "fields": {
+        "account": 1,
+        "balance": "159.00",
+        "date": "2025-09-02"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 11,
+    "fields": {
+        "account": 1,
+        "balance": "110.00",
+        "date": "2025-09-04"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 12,
+    "fields": {
+        "account": 3,
+        "balance": "18.00",
+        "date": "2025-09-03"
+    }
+},
+{
+    "model": "BudgetApp.accountbalancehistory",
+    "pk": 13,
+    "fields": {
+        "account": 3,
+        "balance": "53.00",
+        "date": "2025-09-13"
+    }
+}
+]

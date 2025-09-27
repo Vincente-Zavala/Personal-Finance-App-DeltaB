@@ -552,14 +552,21 @@ def tasks(request):
 def color(request):
     return render(request, 'color.html')
 
-def element(request):
-    return render(request, 'element.html')
 
 def signup(request):
     return render(request, 'signup.html')
 
 def signin(request):
     return render(request, 'signin.html')
+
+def element(request):
+    return render(request, 'element.html')
+
+
+def home(request):
+    return render(request, "home.html")
+
+
 
 ## --------------------LiSTS NEED UPDATING-------------------- ##
 def categorylist():
