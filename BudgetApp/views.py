@@ -14,6 +14,10 @@ from collections import defaultdict
 import calendar
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+
 
 
 
@@ -375,6 +379,7 @@ def filtertransactions(request, pk):
 ## --------------------BASE VIEWS-------------------- ##
 
 
+@login_required
 def index(request):
     # GET MONTH/YEAR
     selected_month, selected_year = getselectedmonthyear(request)
@@ -383,11 +388,13 @@ def index(request):
     budgetmap = getbudgetmap(selected_month, selected_year)
 
     accounts = accountlist()
+    name = request.user.get_full_name()
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(selected_month, selected_year, budgetmap)
 
 
     context = {
+        "name": name,
         "accounts": accounts,
         "categorytypes": categorytypes,
         "budgetmap": budgetmap,
@@ -405,6 +412,7 @@ def index(request):
 
 
 
+@login_required
 def dashboard(request):
     categories = categorylist()
 
@@ -450,6 +458,7 @@ def dashboard(request):
 
 
 
+@login_required
 def newtransactions(request):
     categories = categorylist()
     accounts = accountlist()
@@ -472,6 +481,7 @@ def newtransactions(request):
 
 
 
+@login_required
 def alltransactions(request):
 
     categories = categorylist()
@@ -501,6 +511,8 @@ def alltransactions(request):
 
 
 
+
+@login_required
 def budget(request):
     # GET MONTH/YEAR
     selected_month, selected_year = getselectedmonthyear(request)
@@ -529,6 +541,10 @@ def budget(request):
     return render(request, "budget.html", context)
 
 
+
+
+
+@login_required
 def setup(request):
     categories = categorylist()
     categorytypes = categorytypelist()
@@ -545,24 +561,58 @@ def setup(request):
 
     return render(request, 'setup.html', context)
 
+
+
+
+
+@login_required
 def tasks(request):
     return render(request, 'tasks.html')
 
 
+
+
+
+@login_required
 def color(request):
     return render(request, 'color.html')
+
+
+
 
 
 def signup(request):
     return render(request, 'signup.html')
 
-def signin(request):
-    return render(request, 'signin.html')
 
+
+
+
+def signin(request):
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect("index")
+    else:
+        form = AuthenticationForm()
+
+    return render(request, "signin.html", {"form": form})
+
+
+
+
+
+@login_required
 def element(request):
     return render(request, 'element.html')
 
 
+
+
+
+@login_required
 def home(request):
     return render(request, "home.html")
 
