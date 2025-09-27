@@ -178,6 +178,12 @@
                                             <input class="form-control" id="inputaccount" name="inputaccount">
                                         </div>
                                     </div>
+                                    <div class="row mb-3">
+                                        <label for="inputaccountbalance" class="col-sm-2 col-form-label">Starting Balance</label>
+                                        <div class="col-sm-2">
+                                            <input class="form-control" id="inputaccountbalance" name="inputaccountbalance">
+                                        </div>
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">ADD</button>
                             </form>
@@ -271,7 +277,7 @@
                                         <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
                                         <div class="w-100 ms-3">
                                             <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ account.name }}</h6>
+                                                <h6 class="mb-0">{{ account.name }} - Starting Balance: ${{ account.startingbalance }}</h6>
                                                 <small>ID: {{ account.id }}</small>
                                             </div>
                                         </div>
