@@ -326,6 +326,20 @@ def addtransaction(request):
 
 
 
+# DELETE TRANSACTIONS #
+def deletetransactions (request):
+    selectedtransactionids = request.POST.getlist("selectedtransactions")
+    Transaction.objects.filter(id__in=selectedtransactionids).delete()
+
+    redirecturl = request.POST.get("redirect")
+    
+    
+    return redirect(redirecturl)
+
+
+
+
+
 # CREATE BUDGET LIMITS #
 def budgetlimit(request):
     today = datetime.today()
@@ -412,47 +426,67 @@ def filtertransactions(request):
     """
 
     transactions = Transaction.objects.all()
+    appliedfilters = []
 
     # Date range
     datestart = request.POST.get('date_start')
     dateend = request.POST.get('date_end')
+
     if datestart:
-        try:
-            datestart = datetime.strptime(datestart, "%m-%d-%Y").date()
-            transactions = transactions.filter(date__gte=datestart)
-        except Exception:
-            pass
+        datestart = datetime.strptime(datestart, "%m-%d-%Y").date()
+        transactions = transactions.filter(date__gte=datestart)
+        appliedfilters.append(f"From: {datestart.strftime('%m-%d-%Y')}")
     if dateend:
-        try:
-            dateend = datetime.strptime(dateend, "%m-%d-%Y").date()
-            transactions = transactions.filter(date__lte=dateend)
-        except Exception:
-            pass
+        dateend = datetime.strptime(dateend, "%m-%d-%Y").date()
+        transactions = transactions.filter(date__lte=dateend)
+        appliedfilters.append(f"To: {dateend.strftime('%m-%d-%Y')}")
+
 
     # Amount - allow single number or range 'min-max'
-    amount = request.POST.get('filteramount')
-    if amount:
-        #amount = amount.strip()
-        # if '-' in amount:
-        #     parts = amount.split('-')
-        #     try:
-        #         low = Decimal(parts[0].strip())
-        #         high = Decimal(parts[1].strip())
-        #         transactions = transactions.filter(amount__gte=low, amount__lte=high)
-        #     except Exception:
-        #         pass
-        # else:
-            # try:
-        amount = Decimal(amount)
-        transactions = transactions.filter(amount=amount)
-            # except Exception:
-                # fallback: contains
-        #transactions = transactions.filter(note__icontains=amount)
+    amountoption = request.POST.get("amountoption")
+
+    if amountoption == "exact":
+        exactamount = request.POST.get('filterexactamount')
+        if exactamount:
+            #amount = amount.strip()
+            # if '-' in amount:
+            #     parts = amount.split('-')
+            #     try:
+            #         low = Decimal(parts[0].strip())
+            #         high = Decimal(parts[1].strip())
+            #         transactions = transactions.filter(amount__gte=low, amount__lte=high)
+            #     except Exception:
+            #         pass
+            # else:
+                # try:
+            exactamount = Decimal(exactamount)
+            transactions = transactions.filter(amount=exactamount)
+            appliedfilters.append(f"Amount = ${exactamount}")
+                # except Exception:
+                    # fallback: contains
+            #transactions = transactions.filter(note__icontains=amount)
+    elif amountoption == "minmax":
+        minamount = request.POST.get('filterminamount')
+        maxamount = request.POST.get('filtermaxamount')
+
+        if minamount and maxamount:
+            minamount = Decimal(minamount)
+            maxamount = Decimal(maxamount)
+
+            if minamount:
+                transactions = transactions.filter(amount__gte=minamount)
+                appliedfilters.append(f"Min Amount: ${minamount}")
+            if maxamount:
+                transactions = transactions.filter(amount__lte=maxamount)
+                appliedfilters.append(f"Max Amount: ${maxamount}")
+
+
 
     # Note text
     note = request.POST.get('filternote')
     if note:
         transactions = transactions.filter(note__icontains=note)
+        appliedfilters.append(f"Note: '{note}'")
 
     # Categories (checkboxes)
     # categories = request.POST.getlist('categories')
@@ -474,14 +508,20 @@ def filtertransactions(request):
     selectedaccounts = []
 
     if request.method == "POST":
+        selectedcategorytypes = request.POST.getlist("filtercategorytypechoice")
+        selectedaccounttypes = request.POST.getlist("filteraccounttypechoice")
         selectedcategories = request.POST.getlist("filtercategorychoice")
         selectedaccounts = request.POST.getlist("filteraccountchoice")
 
         if selectedcategories:
             transactions = transactions.filter(category__id__in=selectedcategories)
+            names = list(Category.objects.filter(id__in=selectedcategories).values_list("name", flat=True))
+            appliedfilters.append("Categories: " + ", ".join(names))
 
         if selectedaccounts:
             transactions = transactions.filter(sourceaccount__id__in=selectedaccounts)
+            names = list(Account.objects.filter(id__in=selectedaccounts).values_list("name", flat=True))
+            appliedfilters.append("Accounts: " + ", ".join(names))
 
 
 
@@ -501,6 +541,7 @@ def filtertransactions(request):
         "transactions": transactions,
         "categorytypes": categorytypes,
         "accounttypes": accounttypes,
+        "appliedfilters": appliedfilters,
         #"source_accounts": accounts,
         #"final_accounts": accounts,
         "selectedcategories": selectedcategories,
