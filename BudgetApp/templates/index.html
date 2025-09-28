@@ -130,6 +130,7 @@
                                     <h6>Month</h6>
                                     <select class="form-select mb-3" name="month">
                                         <option disabled {% if not selected_month %}selected{% endif %}>Options</option>
+                                        <option value="13" {% if selected_month == 0 %}selected{% endif %}>Total Year</option>
                                         <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
                                         <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
                                         <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>

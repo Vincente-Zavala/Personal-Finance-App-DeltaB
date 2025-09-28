@@ -2,6 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db import models
 from .models import Transaction, Account, AccountBalanceHistory
+from django.utils import timezone
 
 
 def recalculatebalance(account, from_date):
@@ -20,7 +21,11 @@ def recalculatebalance(account, from_date):
         .order_by("-date")
         .first()
     )
-    running_balance = prev_balance_obj.balance if prev_balance_obj else 0
+
+    if prev_balance_obj:
+        running_balance = prev_balance_obj.balance
+    else:
+        running_balance = account.startingbalance or 0
 
     current_date = None
     for tx in transactions:
@@ -66,3 +71,16 @@ def update_balance_on_delete(sender, instance, **kwargs):
 
     if instance.destinationaccount:
         recalculatebalance(instance.destinationaccount, instance.date)
+
+
+@receiver(post_save, sender=Account)
+def setinitialbalance(sender, instance, created, **kwargs):
+    if created:
+        instance.balance = instance.startingbalance
+        instance.save()
+
+        AccountBalanceHistory.objects.create(
+            account=instance,
+            date=timezone.now().date(),
+            balance=instance.startingbalance
+        )
