@@ -150,7 +150,17 @@
                                     <div class="bg-secondary text-center rounded p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-4">
                                             <h6 class="mb-0">All Transactions</h6>
+                                            <div class="text-primary">
+                                                {% if appliedfilters %}
+                                                    <span>FILTERS-- </span>
+                                                    <span>
+                                                        {{ appliedfilters|join:" | " }}
+                                                    </span>
+                                                {% endif %}    
+                                            </div>
                                             <div class="d-flex gap-2">
+                                                <button type="submit" form="deletetransactionForm" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button>
+                                                <button id="toggleEdit" type="button" class="btn btn-sm btn-primary" href="">Edit</button>
                                                 <a href="{% url 'alltransactions' %}" class="btn btn-sm btn-primary">Reset</a>
                                                 <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModalTransactions">
                                                     Filter
@@ -158,38 +168,40 @@
                                             </div>
                                         </div>
                                         <div class="table-responsive">
-                                            <table class="table text-start align-middle table-bordered table-hover mb-0">
-                                                <thead>
-                                                    <tr class="text-white">
-                                                        <th scope="col"><input class="form-check-input" type="checkbox"></th>
-                                                        <th scope="col">Date</th>
-                                                        <th scope="col">Category</th>
-                                                        <th scope="col">Note</th>
-                                                        <th scope="col">Amount</th>
-                                                        <th scope="col">Account</th>
-                                                        <th scope="col">Running Balance</th>
-                                                        <th scope="col">Edit</th>
-                                                    </tr>
-                                                </thead>
-                                                {% for transaction in transactions %}
-                                                <tbody>
-                                                    <tr>
-                                                        <td><input class="form-check-input" type="checkbox"></td>
-                                                        <td>{{ transaction.date }}</td>
-                                                        <td>{{ transaction.category }}</td>
-                                                        <td>{{ transaction.note }}</td>
-                                                        <td>${{ transaction.amount }}</td>
-                                                        <td>{{ transaction.sourceaccount }}</td>
-                                                        <td>${{ transaction.runningbalance }}</td>
-                                                        <td><a class="btn btn-sm btn-primary" href="">Delete</a></td>
-                                                    </tr>
-                                                    {% empty %}
-                                                    <tr>
-                                                        <td colspan="7">No transactions found.</td>
-                                                    </tr>
-                                                </tbody>
-                                                {% endfor %}
-                                            </table>
+                                            <form id="deletetransactionForm" method="POST" action="{% url 'deletetransactions' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="redirect" value="{{ request.path }}">
+                                                <table class="table text-start align-middle table-bordered table-hover mb-0">
+                                                    <thead>
+                                                        <tr class="text-white">
+                                                            <th scope="col"  class="editcol" hidden></th>
+                                                            <th scope="col">Date</th>
+                                                            <th scope="col">Category</th>
+                                                            <th scope="col">Note</th>
+                                                            <th scope="col">Amount</th>
+                                                            <th scope="col">Account</th>
+                                                            <th scope="col">Running Balance</th>
+                                                        </tr>
+                                                    </thead>
+                                                    {% for transaction in transactions %}
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
+                                                            <td>{{ transaction.date }}</td>
+                                                            <td>{{ transaction.category }}</td>
+                                                            <td>{{ transaction.note }}</td>
+                                                            <td>${{ transaction.amount }}</td>
+                                                            <td>{{ transaction.sourceaccount }}</td>
+                                                            <td>${{ transaction.runningbalance }}</td>
+                                                        </tr>
+                                                        {% empty %}
+                                                        <tr>
+                                                            <td colspan="7">No transactions found.</td>
+                                                        </tr>
+                                                    </tbody>
+                                                    {% endfor %}
+                                                </table>
+                                            </form>
                                         </div>
                                         <!-- Filters Start -->
                                         <div class="modal fade" id="filterModalTransactions" tabindex="-1" aria-labelledby="filterModalTransactions" aria-hidden="true">
@@ -230,60 +242,96 @@
                                                         </div>
                                                         <div class="col-sm-12 col-xl-6">
                                                             <div class="bg-secondary rounded h-100 p-4">
-                                                                <label for="filteramount" class="col-sm-2 col-form-label">Amount</label>
-                                                                <div class="input-group mb-3">
+                                                                <h6>Amount</h6>
+                                                                <div class="form-check form-check-inline mb-3 minmax">
+                                                                    <input class="form-check-input" type="radio" name="amountoption" id="exactoption" value="exact" checked>
+                                                                    <label class="form-check-label" for="exactoption">Exact</label>
+                                                                </div>
+                                                                <div class="form-check form-check-inline mb-3">
+                                                                    <input class="form-check-input" type="radio" name="amountoption" id="minmaxoption" value="minmax">
+                                                                    <label class="form-check-label" for="minmaxoption">Min/Max</label>
+                                                                </div>
+                                                                <div class="input-group mb-3" id="exactinput">
                                                                     <span class="input-group-text">Exact:</span>
-                                                                    <input type="text" class="form-control" id="filteramount" name="filteramount" placeholder="$0.00">
+                                                                    <input type="text" class="form-control" id="filterexactamount" name="filterexactamount" placeholder="$0.00">
+                                                                </div>
+                                                                <div id="minmaxinput" hidden>
+                                                                    <div class="input-group mb-3">
+                                                                        <span class="input-group-text">Min:</span>
+                                                                        <input type="text" class="form-control" id="filterminamount" name="filterminamount" placeholder="$0.00">
+                                                                    </div>
+                                                                    <div class="input-group mb-3">
+                                                                        <span class="input-group-text">Max:</span>
+                                                                        <input type="text" class="form-control" id="filtermaxamount" name="filtermaxamount" placeholder="$0.00">
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-sm-12 col-xl-6">
                                                             <div class="bg-secondary rounded h-100 p-4">
-                                                                <label for="filternote" class="col-sm-2 col-form-label">Note</label>
+                                                                <h6>Note</h6>
                                                                 <div class="col-sm-12">
-                                                                    <input type="text" class="form-control" id="filternote" name="filternote"></input>
+                                                                    <input type="text" class="form-control" id="filternote" name="filternote" placeholder="Description"></input>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4 text-start">
-                                                              <h6>Categories</h6>
-                                                              <div>
-                                                                    {% for categorytype in categorytypes %}
-                                                                    <hr>
-                                                                        <label class="form-check-label" for="flexCheckDefault">
-                                                                            {{ categorytype.name }}
-                                                                        </label>
-                                                                        {% for category in categorytype.category_set.all %}
-                                                                        <div class="form-check">
-                                                                            <input class="form-check-input" type="checkbox" name="filtercategorychoice" value="{{ category.id }}" id="filtercategory{{category.id}}">
-                                                                            <label class="form-check-label" for="flexCheckDefault">
-                                                                                {{ category.name }}
-                                                                            </label>
-                                                                        </div>
-                                                                        {% endfor %}
-                                                                    {% endfor %}
+                                                            <div class="bg-secondary rounded h-100 p-4">
+                                                                <h6>Categories</h6>
+                                                                <div>
+                                                                    <ul id="myUL">
+                                                                        <li><span class="caret caret">Options</span>
+                                                                            <hr>
+                                                                            <ul class="nested">
+                                                                                {% for categorytype in categorytypes %}
+                                                                                <li>
+                                                                                    <span class="caret"></span>
+                                                                                    <input class="form-check-input parent-checkbox" type="checkbox" name="filtercategorytypechoice" value="{{ categorytype.id }}" id="filtercategorytype{{categorytype.id}}">
+                                                                                    <span>{{ categorytype.name }}</span>
+                                                                                    <ul class="nested">
+                                                                                        {% for category in categorytype.category_set.all %}
+                                                                                        <li>
+                                                                                            <input class="form-check-input child-checkbox" type="checkbox" name="filtercategorychoice" value="{{ category.id }}" id="filtercategory{{category.id}}">
+                                                                                            {{ category.name }}
+                                                                                        </li>
+                                                                                        {% endfor %}
+                                                                                    </ul>
+                                                                                    <hr>
+                                                                                </li>
+                                                                                {% endfor %}
+                                                                            </ul>
+                                                                        </li>
+                                                                    </ul>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4 text-start">
-                                                              <h6>Accounts</h6>
-                                                              <div>
-                                                                    {% for accounttype in accounttypes %}
-                                                                    <hr>
-                                                                        <label class="form-check-label" for="flexCheckDefault">
-                                                                            {{ accounttype.name }}
-                                                                        </label>
-                                                                        {% for account in accounttype.account_set.all %}
-                                                                        <div class="form-check">
-                                                                            <input class="form-check-input" type="checkbox" name="filteraccountchoice" value="{{ account.id }}" id="filteraccount{{account.id}}">
-                                                                            <label class="form-check-label" for="flexCheckDefault">
-                                                                                {{ account.name }}
-                                                                            </label>
-                                                                        </div>
-                                                                        {% endfor %}
-                                                                    {% endfor %}
+                                                            <div class="bg-secondary rounded h-100 p-4">
+                                                                <h6>Accounts</h6>
+                                                                <div>
+                                                                    <ul id="myUL">
+                                                                        <li><span class="caret caret">Options</span>
+                                                                            <hr>
+                                                                            <ul class="nested">
+                                                                                {% for accounttype in accounttypes %}
+                                                                                <li>
+                                                                                    <span class="caret"></span>
+                                                                                    <input class="form-check-input parent-checkbox" type="checkbox" name="filteraccounttypechoice" value="{{ accounttype.id }}" id="filteraccounttype{{accounttype.id}}">
+                                                                                    <span>{{ accounttype.name }}</span>
+                                                                                    <ul class="nested">
+                                                                                        {% for account in accounttype.account_set.all %}
+                                                                                        <li>
+                                                                                            <input class="form-check-input child-checkbox" type="checkbox" name="filteraccountchoice" value="{{ account.id }}" id="filteraccount{{account.id}}">
+                                                                                            {{ account.name }}
+                                                                                        </li>
+                                                                                        {% endfor %}
+                                                                                    </ul>
+                                                                                    <hr>
+                                                                                </li>
+                                                                                {% endfor %}
+                                                                            </ul>
+                                                                        </li>
+                                                                    </ul>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -344,6 +392,9 @@
     <!-- Template Javascript -->
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/datedropdown.js' %}"></script>
+    <script src="{% static 'js/toggleedit.js' %}"></script>
+    <script src="{% static 'js/nestedlist.js' %}"></script>
+    <script src="{% static 'js/minmax.js' %}"></script>
 
     <script>
     (function(){
