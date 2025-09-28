@@ -398,6 +398,99 @@ def edit_categorytype_limits(request, pk):
 
 
 
+# DATE FILTER #
+def filtertransactions(request):
+    """Handle filter form submission and render the alltransactions view with filtered transactions.
+
+    Supported filters (from the modal):
+    - date_start (YYYY-MM-DD)
+    - date_end (YYYY-MM-DD)
+    - filteramount (single number or range like 10-50)
+    - filternote (text, substring match)
+    - categories (multiple checkbox values)
+    - accounts (multiple checkbox values)
+    """
+    if request.method != "POST":
+        return redirect('alltransactions')
+
+    qs = Transaction.objects.all()
+
+    # Date range
+    date_start = request.POST.get('date_start')
+    date_end = request.POST.get('date_end')
+    if date_start:
+        try:
+            qs = qs.filter(date__gte=date_start)
+        except Exception:
+            pass
+    if date_end:
+        try:
+            qs = qs.filter(date__lte=date_end)
+        except Exception:
+            pass
+
+    # Amount - allow single number or range 'min-max'
+    amount = request.POST.get('filteramount')
+    if amount:
+        amount = amount.strip()
+        if '-' in amount:
+            parts = amount.split('-')
+            try:
+                low = Decimal(parts[0].strip())
+                high = Decimal(parts[1].strip())
+                qs = qs.filter(amount__gte=low, amount__lte=high)
+            except Exception:
+                pass
+        else:
+            try:
+                amt = Decimal(amount)
+                qs = qs.filter(amount=amt)
+            except Exception:
+                # fallback: contains
+                qs = qs.filter(note__icontains=amount)
+
+    # Note text
+    note = request.POST.get('filternote')
+    if note:
+        qs = qs.filter(note__icontains=note)
+
+    # Categories (checkboxes)
+    categories = request.POST.getlist('categories')
+    if categories:
+        try:
+            qs = qs.filter(category__id__in=[int(c) for c in categories])
+        except Exception:
+            pass
+
+    # Accounts (checkboxes)
+    accounts = request.POST.getlist('accounts')
+    if accounts:
+        try:
+            qs = qs.filter(sourceaccount__id__in=[int(a) for a in accounts])
+        except Exception:
+            pass
+
+    # Order and render same context as alltransactions
+    transactions = qs.order_by('-date')
+
+    categories = categorylist()
+    accounts = accountlist()
+    date_tree = builddatetree()
+    month_names = {i: calendar.month_name[i] for i in range(1, 13)}
+
+    context = {
+        "categories": categories,
+        "accounts": accounts,
+        "transactions": transactions,
+        "source_accounts": accounts,
+        "final_accounts": accounts,
+        "date_tree": {year: dict(months) for year, months in date_tree.items()},
+        "month_names": month_names,
+    }
+
+    return render(request, 'alltransactions.html', context)
+
+
 
 ## --------------------BASE VIEWS-------------------- ##
 
