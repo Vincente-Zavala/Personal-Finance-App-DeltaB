@@ -142,17 +142,20 @@
                     <!-- Account Balance End -->
 
 
-                    <!-- Recent Transactions Start -->
+                    <!-- All Transactions Start -->
                     <div class="col-sm-12 col-xl-10">
                         <div class="d-flex flex-column gap-3">
                             <div class="row g-4">
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary text-center rounded p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-4">
-                                            <h6 class="mb-0">Recent Transactions</h6>
-                                            <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModalTransactions">
-                                                Filter
-                                            </a>
+                                            <h6 class="mb-0">All Transactions</h6>
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'alltransactions' %}" class="btn btn-sm btn-primary">Reset</a>
+                                                <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModalTransactions">
+                                                    Filter
+                                                </a>
+                                            </div>
                                         </div>
                                         <div class="table-responsive">
                                             <table class="table text-start align-middle table-bordered table-hover mb-0">
@@ -172,13 +175,17 @@
                                                 <tbody>
                                                     <tr>
                                                         <td><input class="form-check-input" type="checkbox"></td>
-                                                        <td>{{transaction.date}}</td>
-                                                        <td>{{transaction.category}}</td>
-                                                        <td>{{transaction.note}}</td>
-                                                        <td>${{transaction.amount}}</td>
-                                                        <td>{{transaction.account}}</td>
-                                                        <td>{{transaction.amount}}</td>
+                                                        <td>{{ transaction.date }}</td>
+                                                        <td>{{ transaction.category }}</td>
+                                                        <td>{{ transaction.note }}</td>
+                                                        <td>${{ transaction.amount }}</td>
+                                                        <td>{{ transaction.sourceaccount }}</td>
+                                                        <td>${{ transaction.runningbalance }}</td>
                                                         <td><a class="btn btn-sm btn-primary" href="">Delete</a></td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="7">No transactions found.</td>
                                                     </tr>
                                                 </tbody>
                                                 {% endfor %}
@@ -203,18 +210,20 @@
                                                                     <div class="d-flex gap-2 align-items-center">
                                                                         <div class="input-group me-4" style="max-width: 220px;">
                                                                             <span class="input-group-text">From</span>
-                                                                            <input type="text" class="form-control datetimepicker-input date-filter-input" id="filter_date_start" name="date_start" data-toggle="datetimepicker" data-target="#filter_date_start" placeholder="YYYY-MM-DD">
+                                                                            <input type="text" class="form-control datetimepicker-input date-filter-input" id="filter_date_start" name="date_start" data-toggle="datetimepicker" data-target="#filter_date_start" placeholder="MM-DD-YYYY" autocomplete="off">
                                                                         </div>
                                                                         <div class="input-group" style="max-width: 220px;">
                                                                             <span class="input-group-text">To</span>
-                                                                            <input type="text" class="form-control datetimepicker-input date-filter-input" id="filter_date_end" name="date_end" data-toggle="datetimepicker" data-target="#filter_date_end" placeholder="YYYY-MM-DD">
+                                                                            <input type="text" class="form-control datetimepicker-input date-filter-input" id="filter_date_end" name="date_end" data-toggle="datetimepicker" data-target="#filter_date_end" placeholder="MM-DD-YYYY" autocomplete="off">
                                                                         </div>
                                                                     </div>
                                                                     <div class="d-flex gap-2">
                                                                         <button type="button" class="btn btn-sm btn-primary" id="preset_7">Last 7 days</button>
                                                                         <button type="button" class="btn btn-sm btn-primary" id="preset_30">Last 30 days</button>
                                                                         <button type="button" class="btn btn-sm btn-primary" id="preset_month">This month</button>
-                                                                        <button type="button" class="btn btn-sm btn-secondary" id="preset_clear">Clear</button>
+                                                                        <button type="button" class="btn btn-sm btn-primary" id="preset_last_month">Last month</button>
+                                                                        <button type="button" class="btn btn-sm btn-primary" id="preset_ytd">Year to Date</button>
+                                                                        <button type="button" class="btn btn-sm btn-light" id="preset_clear">Clear</button>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -222,8 +231,9 @@
                                                         <div class="col-sm-12 col-xl-6">
                                                             <div class="bg-secondary rounded h-100 p-4">
                                                                 <label for="filteramount" class="col-sm-2 col-form-label">Amount</label>
-                                                                <div class="col-sm-12">
-                                                                    <input type="text" class="form-control" id="filteramount" name="filteramount"></input>
+                                                                <div class="input-group mb-3">
+                                                                    <span class="input-group-text">Exact:</span>
+                                                                    <input type="text" class="form-control" id="filteramount" name="filteramount" placeholder="$0.00">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -239,13 +249,19 @@
                                                             <div class="bg-secondary rounded h-100 p-4 text-start">
                                                               <h6>Categories</h6>
                                                               <div>
-                                                                    {% for category in categories %}
-                                                                    <div>
-                                                                        <label>
-                                                                        <input type="checkbox" name="categories" value="{{ category.id }}">
-                                                                        {{ category.name }}
+                                                                    {% for categorytype in categorytypes %}
+                                                                    <hr>
+                                                                        <label class="form-check-label" for="flexCheckDefault">
+                                                                            {{ categorytype.name }}
                                                                         </label>
-                                                                    </div>
+                                                                        {% for category in categorytype.category_set.all %}
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="checkbox" name="filtercategorychoice" value="{{ category.id }}" id="filtercategory{{category.id}}">
+                                                                            <label class="form-check-label" for="flexCheckDefault">
+                                                                                {{ category.name }}
+                                                                            </label>
+                                                                        </div>
+                                                                        {% endfor %}
                                                                     {% endfor %}
                                                                 </div>
                                                             </div>
@@ -254,13 +270,19 @@
                                                             <div class="bg-secondary rounded h-100 p-4 text-start">
                                                               <h6>Accounts</h6>
                                                               <div>
-                                                                    {% for account in accounts %}
-                                                                    <div>
-                                                                        <label>
-                                                                        <input type="checkbox" name="accounts" value="{{ account.id }}">
-                                                                        {{ account.name }}
+                                                                    {% for accounttype in accounttypes %}
+                                                                    <hr>
+                                                                        <label class="form-check-label" for="flexCheckDefault">
+                                                                            {{ accounttype.name }}
                                                                         </label>
-                                                                    </div>
+                                                                        {% for account in accounttype.account_set.all %}
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="checkbox" name="filteraccountchoice" value="{{ account.id }}" id="filteraccount{{account.id}}">
+                                                                            <label class="form-check-label" for="flexCheckDefault">
+                                                                                {{ account.name }}
+                                                                            </label>
+                                                                        </div>
+                                                                        {% endfor %}
                                                                     {% endfor %}
                                                                 </div>
                                                             </div>
@@ -268,7 +290,7 @@
                                                     </div>    
                                                     <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                                    <button type="submit" class="btn btn-primary">Filter</button>
                                                     </div>
                                                 </form>
                                                 </div>
@@ -281,7 +303,7 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Recent Transactions End -->
+                    <!-- All Transactions End -->
 
 
             <!-- Footer Start -->
@@ -337,15 +359,15 @@
 
             if (hasJQPicker) {
                 // use jQuery datetimepicker with explicit format to avoid time portion
-                $start.datetimepicker({ format: 'YYYY-MM-DD', useCurrent: false });
-                $end.datetimepicker({ format: 'YYYY-MM-DD', useCurrent: false });
+                $start.datetimepicker({ format: 'MM-DD-YYYY', useCurrent: false });
+                $end.datetimepicker({ format: 'MM-DD-YYYY', useCurrent: false });
 
                 function setRange(startMoment, endMoment) {
                     // set picker date and input value
                     $start.datetimepicker('date', startMoment);
                     $end.datetimepicker('date', endMoment);
-                    $start.val(startMoment.format('YYYY-MM-DD'));
-                    $end.val(endMoment.format('YYYY-MM-DD'));
+                    $start.val(startMoment.format('MM-DD-YYYY'));
+                    $end.val(endMoment.format('MM-DD-YYYY'));
                 }
 
                 document.getElementById('preset_7')?.addEventListener('click', function(){
@@ -386,8 +408,8 @@
                 }
 
                 function setRange(start, end) {
-                    if (startEl) startEl.value = start.format('YYYY-MM-DD');
-                    if (endEl) endEl.value = end.format('YYYY-MM-DD');
+                    if (startEl) startEl.value = start.format('MM-DD-YYYY');
+                    if (endEl) endEl.value = end.format('MM-DD-YYYY');
                 }
 
                 document.getElementById('preset_7')?.addEventListener('click', function(){
@@ -412,8 +434,8 @@
             } else {
                 // Last fallback: set plain input values
                 function setRangePlain(start, end) {
-                    if (startEl) startEl.value = start.format ? start.format('YYYY-MM-DD') : start;
-                    if (endEl) endEl.value = end.format ? end.format('YYYY-MM-DD') : end;
+                    if (startEl) startEl.value = start.format ? start.format('MM-DD-YYYY') : start;
+                    if (endEl) endEl.value = end.format ? end.format('MM-DD-YYYY') : end;
                 }
                 document.getElementById('preset_7')?.addEventListener('click', function(){
                     const end = moment ? moment() : new Date();

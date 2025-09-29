@@ -137,6 +137,7 @@
                                     <h6>Month</h6>
                                     <select class="form-select mb-3" name="month">
                                         <option disabled {% if not selected_month %}selected{% endif %}>Options</option>
+                                        <option value="13" {% if selected_month == 0 %}selected{% endif %}>Total Year</option>
                                         <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
                                         <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
                                         <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
@@ -158,7 +159,41 @@
                                         <option value="2026" {% if selected_year == 2026 %}selected{% endif %}>2026</option>
                                         <option value="2027" {% if selected_year == 2027 %}selected{% endif %}>2027</option>
                                     </select>
-                                    
+                                    <div class="dropdown mb-2">
+                                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="advancedDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Advanced
+                                        </button>
+                                        <div class="dropdown-menu p-3 dropdown-menu-end bg-secondary border-0" aria-labelledby="advancedDropdown" style="min-width:320px;">
+                                            <div class="mb-2">
+                                                <label for="overview_date_start" class="form-label small text-light">From</label>
+                                                <div class="input-group date" id="overview_start_picker" data-target-input="nearest">
+                                                    <input type="text" id="overview_date_start" name="date_start" class="form-control datetimepicker-input date-filter-input" data-target="#overview_start_picker" placeholder="MM-DD-YYYY" autocomplete="off" />
+                                                    <div class="input-group-append" data-target="#overview_start_picker" data-toggle="datetimepicker">
+                                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label for="overview_date_end" class="form-label small text-light">To</label>
+                                                <div class="input-group date" id="overview_end_picker" data-target-input="nearest">
+                                                    <input type="text" id="overview_date_end" name="date_end" class="form-control datetimepicker-input date-filter-input" data-target="#overview_end_picker" placeholder="MM-DD-YYYY" autocomplete="off" />
+                                                    <div class="input-group-append" data-target="#overview_end_picker" data-toggle="datetimepicker">
+                                                        <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2 mb-2">
+                                                <button type="button" class="btn btn-sm btn-primary" id="overview_preset_7">Last 7 days</button>
+                                                <button type="button" class="btn btn-sm btn-primary" id="overview_preset_30">Last 30 days</button>
+                                                <button type="button" class="btn btn-sm btn-primary" id="overview_preset_month">This month</button>
+                                                <button type="button" class="btn btn-sm btn-light" id="overview_preset_clear">Clear</button>
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-muted">Use Apply to filter</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <button type="submit" class="btn btn-primary">Apply</button>
                                 </form>
                             </div>
@@ -340,6 +375,123 @@
 
     <!-- Template Javascript -->
     <script src="{% static 'js/main.js' %}"></script>
+   <script>
+    (function(){
+        // Initialize the bootstrap datetimepicker (tempusdominus-bootstrap-4) if available
+        try {
+            const startEl = document.getElementById('filter_date_start');
+            const endEl = document.getElementById('filter_date_end');
+
+            const $start = window.jQuery ? window.jQuery(startEl) : null;
+            const $end = window.jQuery ? window.jQuery(endEl) : null;
+
+            const hasJQPicker = window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.datetimepicker === 'function';
+
+            if (hasJQPicker) {
+                // use jQuery datetimepicker with explicit format to avoid time portion
+                $start.datetimepicker({ format: 'MM-DD-YYYY', useCurrent: false });
+                $end.datetimepicker({ format: 'MM-DD-YYYY', useCurrent: false });
+
+                function setRange(startMoment, endMoment) {
+                    // set picker date and input value
+                    $start.datetimepicker('date', startMoment);
+                    $end.datetimepicker('date', endMoment);
+                    $start.val(startMoment.format('MM-DD-YYYY'));
+                    $end.val(endMoment.format('MM-DD-YYYY'));
+                }
+
+                document.getElementById('preset_7')?.addEventListener('click', function(){
+                    const end = moment();
+                    const start = moment().subtract(6, 'days');
+                    setRange(start, end);
+                });
+
+                document.getElementById('preset_30')?.addEventListener('click', function(){
+                    const end = moment();
+                    const start = moment().subtract(29, 'days');
+                    setRange(start, end);
+                });
+
+                document.getElementById('preset_month')?.addEventListener('click', function(){
+                    const start = moment().startOf('month');
+                    const end = moment().endOf('month');
+                    setRange(start, end);
+                });
+
+                document.getElementById('preset_clear')?.addEventListener('click', function(){
+                    $start.datetimepicker('clear');
+                    $end.datetimepicker('clear');
+                    $start.val('');
+                    $end.val('');
+                });
+            } else if (window.tempusDominus) {
+                // Fallback for tempusDominus v6+ API
+                if (startEl) {
+                    new tempusDominus.TempusDominus(startEl, {
+                        display: { components: { decades: false, year: true, month: true, date: true, hours: false, minutes: false, seconds: false } },
+                    });
+                }
+                if (endEl) {
+                    new tempusDominus.TempusDominus(endEl, {
+                        display: { components: { decades: false, year: true, month: true, date: true, hours: false, minutes: false, seconds: false } },
+                    });
+                }
+
+                function setRange(start, end) {
+                    if (startEl) startEl.value = start.format('MM-DD-YYYY');
+                    if (endEl) endEl.value = end.format('MM-DD-YYYY');
+                }
+
+                document.getElementById('preset_7')?.addEventListener('click', function(){
+                    const end = moment();
+                    const start = moment().subtract(6, 'days');
+                    setRange(start, end);
+                });
+                document.getElementById('preset_30')?.addEventListener('click', function(){
+                    const end = moment();
+                    const start = moment().subtract(29, 'days');
+                    setRange(start, end);
+                });
+                document.getElementById('preset_month')?.addEventListener('click', function(){
+                    const start = moment().startOf('month');
+                    const end = moment().endOf('month');
+                    setRange(start, end);
+                });
+                document.getElementById('preset_clear')?.addEventListener('click', function(){
+                    if (startEl) startEl.value = '';
+                    if (endEl) endEl.value = '';
+                });
+            } else {
+                // Last fallback: set plain input values
+                function setRangePlain(start, end) {
+                    if (startEl) startEl.value = start.format ? start.format('MM-DD-YYYY') : start;
+                    if (endEl) endEl.value = end.format ? end.format('MM-DD-YYYY') : end;
+                }
+                document.getElementById('preset_7')?.addEventListener('click', function(){
+                    const end = moment ? moment() : new Date();
+                    const start = moment ? moment().subtract(6, 'days') : new Date(new Date().setDate(new Date().getDate()-6));
+                    setRangePlain(start, end);
+                });
+                document.getElementById('preset_30')?.addEventListener('click', function(){
+                    const end = moment ? moment() : new Date();
+                    const start = moment ? moment().subtract(29, 'days') : new Date(new Date().setDate(new Date().getDate()-29));
+                    setRangePlain(start, end);
+                });
+                document.getElementById('preset_month')?.addEventListener('click', function(){
+                    const start = moment ? moment().startOf('month') : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                    const end = moment ? moment().endOf('month') : new Date(new Date().getFullYear(), new Date().getMonth()+1, 0);
+                    setRangePlain(start, end);
+                });
+                document.getElementById('preset_clear')?.addEventListener('click', function(){
+                    if (startEl) startEl.value = '';
+                    if (endEl) endEl.value = '';
+                });
+            }
+        } catch (e) {
+            console.warn('Date filter init failed', e);
+        }
+    })();
+    </script>
 </body>
 
 </html>

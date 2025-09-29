@@ -33,7 +33,7 @@ class Category(models.Model):
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.name} {self.type}"
+        return f"{self.name} {self.type} {self.id}"
 
 
 
@@ -55,6 +55,7 @@ class Account(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.name} {self.balance} {self.type}"

@@ -65,8 +65,11 @@ def getselectedmonthyear(request):
     selected_month = request.session.get("month")
     selected_year = request.session.get("year")
 
+    print("DEBUG: getselectedmonth, Month: ", selected_month)
+
     # If not chosen yet, default to current
     if not selected_month or not selected_year:
+        print("DEBUG within IF of not chosen", selected_month)
         today = timezone.now()
         selected_month = today.month
         selected_year = today.year
@@ -80,17 +83,24 @@ def getselectedmonthyear(request):
 
 
 
-#
+# CALCULATE SUM OF CATEGORIES FROM TRANSACTIONS #
 def categorytransactionsum(category, selected_year, selected_month):
-        total = 0
-        txs = Transaction.objects.filter(
-            category=category,
-            date__year=selected_year,
-            date__month=selected_month,
-        )
-        for tx in txs:
-            total += abs(tx.signed_amount(tx.sourceaccount))
-        return total
+    total = 0
+
+    txs = Transaction.objects.filter(
+        category=category,
+        date__year=selected_year,
+    )
+
+    print("DEBUG: Month: ", selected_month)
+
+    if selected_month != 13:
+        txs = txs.filter(date__month=selected_month)
+
+    for tx in txs:
+        total += abs(tx.signed_amount(tx.sourceaccount))
+
+    return total
 
 
 
@@ -155,7 +165,10 @@ def calculatecategorytotals(selected_month, selected_year, budgetmap):
 
 # GET BUDGET MAP #
 def getbudgetmap(month, year):
-    budgets = Budget.objects.filter(month=month, year=year)
+    if month == 13:
+        budgets = Budget.objects.filter(year=year)
+    else:
+        budgets = Budget.objects.filter(month=month, year=year)
     
     
     return {b.category_id: b.limit for b in budgets}
@@ -191,7 +204,7 @@ def builddatetree():
 ## --------------------ADDITIONAL VIEWS-------------------- ##
 
 
-# SETUP CREATE CATEGORIES/ACCOUNTS # DONE
+# CREATE CATEGORIES/ACCOUNTS #
 def addinput(request):
     if request.method == "POST":
         input_type = request.POST.get("inputtype")
@@ -210,16 +223,42 @@ def addinput(request):
         # ACCOUNT
         elif input_type == "account":
             account_name = request.POST.get("inputaccount")
+            accountstartingbalance = request.POST.get("inputaccountbalance")
             existing_type_id = request.POST.get("accountchoice")
             if existing_type_id:
                 account_type = AccountType.objects.get(id=existing_type_id)
             else:
                 account_type = None
             if account_name:
-                Account.objects.create(name=account_name, type=account_type)
+                Account.objects.create(name=account_name, type=account_type, startingbalance = accountstartingbalance)
 
 
         return redirect("setup")
+
+
+
+
+
+# FILTER CATEGORIES/ACCOUNTS #
+# def filtertransactions(request):
+
+#     if request.method == "POST":
+#         categorychoices = request.POST.getlist("filtercategorychoice")
+#         print("DEBUG: Category Choice: ", categorychoices)
+#         accountchoices = request.POST.getlist("filteraccountchoice")
+#         print("DEBUG: Category Choice: ", accountchoices)
+
+#         for category in categorychoices:
+#             for account in accountchoices:
+
+#                 transactions = Transaction.objects.filter(category = category, account = account).order_by("-date")
+
+#         context = {
+#             "transactions": transactions
+#         }
+
+
+#         return render(request, "alltransactions.html", context)
 
 
 
@@ -358,7 +397,8 @@ def edit_categorytype_limits(request, pk):
 
 
 
-# DATE FILTER #
+
+# TRANSACTIONS FILTER #
 def filtertransactions(request):
     """Handle filter form submission and render the alltransactions view with filtered transactions.
 
@@ -370,71 +410,88 @@ def filtertransactions(request):
     - categories (multiple checkbox values)
     - accounts (multiple checkbox values)
     """
-    if request.method != "POST":
-        return redirect('alltransactions')
 
-    qs = Transaction.objects.all()
+    transactions = Transaction.objects.all()
 
     # Date range
-    date_start = request.POST.get('date_start')
-    date_end = request.POST.get('date_end')
-    if date_start:
+    datestart = request.POST.get('date_start')
+    dateend = request.POST.get('date_end')
+    if datestart:
         try:
-            qs = qs.filter(date__gte=date_start)
+            datestart = datetime.strptime(datestart, "%m-%d-%Y").date()
+            transactions = transactions.filter(date__gte=datestart)
         except Exception:
             pass
-    if date_end:
+    if dateend:
         try:
-            qs = qs.filter(date__lte=date_end)
+            dateend = datetime.strptime(dateend, "%m-%d-%Y").date()
+            transactions = transactions.filter(date__lte=dateend)
         except Exception:
             pass
 
     # Amount - allow single number or range 'min-max'
     amount = request.POST.get('filteramount')
     if amount:
-        amount = amount.strip()
-        if '-' in amount:
-            parts = amount.split('-')
-            try:
-                low = Decimal(parts[0].strip())
-                high = Decimal(parts[1].strip())
-                qs = qs.filter(amount__gte=low, amount__lte=high)
-            except Exception:
-                pass
-        else:
-            try:
-                amt = Decimal(amount)
-                qs = qs.filter(amount=amt)
-            except Exception:
+        #amount = amount.strip()
+        # if '-' in amount:
+        #     parts = amount.split('-')
+        #     try:
+        #         low = Decimal(parts[0].strip())
+        #         high = Decimal(parts[1].strip())
+        #         transactions = transactions.filter(amount__gte=low, amount__lte=high)
+        #     except Exception:
+        #         pass
+        # else:
+            # try:
+        amount = Decimal(amount)
+        transactions = transactions.filter(amount=amount)
+            # except Exception:
                 # fallback: contains
-                qs = qs.filter(note__icontains=amount)
+        #transactions = transactions.filter(note__icontains=amount)
 
     # Note text
     note = request.POST.get('filternote')
     if note:
-        qs = qs.filter(note__icontains=note)
+        transactions = transactions.filter(note__icontains=note)
 
     # Categories (checkboxes)
-    categories = request.POST.getlist('categories')
-    if categories:
-        try:
-            qs = qs.filter(category__id__in=[int(c) for c in categories])
-        except Exception:
-            pass
+    # categories = request.POST.getlist('categories')
+    # if categories:
+    #     try:
+    #         transactions = transactions.filter(category__id__in=[int(c) for c in categories])
+    #     except Exception:
+    #         pass
 
-    # Accounts (checkboxes)
-    accounts = request.POST.getlist('accounts')
-    if accounts:
-        try:
-            qs = qs.filter(sourceaccount__id__in=[int(a) for a in accounts])
-        except Exception:
-            pass
+    # # Accounts (checkboxes)
+    # accounts = request.POST.getlist('accounts')
+    # if accounts:
+    #     try:
+    #         transactions = transactions.filter(sourceaccount__id__in=[int(a) for a in accounts])
+    #     except Exception:
+    #         pass
+
+    selectedcategories = []
+    selectedaccounts = []
+
+    if request.method == "POST":
+        selectedcategories = request.POST.getlist("filtercategorychoice")
+        selectedaccounts = request.POST.getlist("filteraccountchoice")
+
+        if selectedcategories:
+            transactions = transactions.filter(category__id__in=selectedcategories)
+
+        if selectedaccounts:
+            transactions = transactions.filter(sourceaccount__id__in=selectedaccounts)
+
+
 
     # Order and render same context as alltransactions
-    transactions = qs.order_by('-date')
+    transactions = transactions.order_by('-date')
 
     categories = categorylist()
     accounts = accountlist()
+    categorytypes = categorytypelist()
+    accounttypes = accounttypelist()
     date_tree = builddatetree()
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
 
@@ -442,17 +499,17 @@ def filtertransactions(request):
         "categories": categories,
         "accounts": accounts,
         "transactions": transactions,
-        "source_accounts": accounts,
-        "final_accounts": accounts,
+        "categorytypes": categorytypes,
+        "accounttypes": accounttypes,
+        #"source_accounts": accounts,
+        #"final_accounts": accounts,
+        "selectedcategories": selectedcategories,
+        "selectedaccounts": selectedaccounts,
         "date_tree": {year: dict(months) for year, months in date_tree.items()},
         "month_names": month_names,
     }
 
     return render(request, 'alltransactions.html', context)
-
-
-
-
 
 
 
@@ -463,6 +520,8 @@ def filtertransactions(request):
 def index(request):
     # GET MONTH/YEAR
     selected_month, selected_year = getselectedmonthyear(request)
+
+    print("DEBUG: index, Month: ", selected_month)
 
     # Budgets for selected month/year
     budgetmap = getbudgetmap(selected_month, selected_year)
@@ -565,8 +624,27 @@ def newtransactions(request):
 def alltransactions(request):
 
     categories = categorylist()
+    categorytypes = categorytypelist()
     accounts = accountlist()
-    transactions = Transaction.objects.all().order_by('-date')
+    accounttypes = accounttypelist()
+    #transactions = Transaction.objects.all().order_by('date')
+
+    transactionchron = Transaction.objects.all().order_by('date')
+    runningbalance = Decimal('0.00')
+
+    for transaction in transactionchron:
+
+        if transaction.categorytype.name.lower() == 'income':
+            runningbalance += transaction.amount
+        else:
+            runningbalance -= transaction.amount
+
+        # Save running balance for this transaction
+        transaction.runningbalance = runningbalance
+
+    transactionsdisplay = list(transactionchron)[::-1]
+
+
 
     date_tree = builddatetree()
 
@@ -576,14 +654,33 @@ def alltransactions(request):
     source_accounts = accounts
     final_accounts = accounts
 
+    # selectedcategories = []
+    # selectedaccounts = []
+
+    # if request.method == "POST":
+    #     selectedcategories = request.POST.getlist("filtercategorychoice")
+    #     selectedaccounts = request.POST.getlist("filteraccountchoice")
+
+    #     if selectedcategories:
+    #         transactions = transactions.filter(category__id__in=selectedcategories)
+
+    #     if selectedaccounts:
+    #         transactions = transactions.filter(sourceaccount__id__in=selectedaccounts)
+
+
     context = {
         "categories": categories,
+        "categorytypes": categorytypes,
         "accounts": accounts,
-        "transactions": transactions,
+        "accounttypes": accounttypes,
+        #"transactions": transactions,
         "source_accounts": source_accounts,
         "final_accounts": final_accounts,
+        "transactions": transactionsdisplay,
         "date_tree": {year: dict(months) for year, months in date_tree.items()},
-        "month_names": month_names,  
+        "month_names": month_names,
+        # "selectedcategories": selectedcategories,
+        # "selectedaccounts": selectedaccounts,
     }
 
     return render(request, 'alltransactions.html', context)
