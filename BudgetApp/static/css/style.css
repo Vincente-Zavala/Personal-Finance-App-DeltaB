@@ -261,6 +261,11 @@
     border-bottom-color: var(--primary);
 }
 
+/* Ensure Tempus Dominus widget appears above dropdowns/modals */
+.bootstrap-datetimepicker-widget {
+    z-index: 200105 !important;
+}
+
 
 /*** Testimonial ***/
 .progress .progress-bar {
