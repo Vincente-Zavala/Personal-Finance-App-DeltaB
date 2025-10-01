@@ -55,29 +55,35 @@ def savebudgetlimit(post_data, month, year):
 
 
 # GET SELECTED MONTH/YEAR #
-def getselectedmonthyear(request):
+def getselecteddate(request):
     # Handle month/year selection from dropdown
     if "month" in request.GET and "year" in request.GET:
         request.session["month"] = int(request.GET["month"])
         request.session["year"] = int(request.GET["year"])
 
+    if "fromdate" in request.GET and "todate" in request.GET:
+        request.session["fromdate"] = request.GET["fromdate"]
+        request.session["todate"] = request.GET["todate"]
+
     # Always pull from session
     selected_month = request.session.get("month")
     selected_year = request.session.get("year")
-
-    print("DEBUG: getselectedmonth, Month: ", selected_month)
+    selectedfromdate = request.session.get("fromdate")
+    selectedtodate = request.session.get("todate")
 
     # If not chosen yet, default to current
-    if not selected_month or not selected_year:
-        print("DEBUG within IF of not chosen", selected_month)
+    if not selected_month or not selected_year or not selectedfromdate or not selectedtodate:
+
         today = timezone.now()
         selected_month = today.month
         selected_year = today.year
         request.session["month"] = selected_month
         request.session["year"] = selected_year
 
+    print(selectedfromdate, selectedtodate)
 
-    return selected_month, selected_year
+
+    return selected_month, selected_year, selectedfromdate, selectedfromdate
 
 
 
@@ -343,7 +349,7 @@ def deletetransactions (request):
 # CREATE BUDGET LIMITS #
 def budgetlimit(request):
     today = datetime.today()
-    selected_month, selected_year = getselectedmonthyear(request)
+    selected_month, selected_year = getselecteddate(request)
     categorytypes = CategoryType.objects.prefetch_related("category_set")
 
     budgetmap = getbudgetmap(selected_month, selected_year)
@@ -365,7 +371,7 @@ def budgetlimit(request):
 # SUM TRANSACTIONS #
 def transactionsum(request):
     # GET MONTH/YEAR
-    selected_month, selected_year = getselectedmonthyear(request)
+    selected_month, selected_year = getselecteddate(request)
 
     # budgets lookup
     budgetmap = getbudgetmap(selected_month, selected_year)
@@ -560,9 +566,7 @@ def filtertransactions(request):
 @login_required
 def index(request):
     # GET MONTH/YEAR
-    selected_month, selected_year = getselectedmonthyear(request)
-
-    print("DEBUG: index, Month: ", selected_month)
+    selected_month, selected_year, selectedfromdate, selectedtodate = getselecteddate(request)
 
     # Budgets for selected month/year
     budgetmap = getbudgetmap(selected_month, selected_year)
@@ -597,7 +601,7 @@ def dashboard(request):
     categories = categorylist()
 
     # GET MONTH/YEAR
-    selected_month, selected_year = getselectedmonthyear(request)
+    selected_month, selected_year = getselecteddate(request)
 
     accounts = accountlist()
 
@@ -733,7 +737,7 @@ def alltransactions(request):
 @login_required
 def budget(request):
     # GET MONTH/YEAR
-    selected_month, selected_year = getselectedmonthyear(request)
+    selected_month, selected_year = getselecteddate(request)
 
     # Budgets for selected month/year
     budgetmap = getbudgetmap(selected_month, selected_year)
