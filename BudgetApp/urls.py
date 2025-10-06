@@ -17,6 +17,7 @@ urlpatterns = [
     path("edit-limits/<int:pk>/", views.edit_categorytype_limits, name="edit_categorytype_limits"),
     path("filtertransactions", views.filtertransactions, name="filtertransactions"),
     path("deletetransactions", views.deletetransactions, name="deletetransactions"),
+    path("uploadfile", views.uploadfile, name="uploadfile"),
     path("signup/", views.signup, name="signup"),
     path("signin/", views.signin, name="signin"),
     path("home/", views.home, name="home")

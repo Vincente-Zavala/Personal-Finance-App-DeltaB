@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+
 
 
 
@@ -19,6 +21,7 @@ class CustomUser(AbstractUser):
 # CATEGORY TYPE #
 class CategoryType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categorytypes")
 
     def __str__(self):
         return f"{self.name} {self.id}"
@@ -31,6 +34,7 @@ class CategoryType(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
 
     def __str__(self):
         return f"{self.name} {self.type} {self.id}"
@@ -42,6 +46,7 @@ class Category(models.Model):
 # ACCOUNT TYPE  #
 class AccountType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounttypes")
 
     def __str__(self):
         return f"{self.name}"
@@ -56,6 +61,7 @@ class Account(models.Model):
     type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
 
     def __str__(self):
         return f"{self.name} {self.balance} {self.type}"
@@ -74,6 +80,7 @@ class Transaction(models.Model):
     sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
     destinationaccount = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True, related_name='final_transactions')
     refund = models.BooleanField(default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
 
     def signed_amount(self, sourceaccount):
         amt = self.amount
@@ -142,6 +149,7 @@ class Budget(models.Model):
     year = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     limit = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="budgets")
 
     class Meta:
         unique_together = ('month', 'year', 'category')
@@ -158,6 +166,7 @@ class AccountBalanceHistory(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=20, decimal_places=2)
     date = models.DateField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accountbalancehistories")
 
     class Meta:
         unique_together = ("account", "date")
