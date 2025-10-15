@@ -55,7 +55,7 @@
                         <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
                     </div>
                     <div class="ms-3">
-                        <h6 class="mb-0">Jhon Doe NU</h6>
+                        <h6 class="mb-0">{{ name }}</h6>
                         <span>Admin NU</span>
                     </div>
                 </div>
@@ -65,23 +65,23 @@
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
+                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle active show" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0 show" data-bs-popper="none">
                             <a href="{% url 'setup' %}" class="dropdown-item active">Setup</a>
-                            <a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>
-                            <a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>
+                            <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
+                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
                         </div>
                     </div>
-                    <div class="nav-item dropdown">
+                    <!-- <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
                             <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </nav>
@@ -103,12 +103,15 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <img class="rounded-circle me-lg-2" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                            <span class="d-none d-lg-inline-flex">John Doe NU</span>
+                            <span class="d-none d-lg-inline-flex">{{ name }}</span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                            <a href="#" class="dropdown-item">My Profile NU</a>
-                            <a href="#" class="dropdown-item">Settings NU</a>
-                            <a href="#" class="dropdown-item">Log Out NU</a>
+                            <!-- <a href="#" class="dropdown-item">My Profile NU</a>
+                            <a href="#" class="dropdown-item">Settings NU</a> -->
+                            <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
+                                {% csrf_token %}
+                                <a type="button" class="dropdown-item" onclick="document.getElementById('logoutform').submit(); return false;">Logout</a>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -176,6 +179,12 @@
                                         <label for="inputaccount" class="col-sm-2 col-form-label">New Account</label>
                                         <div class="col-sm-10">
                                             <input class="form-control" id="inputaccount" name="inputaccount">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <label for="inputaccountbalance" class="col-sm-2 col-form-label">Starting Balance</label>
+                                        <div class="col-sm-2">
+                                            <input class="form-control" id="inputaccountbalance" name="inputaccountbalance">
                                         </div>
                                     </div>
                                 </div>
@@ -271,7 +280,7 @@
                                         <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
                                         <div class="w-100 ms-3">
                                             <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ account.name }}</h6>
+                                                <h6 class="mb-0">{{ account.name }} - Starting Balance: ${{ account.startingbalance }}</h6>
                                                 <small>ID: {{ account.id }}</small>
                                             </div>
                                         </div>

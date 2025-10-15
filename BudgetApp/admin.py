@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import CategoryType, Category, AccountType, Account, Transaction, Budget, AccountBalanceHistory, CustomUser
+from . models import CategoryType, Category, AccountType, Account, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction
 
 # Register your models here.
 admin.site.register(CategoryType)
@@ -10,3 +10,4 @@ admin.site.register(Transaction)
 admin.site.register(Budget)
 admin.site.register(AccountBalanceHistory)
 admin.site.register(CustomUser)
+admin.site.register(PendingTransaction)

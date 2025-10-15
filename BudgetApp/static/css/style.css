@@ -261,6 +261,11 @@
     border-bottom-color: var(--primary);
 }
 
+/* Ensure Tempus Dominus widget appears above dropdowns/modals */
+.bootstrap-datetimepicker-widget {
+    z-index: 200105 !important;
+}
+
 
 /*** Testimonial ***/
 .progress .progress-bar {
@@ -292,3 +297,106 @@
     background: var(--dark);
     border-color: var(--primary);
 }
+
+/* Date filter input styling - sits on dark modal/card but remains interactive */
+.date-filter-input {
+    background-color: #2b2b2b; /* slightly lighter than modal background */
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: .25rem;
+    padding: .375rem .75rem;
+    /* allow native appearance so browser calendar popup works */
+    cursor: text;
+    pointer-events: auto;
+}
+.date-filter-input:focus {
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(13,110,253,0.15);
+}
+/* Keep the native calendar picker visible and usable */
+.date-filter-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9);
+    opacity: 0.9;
+}
+
+/* Label styling for From/To to match the dark card */
+.date-filter-label {
+    background-color: #2b2b2b;
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Container to constrain the date filter area so buttons align nicely */
+.date-filter-container {
+    max-width: 640px;
+    margin: 0 auto; /* center container */
+}
+
+/* Red filter buttons to match theme primary color */
+.date-filter-container .btn-filter-red,
+.btn.btn-filter-red {
+    /* Solid primary button by default (filled red) */
+    background: var(--primary) !important;
+    border: 1px solid var(--primary) !important;
+    color: #fff !important;
+}
+.date-filter-container .btn-filter-red:hover,
+.btn.btn-filter-red:hover,
+.date-filter-container .btn-filter-red:focus,
+.btn.btn-filter-red:focus {
+    /* Slightly darker on hover/focus to look like a pressed button */
+    background: #c30f0f !important;
+    border-color: #c30f0f !important;
+    color: #fff !important;
+}
+
+/* Remove default bullets */
+ul, #myUL {
+    list-style-type: none;
+  }
+  
+  /* Remove margins and padding from the parent ul */
+  #myUL {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Style the caret/arrow */
+  .caret {
+    cursor: pointer;
+    user-select: none; /* Prevent text selection */
+  }
+  
+  /* Create the caret/arrow with a unicode, and style it */
+  .caret::before {
+    content: "\25B6";
+    color: black;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  
+  /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+  .caret-down::before {
+    transform: rotate(90deg);
+  }
+  
+  /* Hide the nested list */
+  .nested {
+    display: none;
+  }
+  
+  /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+  .active {
+    display: block;
+  }
+
+
+/* Hide but keep clickable */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;          /* make it invisible */
+    position: absolute;  /* take it out of normal flow */
+    width: 100%;         /* cover entire input */
+    height: 100%;
+    cursor: pointer;     /* still clickable */
+  }
+  

@@ -56,33 +56,33 @@
                         <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
                     </div>
                     <div class="ms-3">
-                        <h6 class="mb-0">Jhon Doe NU</h6>
+                        <h6 class="mb-0">{{ name }}</h6>
                         <span>Admin NU</span>
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
                     <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
                     <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a>
-                    <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
+                    <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link active"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
+                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'setup' %}" class="dropdown-item">Setup</a>
-                            <a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>
-                            <a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>
+                            <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
+                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
                         </div>
                     </div>
-                    <div class="nav-item dropdown">
+                    <!-- <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
                             <a href="{% url 'signup' %}.html" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </nav>
@@ -104,12 +104,15 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <img class="rounded-circle me-lg-2" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                            <span class="d-none d-lg-inline-flex">John Doe NU</span>
+                            <span class="d-none d-lg-inline-flex">{{ name }}</span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                            <a href="#" class="dropdown-item">My Profile NU</a>
-                            <a href="#" class="dropdown-item">Settings NU</a>
-                            <a href="#" class="dropdown-item">Log Out NU</a>
+                            <!-- <a href="#" class="dropdown-item">My Profile NU</a>
+                            <a href="#" class="dropdown-item">Settings NU</a> -->
+                            <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
+                                {% csrf_token %}
+                                <a type="button" class="dropdown-item" onclick="document.getElementById('logoutform').submit(); return false;">Logout</a>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -123,27 +126,6 @@
                     <!-- Time Period & Accounts Start -->
                     <div class="col-sm-12 col-xl-2">
                         <div class="d-flex flex-column gap-3">
-                            <!-- Time Period Start-->
-                            <div class="bg-secondary rounded h-100 p-3">
-                                <h4>Time Period</h4>
-                                <hr>
-                                <h6>Month</h6>
-                                <select class="form-select mb-3" aria-label="Default select example">
-                                    <option selected>Options</option>
-                                    <option value="1">One</option>
-                                    <option value="2">Two</option>
-                                    <option value="3">Three</option>
-                                </select>
-                                <h6>Year</h6>
-                                <select class="form-select mb-3" aria-label="Default select example">
-                                    <option selected>Options</option>
-                                    <option value="1">One</option>
-                                    <option value="2">Two</option>
-                                    <option value="3">Three</option>
-                                </select>
-                            </div>
-                            <!-- Time Period End -->
-
                             <!-- Accounts Start-->
                             <div class="bg-secondary rounded h-100 p-3">
                                 <h4>Accounts</h4>
@@ -172,7 +154,14 @@
                                 <!-- New Transactions Start -->
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary rounded h-100 p-4">
-                                        <h6 class="mb-4">New Transactions</h6>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="mb-0">New Transactions</h6>
+                                            <div class="d-flex gap-2">
+                                                <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadfile">
+                                                    Upload File
+                                                </a>
+                                            </div>
+                                        </div>
                                         <form method="POST" action="{% url 'addtransaction' %}">
                                             {% csrf_token %}
                                             <hr>
@@ -263,7 +252,7 @@
                                             <div id="amountfields" class="hidefield">
                                                 <div class="row mb-3">
                                                     <label for="inputamount" class="col-sm-2 col-form-label">Amount</label>
-                                                    <div class="col-sm-1">
+                                                    <div class="col-sm-2">
                                                         <input type="text" class="form-control" id="inputamount" name="inputamount" required>
                                                     </div>
                                                 </div>
@@ -295,64 +284,163 @@
                                 <div class="col-sm-12 col-xl-12">
                                     <div class="bg-secondary text-center rounded p-4">
                                         <div class="d-flex align-items-center justify-content-between mb-4">
-                                            <h6 class="mb-0">Recent Transactions</h6>
-                                            <a href="">Show All</a>
+                                            <h6 class="mb-0">Recently Added Transactions</h6>
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" form="deletetransactionForm" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button>
+                                                <button id="toggleEdit" type="button" class="btn btn-sm btn-primary" href="">Edit</button>
+                                            </div>
                                         </div>
                                         <div class="table-responsive">
-                                            <table class="table text-start align-middle table-bordered table-hover mb-0">
-                                                <thead>
-                                                    <tr class="text-white">
-                                                        <th scope="col"><input class="form-check-input" type="checkbox"></th>
-                                                        <th scope="col">Category</th>
-                                                        <th scope="col">Budget</th>
-                                                        <th scope="col">Spent</th>
-                                                        <th scope="col">Remaining</th>
-                                                        <th scope="col">Limit (%)</th>
-                                                        <th scope="col">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                {% for transaction in transactions %}
-                                                <tbody>
-                                                    <tr>
-                                                        <td><input class="form-check-input" type="checkbox"></td>
-                                                        <td>{{transaction.date}}</td>
-                                                        <td>{{transaction.category}}</td>
-                                                        <td>{{transaction.note}}</td>
-                                                        <td>${{transaction.amount}}</td>
-                                                        <td>{{transaction.account}}</td>
-                                                        <td><a class="btn btn-sm btn-primary" href="">Delete</a></td>
-                                                    </tr>
-                                                </tbody>
-                                                {% endfor %}
-                                            </table>
+                                            <form id="deletetransactionForm" method="POST" action="{% url 'deletetransactions' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="redirect" value="{{ request.path }}">
+                                                <table class="table text-start align-middle table-bordered table-hover mb-0">
+                                                    <thead>
+                                                        <tr class="text-white">
+                                                            <th scope="col"  class="editcol" hidden></th>
+                                                            <th scope="col">Date</th>
+                                                            <th scope="col">Category</th>
+                                                            <th scope="col">Note</th>
+                                                            <th scope="col">Amount</th>
+                                                            <th scope="col">Account</th>
+                                                        </tr>
+                                                    </thead>
+                                                    {% for transaction in transactions %}
+                                                    <tbody>
+                                                        <tr>
+                                                            <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
+                                                            <td>{{ transaction.date }}</td>
+                                                            <td>{{ transaction.category }}</td>
+                                                            <td>{{ transaction.note }}</td>
+                                                            <td>${{ transaction.amount }}</td>
+                                                            <td>{{ transaction.sourceaccount }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                    {% endfor %}
+                                                </table>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
                                 <!-- Recent Transactions End -->
-
-                                <!-- File Input Start-->
-                                <div class="col-sm-12 col-xl-12">
-                                    <div class="bg-secondary rounded h-100 p-4">
-                                        <h6 class="mb-4">File Input</h6>
-                                        <div class="mb-3">
-                                            <label for="formFile" class="form-label">Default file input example</label>
-                                            <input class="form-control bg-dark" type="file" id="formFile">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="formFileMultiple" class="form-label">Multiple files input example</label>
-                                            <input class="form-control bg-dark" type="file" id="formFileMultiple" multiple>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="formFileSm" class="form-label">Small file input example</label>
-                                            <input class="form-control form-control-sm bg-dark" id="formFileSm" type="file">
-                                        </div>
-                                        <div>
-                                            <label for="formFileLg" class="form-label">Large file input example</label>
-                                            <input class="form-control form-control-lg bg-dark" id="formFileLg" type="file">
+                                <!-- Uploda File Modal Start -->
+                                <div class="modal fade" id="uploadfile" aria-labelledby="uploadfile" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="">File Input</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form method="post" enctype="multipart/form-data" action="{% url 'uploadfile' %}">
+                                                <div class="row g-4">
+                                                {% csrf_token %}
+                                                    <div class="modal-body">
+                                                        <div class="col-sm-12 col-xl-12 mb-3">
+                                                            <div class="bg-secondary rounded h-100 p-4">
+                                                                <div class="mb-4">
+                                                                    <label class="form-label">Instructions</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-12 col-xl-12">
+                                                            <div class="bg-secondary rounded h-100 p-4">
+                                                                <div class="mb-3">
+                                                                    <label for="uploadfile" class="form-label">Default file input example</label>
+                                                                    <input class="form-control bg-dark" name="uploadfile" type="file" id="uploadfile" onchange="this.form.submit()" required>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-primary" data-bs-target="#mapcolumns" data-bs-toggle="modal" data-bs-dismiss="modal">
+                                                        Next
+                                                    </button>
+                                                </div>
+                                            </form>    
                                         </div>
                                     </div>
                                 </div>
-                                <!-- File Input End -->
+                                <div class="modal fade" id="mapcolumns" aria-labelledby="mapcolumns" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="filterModalTransactions">Map Columns</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form method="post" action="{% url 'adduploaddata' %}">
+                                                {% csrf_token %}
+                                                <div class="modal-body">
+                                                    <div class="bg-secondary rounded p-4 mb-3">
+                                                        <label class="form-label">Instructions</label>
+                                                    </div>
+                                                    <hr>
+                                                    <div class="bg-secondary rounded p-4 mb-3">
+                                                        <div class="row align-items-center">
+                                                            <label for="dateselection" class="col-sm-6 col-form-label">Date</label>
+                                                            <div class="col-sm-4">
+                                                                <select id="dateselection" name="dateselection" class="form-select" required>
+                                                                    <option value="" selected disabled>**Select Column**</option>
+                                                                    {% for col in columns %}
+                                                                        <option value="{{ col }}">{{ col }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-secondary rounded p-4 mb-3">
+                                                        <div class="row align-items-center">
+                                                            <label for="noteselection" class="col-sm-6 col-form-label">Note</label>
+                                                            <div class="col-sm-4">
+                                                                <select id="noteselection" name="noteselection" class="form-select" required>
+                                                                    <option value="" selected disabled>**Select Column**</option>
+                                                                    {% for col in columns %}
+                                                                        <option value="{{ col }}">{{ col }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-secondary rounded p-4 mb-3">
+                                                        <div class="row align-items-center">
+                                                            <label for="amountselection" class="col-sm-6 col-form-label">Amount</label>
+                                                            <div class="col-sm-4">
+                                                                <select id="amountselection" name="amountselection" class="form-select" required>
+                                                                    <option value="" selected disabled>**Select Column**</option>
+                                                                    {% for col in columns %}
+                                                                        <option value="{{ col }}">{{ col }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-secondary rounded p-4 mb-3">
+                                                        <div class="row align-items-center">
+                                                            <label for="accountselection" class="col-sm-6 col-form-label">Account</label>
+                                                            <div class="col-sm-4">
+                                                                <select id="accountselection" name="accountselection" class="form-select" required>
+                                                                    <option value="" selected disabled>**Select Account**</option>
+                                                                    {% for account in accounts %}
+                                                                        <option value="{{ account.id }}">{{ account.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-primary" data-bs-target="#uploadfile" data-bs-toggle="modal" data-bs-dismiss="modal">
+                                                        Back
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        Next
+                                                    </button>
+                                                </div>
+                                            </form>    
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Upload File Modal End -->
                             </div>
                         </div>
                     </div>
@@ -397,6 +485,11 @@
     <!-- Template Javascript -->
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/transactioninputfield.js' %}"></script>
+    <script src="{% static 'js/toggleedit.js' %}"></script>
+
+    {% if open_map_modal %}
+    <script src="{% static 'js/filecolumnmap.js' %}"></script>
+    {% endif %}
 
 </body>
 
