@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+
 
 
 
@@ -10,7 +12,7 @@ class CustomUser(AbstractUser):
     pass
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} {self.username} ({self.email})"
+        return f"{self.first_name} {self.last_name}"
 
 
 
@@ -19,9 +21,10 @@ class CustomUser(AbstractUser):
 # CATEGORY TYPE #
 class CategoryType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categorytypes")
 
     def __str__(self):
-        return f"{self.name} {self.id}"
+        return f"{self.name}"
 
 
 
@@ -31,9 +34,10 @@ class CategoryType(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
 
     def __str__(self):
-        return f"{self.name} {self.type} {self.id}"
+        return f"{self.name}"
 
 
 
@@ -42,6 +46,7 @@ class Category(models.Model):
 # ACCOUNT TYPE  #
 class AccountType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounttypes")
 
     def __str__(self):
         return f"{self.name}"
@@ -56,9 +61,10 @@ class Account(models.Model):
     type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
 
     def __str__(self):
-        return f"{self.name} {self.balance} {self.type}"
+        return f"{self.name}"
 
 
 
@@ -74,6 +80,7 @@ class Transaction(models.Model):
     sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
     destinationaccount = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True, related_name='final_transactions')
     refund = models.BooleanField(default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
 
     def signed_amount(self, sourceaccount):
         amt = self.amount
@@ -130,8 +137,22 @@ class Transaction(models.Model):
         return 0
 
     def __str__(self):
-        return f"{self.amount} {self.note} {self.date} {self.category} {self.sourceaccount} {self.destinationaccount} {self.refund}"
+        return f"{self.amount}"
 
+
+
+
+
+# PENDING TRANSACTIONS #
+class PendingTransaction(models.Model):
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    note = models.CharField(max_length=255)
+    date = models.DateField()
+    sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingtransactions")
+
+    def __str__(self):
+        return f"{self.amount}"
 
 
 
@@ -142,12 +163,13 @@ class Budget(models.Model):
     year = models.PositiveIntegerField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     limit = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="budgets")
 
     class Meta:
         unique_together = ('month', 'year', 'category')
 
     def __str__(self):
-        return f"{self.month} {self.year} {self.category} {self.limit}"
+        return f"{self.month}"
 
 
 
@@ -158,9 +180,10 @@ class AccountBalanceHistory(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=20, decimal_places=2)
     date = models.DateField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accountbalancehistories")
 
     class Meta:
         unique_together = ("account", "date")
 
     def __str__(self):
-        return f"{self.account.name} balance on {self.date}: {self.balance}"
+        return f"{self.account.name}"

@@ -5,10 +5,11 @@ from .models import Transaction, Account, AccountBalanceHistory
 from django.utils import timezone
 
 
-def recalculatebalance(account, from_date):
+def recalculatebalance(account, from_date, user):
     # Include transactions where the account is either the main account or the final_account
     transactions = (
         Transaction.objects.filter(
+            user = user,
             date__gte=from_date
         ).filter(
             models.Q(sourceaccount=account) | models.Q(destinationaccount=account)
@@ -17,7 +18,7 @@ def recalculatebalance(account, from_date):
 
     # Get previous balance
     prev_balance_obj = (
-        AccountBalanceHistory.objects.filter(account=account, date__lt=from_date)
+        AccountBalanceHistory.objects.filter(account=account, date__lt=from_date, user= user)
         .order_by("-date")
         .first()
     )
@@ -32,6 +33,7 @@ def recalculatebalance(account, from_date):
         if current_date != tx.date:
             if current_date:
                 AccountBalanceHistory.objects.update_or_create(
+                    user=user,
                     account=account,
                     date=current_date,
                     defaults={"balance": running_balance},
@@ -45,6 +47,7 @@ def recalculatebalance(account, from_date):
     # Save final balance for last date
     if current_date:
         AccountBalanceHistory.objects.update_or_create(
+            user=user,
             account=account,
             date=current_date,
             defaults={"balance": running_balance},
@@ -59,27 +62,28 @@ def recalculatebalance(account, from_date):
 
 @receiver(post_save, sender=Transaction)
 def update_balance_on_save(sender, instance, created, **kwargs):
-    recalculatebalance(instance.sourceaccount, instance.date)
+    recalculatebalance(instance.sourceaccount, instance.date, instance.user)
 
     if instance.destinationaccount:
-        recalculatebalance(instance.destinationaccount, instance.date)
+        recalculatebalance(instance.destinationaccount, instance.date, instance.user)
 
 
 @receiver(post_delete, sender=Transaction)
 def update_balance_on_delete(sender, instance, **kwargs):
-    recalculatebalance(instance.sourceaccount, instance.date)
+    recalculatebalance(instance.sourceaccount, instance.date, instance.user)
 
     if instance.destinationaccount:
-        recalculatebalance(instance.destinationaccount, instance.date)
+        recalculatebalance(instance.destinationaccount, instance.date, instance.user)
 
 
 @receiver(post_save, sender=Account)
-def setinitialbalance(sender, instance, created, **kwargs):
+def setinitialbalance( sender, instance, created, **kwargs):
     if created:
         instance.balance = instance.startingbalance
         instance.save()
 
         AccountBalanceHistory.objects.create(
+            user=instance.user,
             account=instance,
             date=timezone.now().date(),
             balance=instance.startingbalance
