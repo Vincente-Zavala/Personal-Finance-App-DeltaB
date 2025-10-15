@@ -389,3 +389,14 @@ ul, #myUL {
   .active {
     display: block;
   }
+
+
+/* Hide but keep clickable */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;          /* make it invisible */
+    position: absolute;  /* take it out of normal flow */
+    width: 100%;         /* cover entire input */
+    height: 100%;
+    cursor: pointer;     /* still clickable */
+  }
+  
