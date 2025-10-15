@@ -7,7 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from decimal import Decimal
 from django.utils import timezone
-from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser
+from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction
 from django.db.models import Q, Sum
 from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
 from collections import defaultdict
@@ -20,6 +20,9 @@ from django.contrib.auth.decorators import login_required
 from collections import defaultdict
 import pandas as pd
 from django.db.models import Prefetch
+from django.contrib.auth import logout
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 
@@ -68,14 +71,16 @@ def getselecteddate(request):
     selected_fromdate = None
     selected_todate = None
 
-    request.session["mode"] = request.GET.get("mode")
+    request.session["mode"] = request.POST.get("mode")
     mode = request.session.get("mode")
+
+    print("Debug mode", mode)
 
     if mode == "monthyear":
         # --- Handle Month/Year selection ---
-        if "month" in request.GET and "year" in request.GET:
-            request.session["month"] = int(request.GET["month"])
-            request.session["year"] = int(request.GET["year"])
+        if "month" in request.POST and "year" in request.POST:
+            request.session["month"] = int(request.POST["month"])
+            request.session["year"] = int(request.POST["year"])
 
             # Clear custom range if switching to month/year
             request.session.pop("fromdate", None)
@@ -87,13 +92,14 @@ def getselecteddate(request):
 
             selected_fromdate = None
             selected_todate = None
+            print("Debug, selected month", selected_month)
 
     elif mode == "custom":
         # --- Handle From/To range selection ---
-        if "fromdate" in request.GET and "todate" in request.GET:
+        if "fromdate" in request.POST and "todate" in request.POST:
 
-            request.session["fromdate"] = request.GET["fromdate"]
-            request.session["todate"] = request.GET["todate"]
+            request.session["fromdate"] = request.POST["fromdate"]
+            request.session["todate"] = request.POST["todate"]
 
             # Clear month/year if switching to custom range
             request.session.pop("month", None)
@@ -181,9 +187,11 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
 
 
 # CALCULATE CATEGORY TOTALS #
-def calculatecategorytotals(mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, request, user):
+def calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user):
+
+    print("Debug, calculate categorytotals: budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
     
-    categorytypes = CategoryType.objects.filter(user=request.user).prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=request.user))
+    categorytypes = CategoryType.objects.filter(user=user).prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user))
 )
 
 
@@ -195,10 +203,14 @@ def calculatecategorytotals(mode, selected_month, selected_year, selected_fromda
 
 
 
+
+
     for category in Category.objects.filter(user=user):
 
         total = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
         category_totals[category.id] = total
+
+        print("Debug, budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
 
         budget_limit = budgetmap.get(category.id, 0)
         adjbudget_limit = adjbudgetmap.get(category.id, 0)
@@ -275,12 +287,17 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
     budgetmap = defaultdict(Decimal)
     adjbudgetmap = defaultdict(Decimal)
 
+
+
     if mode == "monthyear":
 
         if selected_month == 13:
             budgets = Budget.objects.filter(year=selected_year, user=user)
+            
         else:
             budgets = Budget.objects.filter(month=selected_month, year=selected_year, user=user)
+        
+        print("Debug, budgets in getbudgetmap", budgets)
 
         # Budget Map for month or multiple months added together
         for b in budgets:
@@ -308,7 +325,7 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
         #budgets = Budget.objects.filter(month=selected_month, year=selected_year)
         adjbudgets = Budget.objects.filter(month__range=(fromdatemonth, todatemonth), year=fromdateyear, user=user)
 
-        print("DEBUG: Budgets: ", budgets)
+        print("DEBUG: Budgets in getbudgetmap: ", budgets)
 
         # for b in budgets:
         #     if b.month in budgetmap:
@@ -411,8 +428,47 @@ def builddatetree(user):
 ## --------------------ADDITIONAL VIEWS-------------------- ##
 
 
+
+# NEW USER #
+def newuser(request):
+    if request.method == 'POST':
+        firstname = request.POST['firstname']
+        lastname = request.POST['lastname']
+        username = request.POST['username']
+        email = request.POST['email']
+        password = request.POST['password']
+        staff = False
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name = firstname,
+            last_name = lastname,
+            is_staff = staff
+        )
+        user.save()
+
+    return redirect("signin")
+
+
+
+
+
+# LOG OUT #
+def logoutuser(request):
+    logout(request)
+    return redirect('home')
+    
+    
+    
+    
+    
 # CREATE CATEGORIES/ACCOUNTS #
-def addinput(request, user):
+def addinput(request):
+
+    user = request.user
+
     if request.method == "POST":
         input_type = request.POST.get("inputtype")
 
@@ -473,6 +529,9 @@ def addinput(request, user):
 
 # ADD TRANSACTION #
 def addtransaction(request):
+
+    user=request.user
+
     if request.method == "POST":
         inputtype = request.POST.get("inputtransaction")
         amount = request.POST.get("inputamount")
@@ -490,16 +549,16 @@ def addtransaction(request):
 
 
         #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
-        categorytype = CategoryType.objects.get(name__iexact=inputtype, user=request.user)
-
         category_id = request.POST.get("categorychoice")
-        category = Category.objects.get(id=category_id, user=request.user) if category_id else None
+        category = Category.objects.get(id=category_id, user=user) if category_id else None
+        
+        categorytype = CategoryType.objects.get(name__iexact=inputtype, user=user)
 
         source_account_id = request.POST.get("sourceaccountchoice")
-        source_account = Account.objects.get(id=source_account_id, user=request.user) if source_account_id else None
+        source_account = Account.objects.get(id=source_account_id, user=user) if source_account_id else None
 
         final_account_id = request.POST.get("finalaccountchoice")
-        final_account = Account.objects.get(id=final_account_id, user=request.user) if final_account_id else None
+        final_account = Account.objects.get(id=final_account_id, user=user) if final_account_id else None
 
 
         # CREATE TRANSACTION BASED ON TYPE
@@ -512,7 +571,7 @@ def addtransaction(request):
                 category=category,
                 sourceaccount=source_account,
                 refund=refund,
-                user=request.user,
+                user=user,
             )
 
         elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "transfer":
@@ -525,7 +584,7 @@ def addtransaction(request):
                 sourceaccount=source_account,
                 destinationaccount=final_account,
                 refund=refund,
-                user=request.user,
+                user=user,
             )
 
 
@@ -535,10 +594,91 @@ def addtransaction(request):
 
 
 
+# ADD TRANSACTION #
+def addpendingtransaction(request):
+
+    user=request.user
+
+    if request.method == "POST":
+        amount = request.POST.get("pendingamount")
+        note = request.POST.get("pendingnote")
+        date = request.POST.get("pendingdate")
+
+
+        # CONVERT TO DECIMAL
+        if amount:
+            amount = Decimal(amount)
+        else:
+            amount = None
+
+
+        #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
+        pendingtransactions = PendingTransaction.objects.filter(user=user)
+
+        for transaction in pendingtransactions:
+            category_id = request.POST.get(f"categorychoice_{transaction.id}")
+            if category_id:
+                # Assign the selected category
+                transaction.category_id = category_id
+                transaction.save()
+
+                category = Category.objects.get(id=transaction.category_id, user=user) if category_id else None
+        
+                categorytype = CategoryType.objects.get(id=category.type.id, user=user)
+
+                source_account = transaction.sourceaccount
+
+                print("Debug: transaction, category, categorytype, source_account, amount, date, note", transaction, category, categorytype, source_account, transaction.amount, transaction.date, transaction.note)
+
+                inputtype = categorytype.name.lower()
+                refund = False
+
+                print("Debug inputtype", inputtype)
+
+
+                # CREATE TRANSACTION BASED ON TYPE
+                if inputtype == "income" or inputtype == "expense":
+                    Transaction.objects.create(
+                        amount=transaction.amount,
+                        note=transaction.note,
+                        date=transaction.date,
+                        categorytype=categorytype,
+                        category=category,
+                        sourceaccount=source_account,
+                        refund=refund,
+                        user=user,
+                    )
+
+                elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "transfer":
+                    Transaction.objects.create(
+                        amount=transaction.amount,
+                        note=transaction.note,
+                        date=transaction.date,
+                        categorytype=categorytype,
+                        category=category,
+                        sourceaccount=source_account,
+                        destinationaccount=final_account,
+                        refund=refund,
+                        user=user,
+                    )
+
+                transaction.delete()
+
+
+    return redirect("alltransactions")
+
+
+
+
+
 # DELETE TRANSACTIONS #
 def deletetransactions (request):
+
+    user=request.user
     selectedtransactionids = request.POST.getlist("selectedtransactions")
-    Transaction.objects.filter(id__in=selectedtransactionids, user=request.user).delete()
+    
+    Transaction.objects.filter(id__in=selectedtransactionids, user=user).delete()
+    PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user).delete()
 
     redirecturl = request.POST.get("redirect")
     
@@ -605,7 +745,10 @@ def transactionsum(request, user):
 
 
 # EDIT BUDGET LIMITS
-def edit_categorytype_limits(request, pk, user):
+def edit_categorytype_limits(request, pk):
+
+    user=request.user
+
     if request.method == "POST":
         # pull from POST instead of session
         month = int(request.POST["month"])
@@ -622,7 +765,7 @@ def edit_categorytype_limits(request, pk, user):
 
 
 # TRANSACTIONS FILTER #
-def filtertransactions(request, user):
+def filtertransactions(request):
     """Handle filter form submission and render the alltransactions view with filtered transactions.
 
     Supported filters (from the modal):
@@ -634,21 +777,24 @@ def filtertransactions(request, user):
     - accounts (multiple checkbox values)
     """
 
+    user = request.user
+
     transactions = Transaction.objects.filter(user=user)
     appliedfilters = []
 
-    # Date range
-    datestart = request.POST.get('date_start')
-    dateend = request.POST.get('date_end')
+    print("Debug within filter transactions")
 
-    if datestart:
-        datestart = datetime.datetime.strptime(datestart, "%m-%d-%Y").date()
-        transactions = transactions.filter(date__gte=datestart)
-        appliedfilters.append(f"From: {datestart.strftime('%m-%d-%Y')}")
-    if dateend:
-        dateend = datetime.datetime.strptime(dateend, "%m-%d-%Y").date()
-        transactions = transactions.filter(date__lte=dateend)
-        appliedfilters.append(f"To: {dateend.strftime('%m-%d-%Y')}")
+    # Date range
+    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+
+    print("Debug, selected month", selected_month)
+
+    if mode == "monthyear":
+        transactions = transactions.filter(date__year=selected_year, date__month=selected_month, user=user)
+
+    elif mode == "custom":
+        transactions = transactions.filter(date__gte=selected_fromdate, date__lte=selected_todate, user=user)
+
 
 
     # Amount - allow single number or range 'min-max'
@@ -737,11 +883,11 @@ def filtertransactions(request, user):
     # Order and render same context as alltransactions
     transactions = transactions.order_by('-date')
 
-    categories = categorylist()
-    accounts = accountlist()
-    categorytypes = categorytypelist()
-    accounttypes = accounttypelist()
-    date_tree = builddatetree()
+    categories = categorylist(user)
+    accounts = accountlist(user)
+    categorytypes = categorytypelist(user)
+    accounttypes = accounttypelist(user)
+    date_tree = builddatetree(user)
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
 
     context = {
@@ -769,20 +915,107 @@ def filtertransactions(request, user):
 def uploadfile(request):
     if request.method == "POST" and request.FILES.get("uploadfile"):
         file = request.FILES["uploadfile"]
-
-        # Get file extension
         filename = file.name.lower()
 
-        if filename.endswith(".csv"):
-            df = pd.read_csv(file)
-        elif filename.endswith(".xlsx") or filename.endswith(".xls"):
-            df = pd.read_excel(file)
-        else:
-            return HttpResponse("Unsupported file type. Please upload CSV or Excel.")
-        
-        print("Debug, file head: ", df.head())
+        try:
+            # Read the uploaded file
+            if filename.endswith(".csv"):
+                df = pd.read_csv(file)
+            elif filename.endswith((".xlsx", ".xls")):
+                df = pd.read_excel(file)
+            else:
+                messages.error(request, "Unsupported file type. Please upload a CSV or Excel file.")
+                return redirect("newtransactions")
 
+            # Store the data and columns in session
+            request.session["upload_data"] = df.to_json(orient="records")
+            request.session["upload_columns"] = df.columns.tolist()
+
+            # Redirect to mapping modal/page
+            return redirect("mapcolumnsview")
+
+        except Exception as e:
+            messages.error(request, f"Error reading file: {e}")
+            return redirect("newtransactions")
+
+    # Default render if GET or no file
     return render(request, "newtransactions.html")
+
+
+
+# MAP COLUMNS #
+def mapcolumnsview(request):
+    user=request.user
+    columns = request.session.get("uploaded_columns", [])
+    accounts = accountlist(user)
+
+    context = {
+        "columns": columns,
+        "open_map_modal": True,
+        "accounts": accounts,
+
+    }
+    return render(request, "newtransactions.html", context)
+
+
+
+
+
+# MAP COLUMNS #
+def adduploaddata(request):
+    user=request.user
+
+    
+    if request.method == "POST":
+        datecolumn = request.POST.get("dateselection")
+        notecolumn = request.POST.get("noteselection")
+        amountcolumn = request.POST.get("amountselection")
+        accountcolumn = request.POST.get("accountselection")
+
+    print("DEBUG, column selection date, note, amount, account", datecolumn, notecolumn, amountcolumn, accountcolumn)
+
+    upload_data_json = request.session.get("upload_data")
+    
+    if not upload_data_json:
+        print("ERROR: No uploaded data found in session.")
+        messages.error(request, "No uploaded data found. Please re-upload your file.")
+        return redirect("newtransactions")
+
+
+    # Convert JSON back to a DataFrame
+    df = pd.read_json(upload_data_json, orient="records")
+
+    # Now you can work with df safely
+    print("DEBUG, DataFrame loaded from session:")
+    print(df.head())
+
+    # Example: access columns dynamically
+    selected_data = df[[datecolumn, notecolumn, amountcolumn]].copy()
+    print("DEBUG, selected data:")
+    selected_data['Account'] = accountcolumn
+    print("DEBUG, selected data after account+:")
+    print(selected_data.head())
+
+    for row in selected_data.itertuples(index=False, name=None):
+        date, note, amount, account = row
+        print("Debug: row", date, note, amount, account)
+
+        PendingTransaction.objects.create(
+                    amount=amount,
+                    note=note,
+                    date=date,
+                    sourceaccount=Account.objects.get(id=account),
+                    user=user,
+                )
+
+    
+    accounts = accountlist(user)
+
+    context = {
+        "accounts": accounts,
+
+    }
+    return render(request, "newtransactions.html", context)
 
 
 
@@ -796,6 +1029,10 @@ def uploadfile(request):
 @login_required
 def index(request):
 
+    user=request.user
+
+    name = request.user.get_full_name()
+
     # dateoption = getselecteddate(request)
 
     mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
@@ -804,12 +1041,14 @@ def index(request):
 
 
     # Budgets for selected month/year
-    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate)
+    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    accounts = accountlist()
-    name = request.user.get_full_name()
+    print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, CustomUser)
+    accounts = accountlist(user=user)
+    
+
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
 
 
     context = {
@@ -837,18 +1076,19 @@ def index(request):
 def dashboard(request):
 
     user=request.user
+    name = request.user.get_full_name()
 
     categories = categorylist(user)
 
     # GET MONTH/YEAR
-    selected_month, selected_year = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
 
     accounts = accountlist(user)
 
     # Budgets for selected month/year
-    budgetmap = getbudgetmap(selected_month, selected_year, user)
+    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(selected_month, selected_year, budgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
 
     # Chart data
     charts_data = []
@@ -863,6 +1103,7 @@ def dashboard(request):
         })
 
     context = {
+        "name": name,
         "categories": categories,
         "accounts": accounts,
         "categorytypes": categorytypes,
@@ -885,6 +1126,7 @@ def dashboard(request):
 @login_required
 def newtransactions(request):
     user=request.user
+    name = request.user.get_full_name()
     categories = categorylist(user=user)
     accounts = accountlist(user=user)
     transactions = Transaction.objects.filter(user=user).order_by('-id')[:7]
@@ -893,6 +1135,7 @@ def newtransactions(request):
     final_accounts = accounts
 
     context = {
+        "name": name,
         "categories": categories,
         "accounts": accounts,
         "transactions": transactions,
@@ -909,14 +1152,15 @@ def newtransactions(request):
 @login_required
 def alltransactions(request):
     user=request.user
+    name = request.user.get_full_name()
 
     categories = categorylist(user=user)
     categorytypes = categorytypelist(user=user)
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user=user)
-    #transactions = Transaction.objects.all().order_by('date')
 
     transactionchron = Transaction.objects.filter(user=user).order_by('date')
+    pendingtransactions = PendingTransaction.objects.filter(user=user).order_by('-id')
     runningbalance = Decimal('0.00')
 
     for transaction in transactionchron:
@@ -933,7 +1177,7 @@ def alltransactions(request):
 
 
 
-    date_tree = builddatetree()
+    date_tree = builddatetree(user=user)
 
 
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
@@ -956,11 +1200,12 @@ def alltransactions(request):
 
 
     context = {
+        "name": name,
         "categories": categories,
         "categorytypes": categorytypes,
         "accounts": accounts,
         "accounttypes": accounttypes,
-        #"transactions": transactions,
+        "pendingtransactions": pendingtransactions,
         "source_accounts": source_accounts,
         "final_accounts": final_accounts,
         "transactions": transactionsdisplay,
@@ -980,11 +1225,13 @@ def alltransactions(request):
 def budget(request):
 
     user=request.user
+    name = request.user.get_full_name()
+
     # GET MONTH/YEAR
-    selected_month, selected_year = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
 
     # Budgets for selected month/year
-    budgetmap = getbudgetmap(selected_month, selected_year)
+    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
     # All lists you had in table()
     categories = Category.objects.filter(user=user)
@@ -994,6 +1241,7 @@ def budget(request):
     transactions = Transaction.objects.filter(user=user)
 
     context = {
+        "name": name,
         "categories": categories,
         "categorytypes": categorytypes,
         "accounts": accounts,
@@ -1013,13 +1261,16 @@ def budget(request):
 @login_required
 def setup(request):
     user=request.user
+    name = request.user.get_full_name()
     categories = categorylist(user=user)
-    categorytypes = categorytypelist(user-user)
+    categorytypes = categorytypelist(user=user)
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user=user)
     transactions = transactionlist(user=user)
 
+
     context = {
+        "name": name,
         "categories": categories,
         "categorytypes": categorytypes,
         "accounts": accounts,
@@ -1034,7 +1285,15 @@ def setup(request):
 
 @login_required
 def tasks(request):
-    return render(request, 'tasks.html')
+    user=request.user
+    name = request.user.get_full_name()
+
+    context = {
+        "name": name,
+    }
+
+
+    return render(request, 'tasks.html', context)
 
 
 
@@ -1042,20 +1301,38 @@ def tasks(request):
 
 @login_required
 def color(request):
-    return render(request, 'color.html')
+    user=request.user
+    name = request.user.get_full_name()
+
+
+    context = {
+        "name": name,
+    }
+
+    return render(request, 'color.html', context)
 
 
 
 
 
 def signup(request):
-    return render(request, 'signup.html')
+    user=request.user
+    
+    name = request.user.get_full_name()
+
+
+    context = {
+        "name": name,
+    }
+
+    return render(request, 'signup.html', context)
 
 
 
 
 
 def signin(request):
+    user=request.user
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -1073,14 +1350,23 @@ def signin(request):
 
 @login_required
 def element(request):
-    return render(request, 'element.html')
+    user=request.user
+
+    name = request.user.get_full_name()
+
+
+    context = {
+        "name": name,
+    }
+
+    return render(request, 'element.html', context)
 
 
 
 
 
-@login_required
 def home(request):
+    user=request.user
     return render(request, "home.html")
 
 

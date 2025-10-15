@@ -12,7 +12,7 @@ class CustomUser(AbstractUser):
     pass
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} {self.username} ({self.email})"
+        return f"{self.first_name} {self.last_name}"
 
 
 
@@ -24,7 +24,7 @@ class CategoryType(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categorytypes")
 
     def __str__(self):
-        return f"{self.name} {self.id}"
+        return f"{self.name}"
 
 
 
@@ -37,7 +37,7 @@ class Category(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
 
     def __str__(self):
-        return f"{self.name} {self.type} {self.id}"
+        return f"{self.name}"
 
 
 
@@ -64,7 +64,7 @@ class Account(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
 
     def __str__(self):
-        return f"{self.name} {self.balance} {self.type}"
+        return f"{self.name}"
 
 
 
@@ -137,8 +137,22 @@ class Transaction(models.Model):
         return 0
 
     def __str__(self):
-        return f"{self.amount} {self.note} {self.date} {self.category} {self.sourceaccount} {self.destinationaccount} {self.refund}"
+        return f"{self.amount}"
 
+
+
+
+
+# PENDING TRANSACTIONS #
+class PendingTransaction(models.Model):
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    note = models.CharField(max_length=255)
+    date = models.DateField()
+    sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingtransactions")
+
+    def __str__(self):
+        return f"{self.amount}"
 
 
 
@@ -155,7 +169,7 @@ class Budget(models.Model):
         unique_together = ('month', 'year', 'category')
 
     def __str__(self):
-        return f"{self.month} {self.year} {self.category} {self.limit}"
+        return f"{self.month}"
 
 
 
@@ -172,4 +186,4 @@ class AccountBalanceHistory(models.Model):
         unique_together = ("account", "date")
 
     def __str__(self):
-        return f"{self.account.name} balance on {self.date}: {self.balance}"
+        return f"{self.account.name}"
