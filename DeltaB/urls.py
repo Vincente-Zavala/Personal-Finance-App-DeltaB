@@ -1,30 +1,23 @@
-from django.urls import path
+"""
+URL configuration for Delta project.
 
-from . import views
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
-    path('index/', views.index, name='index'),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('newuser/', views.newuser, name='newuser'),
-    path('budget/', views.budget, name='budget'),
-    path('newtransactions/', views.newtransactions, name='newtransactions'),
-    path('addpendingtransaction/', views.addpendingtransaction, name='addpendingtransaction'),
-    path('alltransactions/', views.alltransactions, name='alltransactions'),
-    path('tasks/', views.tasks, name='tasks'),
-    path('setup/', views.setup, name='setup'),
-    path('color/', views.color, name='color'),
-    path('addtransaction/', views.addtransaction, name='addtransaction'),
-    path('addinput/', views.addinput, name='addinput'),
-    path('element/', views.element, name='element'),
-    path("edit-limits/<int:pk>/", views.edit_categorytype_limits, name="edit_categorytype_limits"),
-    path("filtertransactions", views.filtertransactions, name="filtertransactions"),
-    path("deletetransactions", views.deletetransactions, name="deletetransactions"),
-    path("uploadfile", views.uploadfile, name="uploadfile"),
-    path("signup/", views.signup, name="signup"),
-    path("signin/", views.signin, name="signin"),
-    path("home/", views.home, name="home"),
-    path("uploadfile/", views.uploadfile, name="uploadfile"),
-    path("mapcolumns/", views.mapcolumnsview, name="mapcolumnsview"),
-    path("adduploaddata/", views.adduploaddata, name="adduploaddata"),
-    path('logoutuser/', views.logoutuser, name='logoutuser'),
+    path('', include('DeltaB.urls')),
+    path("admin/", admin.site.urls),
 ]

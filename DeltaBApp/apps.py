@@ -6,4 +6,4 @@ class DeltaBConfig(AppConfig):
     name = "DeltaB"
 
     def ready(self):
-        import DeltaB.signals
+        import DeltaBApp.signals

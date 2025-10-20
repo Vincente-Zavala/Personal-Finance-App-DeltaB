@@ -37,12 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "DeltaB",
+    "DeltaBApp",
 ]
 
 LOGIN_URL = 'signin'
 LOGIN_REDIRECT_URL = 'index'
-AUTH_USER_MODEL = 'DeltaB.CustomUser'
+AUTH_USER_MODEL = 'DeltaBApp.CustomUser'
 
 
 MIDDLEWARE = [
@@ -55,7 +55,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "Delta.urls"
+ROOT_URLCONF = "DeltaB.urls"
 
 TEMPLATES = [
     {
