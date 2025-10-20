@@ -37,12 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "BudgetApp",
+    "DeltaB",
 ]
 
 LOGIN_URL = 'signin'
 LOGIN_REDIRECT_URL = 'index'
-AUTH_USER_MODEL = 'BudgetApp.CustomUser'
+AUTH_USER_MODEL = 'DeltaB.CustomUser'
 
 
 MIDDLEWARE = [
@@ -68,8 +68,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "BudgetApp.contextprocessors.typeiconmap",
-                "BudgetApp.contextprocessors.accounticonmap",
+                "DeltaB.contextprocessors.typeiconmap",
+                "DeltaB.contextprocessors.accounticonmap",
             ],
         },
     },

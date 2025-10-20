@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class BudgetappConfig(AppConfig):
+class DeltaBConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "BudgetApp"
+    name = "DeltaB"
 
     def ready(self):
-        import BudgetApp.signals
+        import DeltaB.signals
