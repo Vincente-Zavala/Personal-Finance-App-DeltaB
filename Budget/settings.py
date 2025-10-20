@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     "BudgetApp",
 ]
 
-
+LOGIN_URL = 'signin'
+LOGIN_REDIRECT_URL = 'index'
 AUTH_USER_MODEL = 'BudgetApp.CustomUser'
 
 
@@ -82,8 +83,13 @@ WSGI_APPLICATION = "Budget.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "postgres",
+        "USER": "postgres",
+        "PASSWORD": "VincentZ8182*",
+        "HOST": "db.gazpcgrygvtonrxpjshr.supabase.co",
+        "PORT": "5432",
+        "OPTIONS": {"sslmode": "require",},
     }
 }
 

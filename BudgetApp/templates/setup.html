@@ -1,4 +1,5 @@
 {% load static %}
+{% load budgetextra %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -55,7 +56,7 @@
                         <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
                     </div>
                     <div class="ms-3">
-                        <h6 class="mb-0">Jhon Doe NU</h6>
+                        <h6 class="mb-0">{{ name }}</h6>
                         <span>Admin NU</span>
                     </div>
                 </div>
@@ -65,23 +66,23 @@
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
+                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle active show" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0 show" data-bs-popper="none">
                             <a href="{% url 'setup' %}" class="dropdown-item active">Setup</a>
-                            <a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>
-                            <a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>
+                            <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
+                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
                         </div>
                     </div>
-                    <div class="nav-item dropdown">
+                    <!-- <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
                             <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </nav>
@@ -103,12 +104,15 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <img class="rounded-circle me-lg-2" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                            <span class="d-none d-lg-inline-flex">John Doe NU</span>
+                            <span class="d-none d-lg-inline-flex">{{ name }}</span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                            <a href="#" class="dropdown-item">My Profile NU</a>
-                            <a href="#" class="dropdown-item">Settings NU</a>
-                            <a href="#" class="dropdown-item">Log Out NU</a>
+                            <!-- <a href="#" class="dropdown-item">My Profile NU</a>
+                            <a href="#" class="dropdown-item">Settings NU</a> -->
+                            <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
+                                {% csrf_token %}
+                                <a type="button" class="dropdown-item" onclick="document.getElementById('logoutform').submit(); return false;">Logout</a>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -178,6 +182,12 @@
                                             <input class="form-control" id="inputaccount" name="inputaccount">
                                         </div>
                                     </div>
+                                    <div class="row mb-3">
+                                        <label for="inputaccountbalance" class="col-sm-2 col-form-label">Starting Balance</label>
+                                        <div class="col-sm-2">
+                                            <input class="form-control" id="inputaccountbalance" name="inputaccountbalance">
+                                        </div>
+                                    </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">ADD</button>
                             </form>
@@ -198,43 +208,26 @@
                             <div class="col-sm-12 col-xl-12">
                                 <div class="h-100 bg-secondary rounded p-4">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 class="mb-0">Category Types</h6>
-                                        <a href="">Show All</a>
+                                        <h5 class="mb-0">Category Types</h5>
                                     </div>
                                     {% for categorytype in categorytypes %}
-                                    <div class="d-flex align-items-center border-bottom py-3">
-                                        <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
+                                    <hr>
+                                    <div class="d-flex align-items-center py-3">
+                                        <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
                                         <div class="w-100 ms-3">
                                             <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ categorytype.name }}</h6>
-                                                <small>ID: {{ categorytype.id }}</small>
+                                                <h6 class="mb-0 text-primary">{{ categorytype.name }}</h6>
                                             </div>
+                                            <ul class="text-white pt-3 ms-4">
+                                                {% for category in categorytype.category_set.all %}
+                                                <li>{{ category.name }}</li>
+                                                {% endfor %}
+                                            </ul>
                                         </div>
                                     </div>
                                     {% endfor %}
                                 </div>
                             </div>
-                            {% for categorytype in categorytypes %}
-                            <div class="col-sm-12 col-xl-12">
-                                <div class="h-100 bg-secondary rounded p-4">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 class="mb-0">{{ categorytype.name }}</h6>
-                                        <a href="">Show All</a>
-                                    </div>
-                                    {% for category in categorytype.category_set.all %}
-                                    <div class="d-flex align-items-center border-bottom py-3">
-                                        <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
-                                        <div class="w-100 ms-3">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ category.name }}</h6>
-                                                <small>ID: {{ category.id }}</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endfor %}
                         </div>
                     </div>
                     <!-- Account Type Start-->
@@ -243,43 +236,26 @@
                             <div class="col-sm-12 col-xl-12">
                                 <div class="h-100 bg-secondary rounded p-4">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 class="mb-0">Account Type</h6>
-                                        <a href="">Show All</a>
+                                        <h4 class="mb-0">Account Types</h4>
                                     </div>
                                     {% for accounttype in accounttypes %}
-                                    <div class="d-flex align-items-center border-bottom py-3">
-                                        <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
+                                    <hr>
+                                    <div class="d-flex align-items-center py-3">
+                                        <i class="fa {{ accounticonmap|getitem:accounttype.name|default:'fa-folder' }} fa-3x text-light"></i>
                                         <div class="w-100 ms-3">
                                             <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ accounttype.name }}</h6>
-                                                <small>ID: {{ accounttype.id }}</small>
+                                                <h5 class="mb-0 text-primary">{{ accounttype.name }}</h5>
                                             </div>
+                                            <ul class="text-white pt-3 ms-4">
+                                                {% for account in accounttype.account_set.all %}
+                                                <li>{{ account.name }} - Starting Balance: {{ account.startingbalance }}</li>
+                                                {% endfor %}
+                                            </ul>
                                         </div>
                                     </div>
                                     {% endfor %}
                                 </div>
                             </div>
-                            {% for accounttype in accounttypes %}
-                            <div class="col-sm-12 col-xl-12">
-                                <div class="h-100 bg-secondary rounded p-4">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h6 class="mb-0">{{accounttype.name}}</h6>
-                                        <a href="">Show All</a>
-                                    </div>
-                                    {% for account in accounttype.account_set.all %}
-                                    <div class="d-flex align-items-center border-bottom py-3">
-                                        <img class="rounded-circle flex-shrink-0" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
-                                        <div class="w-100 ms-3">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-0">{{ account.name }}</h6>
-                                                <small>ID: {{ account.id }}</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endfor %}
                         </div>
                     </div>
                     <!-- Account Type End -->
