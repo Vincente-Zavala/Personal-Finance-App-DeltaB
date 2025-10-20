@@ -3,5 +3,6 @@ asgiref==3.9.1
 sqlparse==0.5.1
 tzdata==2025.1
 gunicorn==21.2.0
+dj-database-url
 psycopg2-binary==2.9.9
 whitenoise==6.6.0
