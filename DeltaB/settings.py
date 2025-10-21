@@ -1,4 +1,3 @@
-import socket
 """
 Django settings for Delta project.
 
@@ -12,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -99,24 +99,14 @@ WSGI_APPLICATION = "DeltaB.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DB_HOST = "db.mfzleproniqierkeiqcb.supabase.co"
-try:
-    # Force IPv4 resolution at runtime
-    DB_HOST = socket.gethostbyname(DB_HOST)
-except Exception:
-    pass
-
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "VincentZ8182*",
-        "HOST": DB_HOST,
-        "PORT": "5432",
-        "OPTIONS": {"sslmode": "require",},
-    }
+    "default": dj_database_url.parse(
+        "REDACTED_DB_URL/postgres",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
+
 
 
 # Password validation
