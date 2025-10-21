@@ -29,13 +29,16 @@ ALLOWED_HOSTS = [
     "deltab.onrender.com",
 ]
 
-
-
 CSRF_TRUSTED_ORIGINS = [
     "deltab.onrender.com",
 ]
 
+# settings.py
 
+STATIC_URL = '/static/'
+
+# Production
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Application definition
 
