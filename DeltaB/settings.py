@@ -37,11 +37,6 @@ CSRF_TRUSTED_ORIGINS = [
 
 STATIC_URL = '/static/'
 
-
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-
 # Production
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
