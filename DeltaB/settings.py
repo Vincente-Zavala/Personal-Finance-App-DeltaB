@@ -26,13 +26,13 @@ SECRET_KEY = "REDACTED_SECRET_KEY"
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    "https://deltab.onrender.com",
+    "deltab.onrender.com",
 ]
 
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://deltab.onrender.com",
+    "deltab.onrender.com",
 ]
 
 
