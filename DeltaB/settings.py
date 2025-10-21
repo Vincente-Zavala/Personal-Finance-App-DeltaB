@@ -25,7 +25,16 @@ SECRET_KEY = "REDACTED_SECRET_KEY"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "https://deltab.onrender.com",
+]
+
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://deltab.onrender.com",
+]
+
 
 
 # Application definition
