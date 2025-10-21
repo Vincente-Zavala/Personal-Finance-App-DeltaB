@@ -30,12 +30,17 @@ ALLOWED_HOSTS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "deltab.onrender.com",
+    "https://deltab.onrender.com",
 ]
 
 # settings.py
 
 STATIC_URL = '/static/'
+
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Production
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -58,6 +63,7 @@ AUTH_USER_MODEL = 'DeltaBApp.CustomUser'
 
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -72,7 +78,7 @@ ROOT_URLCONF = "DeltaB.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
