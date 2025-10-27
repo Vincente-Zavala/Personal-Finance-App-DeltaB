@@ -21,7 +21,6 @@ class CustomUser(AbstractUser):
 # CATEGORY TYPE #
 class CategoryType(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categorytypes")
 
     def __str__(self):
         return f"{self.name}"
@@ -46,7 +45,6 @@ class Category(models.Model):
 # ACCOUNT TYPE  #
 class AccountType(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounttypes")
 
     def __str__(self):
         return f"{self.name}"
@@ -95,13 +93,13 @@ class Transaction(models.Model):
         # Expense
         elif tx_type == "expense":
             if sourceaccount == self.sourceaccount:
-                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
+                sign = 1 if sourceaccount.type.name in ["Credit Card"] else -1
                 return sign * amt
 
         # Debt
         elif tx_type == "debt":
             if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
+                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
                 return sign * amt
             elif sourceaccount == self.destinationaccount:  # to account
                 sign = -1 if sourceaccount.type.name in ["Credit Card", "Loan"] else 1
@@ -110,7 +108,7 @@ class Transaction(models.Model):
         # Savings
         elif tx_type == "savings":
             if sourceaccount == self.sourceaccount:  # from account
-                sign = -1 if sourceaccount.type.name == "Checking Account" else 1
+                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
                 return sign * amt
             elif sourceaccount == self.destinationaccount:  # to account
                 sign = 1 if sourceaccount.type.name == "Savings Account" else -1
@@ -119,19 +117,34 @@ class Transaction(models.Model):
         # Investment
         elif tx_type == "investment":
             if sourceaccount == self.sourceaccount:  # from account
-                sign = -1 if sourceaccount.type.name in ["Checking Account", "Savings Account"] else 1
+                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
                 return sign * amt
             elif sourceaccount == self.destinationaccount:  # to account
                 sign = 1 if sourceaccount.type.name == "Investment" else -1
                 return sign * amt
 
+        # Retirement
+        elif tx_type == "retirement":
+            if sourceaccount == self.sourceaccount:  # from account
+                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
+                return sign * amt
+            elif sourceaccount == self.destinationaccount:  # to account
+                sign = 1 if sourceaccount.type.name == "Retirement" else -1
+                return sign * amt
+
         # Transfer
         elif tx_type == "transfer":
             if sourceaccount == self.sourceaccount:  # from account
-                sign = -1 if sourceaccount.type.name in ["Savings Account", "Investment", "Retirement", "Loan", "Credit Card"] else 1
+                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
                 return sign * amt
             elif sourceaccount == self.destinationaccount:  # to account
-                sign = 1 if sourceaccount.type.name in ["Checking Account", "Credit Card", "Loan", "Investment"] else -1
+                sign = 1 if sourceaccount.type.name in ["Cash", "Checking Account", "Digital Wallet"] else -1
+                return sign * amt
+
+        # Refund
+        elif tx_type == "refund":
+            if sourceaccount == self.sourceaccount: # from account
+                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
                 return sign * amt
 
         return 0

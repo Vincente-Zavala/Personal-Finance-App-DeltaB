@@ -11,7 +11,7 @@
     <meta content="" name="description">
 
     <!-- Favicon -->
-    <!-- <link href="{% static 'img/favicon.ico' %}" rel="icon"> -->
+    <link href="{% static 'img/favicon.ico' %}" rel="icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,10 +52,10 @@
 
 
         <!-- Left Sidebar Start -->
-        <div class="sidebar-left pe-4 pb-3">
-            <nav class="navbar bg-secondary navbar-dark">
-                <a href="{% url 'index' %}" class="navbar-brand mx-4 mb-3">
-                    <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>Overview</h3>
+        <div class="sidebar-left sidebar pe-4 pb-3">
+            <nav class="navbar navbar-dark">
+                <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
                 </a>
                 <div class="d-flex align-items-center ms-4 mb-4">
                     <div class="position-relative">
@@ -68,8 +68,9 @@
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
-                    <a href="{% url 'index' %}" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
-                    <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a>
+                    <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
+                    <a href="{% url 'index' %}" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
+                    <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
@@ -99,15 +100,11 @@
 
 
         <!-- Right Sidebar Start -->
-        <div class="sidebar-right pe-4 pb-3">
-            <nav class="navbar bg-secondary navbar-dark">
-                <a href="{% url 'index' %}" class="navbar-brand d-flex d-lg-none me-4">
-                    <h2 class="text-primary mb-0"><i class="fa fa-user-edit"></i></h2>
-                </a>
-            
-                <div class="navbar-nav align-items-center ms-auto">
+        <div class="sidebar-right sidebar pe-4 pb-3">
+            <nav class="navbar navbar-dark">            
+                <div class="navbar-nav align-items-center ms-auto mt-2">
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <a href="#" class="d-flex align-items-center profile-dropdown" data-bs-toggle="dropdown">
                             <!-- Avatar + status -->
                             <div class="position-relative">
                                 <img class="rounded-circle" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
@@ -119,8 +116,8 @@
                                 <h6 class="mb-0">{{ name }}</h6>
                                 <small class="text-muted">Admin NU</small>
                             </div>
+                            <span class="profile-dropdown-toggle"></span>
                         </a>
-            
                         <!-- Dropdown -->
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
                             <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
@@ -131,18 +128,23 @@
                     </div>
                     <!-- <h4>Accounts</h4> -->
                     <div class="row g-3 mt-2">
+                        <div class="section-divider-account-title"></div>
                         {% for account in accounts %}
-                        <div class="col-12 mt-4 ms-2">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap">
-                                <!-- Left section: icon + name -->
-                                <div class="d-flex align-items-center text-truncate">
-                                    <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} fa-2x text-primary me-3"></i>
-                                    <p class="mb-0 fw-semibold text-truncate">{{ account.name }}</p>
-                                </div>
-                                <!-- Right section: balance -->
-                                <h6 class="mb-0 text-light text-end">${{ account.balance }}</h6>
+                        <div class="col-12">
+                            <div class="account-item d-flex align-items-center">
+                              <!-- Icon on the left -->
+                              <div class="account-icon-wrapper me-3">
+                                <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }}"></i>
+                              </div>
+                        
+                              <!-- Name and balance stacked -->
+                              <div class="d-flex flex-column justify-content-center text-truncate">
+                                <span class="account-name fw-semibold text-truncate">{{ account.name }}</span>
+                                <span class="account-balance fw-semibold">${{ account.balance }}</span>
+                              </div>
                             </div>
                         </div>
+                        <div class="section-divider-account"></div>
                         {% endfor %}
                     </div>                    
                 </div>
@@ -160,7 +162,7 @@
                     <div class="d-flex justify-content-between">
                         <div style="width: 20%;">
                             <div class="px-4 py-2 d-inline-block text-light w-100 text-start">
-                                <h2 class="under fw-semibold text-primary"><u>Overview</u></h2>
+                                <h2 class="under fw-semibold text-primary"><u>Breakdown</u></h2>
                             </div>                              
                         </div>
                         <div style="width: 80%;">
@@ -223,39 +225,30 @@
                     <!-- Overview Start -->
                     <div class="col-sm-12 col-xl-12">
                         <div class="row">
+                            <div class="section-divider top-only"></div>
                             <div class="container-fluid px-4">
-                                <div class="row g-4 mb-4">
+                                <div class="row my-1">
                                     {% for categorytype in categorytypes %}
-                                    {% if categorytype.name == "Income" or categorytype.name == "Expense" %}
-                                    <!-- Total Income Start-->
-                                    <div class="col-sm-6 col-xl-6">
-                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4 border border-light">
+                                    {% if categorytype.name != "Transfer" and categorytype.name != "Refund" and categorytype.name != "Debt" %}
+                                    <!-- Total Start-->
+                                    <div class="col">
+                                        <div class="bg-secondary rounded d-flex align-items-center bg-dark justify-content-between p-4 border border-light">
                                             <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-light"></i>
                                             <div class="ms-3">
-                                                <p class="mb-2">Total {{categorytype.name}}</p>
+                                                <p class="mb-2">{{categorytype.name}}</p>
                                                 <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Total Income End -->
-                                    {% else %}
-                                    <!-- Total Expense Start-->
-                                    <div class="col-sm-6 col-xl-3">
-                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
-                                            <div class="ms-3">
-                                                <p class="mb-2">Total {{categorytype.name}}</p>
-                                                <h6 class="mb-0">${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Total Expense End-->
+                                    <!-- Total End -->
                                     {% endif %}
                                     {% endfor %}
                                 </div>
                             </div>
+                            <div class="section-divider bottom-only"></div>
                             <!-- Categories Start-->
                             {% for categorytype in categorytypes %}
+                            {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
                             <div class="col-sm-12 col-xl-12">
                                 <div class="bg-secondary text-center rounded p-4 mb-4">
                                     <div class="d-flex align-items-center mb-4">
@@ -351,6 +344,7 @@
                                 </div>
                             </div>    
                             <!-- Categories End-->
+                            {% endif %}
                             {% endfor %}
                         </div>
                     </div>

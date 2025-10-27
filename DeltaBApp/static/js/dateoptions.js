@@ -5,8 +5,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const customsection = document.getElementById("customsection");
   
     // Show month/year by default
-    monthyearsection.style.display = "block";
-    customsection.style.display = "none";
+    // monthyearsection.style.display = "block";
+    // customsection.style.display = "none";
   
     monthbutton.addEventListener("click", function () {
       monthbutton.classList.add("active");

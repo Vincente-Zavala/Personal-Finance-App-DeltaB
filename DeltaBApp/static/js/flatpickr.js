@@ -10,6 +10,11 @@ document.addEventListener("DOMContentLoaded", function () {
     allowInput: true
   });
 
+  const inputPicker = flatpickr("#inputdate", {
+    dateFormat: "m-d-Y",
+    allowInput: true
+  });
+
   // Make setPreset available globally for button onclicks
   window.setPreset = function (type) {
     const today = new Date();

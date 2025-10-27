@@ -5,13 +5,13 @@
 
 <head>
     <meta charset="utf-8">
-    <title>DeltaB - New Transactions</title>
+    <title>DeltaB</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
 
     <!-- Favicon -->
-    <!-- <link href="{% static 'img/favicon.ico' %}" rel="icon"> -->
+    <link href="{% static 'img/favicon.ico' %}" rel="icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,11 +51,11 @@
         <!-- Spinner End -->
 
 
-        <!-- Sidebar Start -->
-        <div class="sidebar pe-4 pb-3">
-            <nav class="navbar bg-secondary navbar-dark">
-                <a href="{% url 'index' %}" class="navbar-brand mx-4 mb-3">
-                    <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>New Transactions</h3>
+        <!-- Left Sidebar Start -->
+        <div class="sidebar-left sidebar pe-4 pb-3">
+            <nav class="navbar navbar-dark">
+                <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
                 </a>
                 <div class="d-flex align-items-center ms-4 mb-4">
                     <div class="position-relative">
@@ -68,8 +68,9 @@
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
-                    <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
-                    <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a>
+                    <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
+                    <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
+                    <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link active"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
@@ -94,374 +95,400 @@
                 </div>
             </nav>
         </div>
-        <!-- Sidebar End -->
+        <!-- Left Sidebar End -->
 
-
-        <!-- Content Start -->
-        <div class="content">
-            <!-- Navbar Start -->
-            <nav class="navbar navbar-expand bg-secondary navbar-dark sticky-top px-4 py-0">
-                <a href="{% url 'index' %}" class="navbar-brand d-flex d-lg-none me-4">
+        <!-- Right Sidebar Start -->
+        <div class="sidebar-right sidebar ps-4 pb-3">
+            <nav class="navbar navbar-dark">
+                <!-- <a href="{% url 'index' %}" class="navbar-brand d-flex d-lg-none me-4">
                     <h2 class="text-primary mb-0"><i class="fa fa-user-edit"></i></h2>
-                </a>
-                <a href="#" class="sidebar-toggler flex-shrink-0">
-                    <i class="fa fa-bars"></i>
-                </a>
-                <div class="navbar-nav align-items-center ms-auto">
+                </a> -->
+            
+                <div class="navbar-nav align-items-center ms-auto mt-2">
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                            <img class="rounded-circle me-lg-2" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                            <span class="d-none d-lg-inline-flex">{{ name }}</span>
+                        <a href="#" class="d-flex align-items-center profile-dropdown" data-bs-toggle="dropdown">
+                            <!-- Avatar + status -->
+                            <div class="position-relative">
+                                <img class="rounded-circle" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
+                                <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+                            </div>
+            
+                            <!-- Name + Role -->
+                            <div class="ms-3 d-none d-lg-block text-start">
+                                <h6 class="mb-0">{{ name }}</h6>
+                                <small class="text-muted">Admin NU</small>
+                            </div>
+                            <span class="profile-dropdown-toggle"></span>
                         </a>
+                        <!-- Dropdown -->
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                            <!-- <a href="#" class="dropdown-item">My Profile NU</a>
-                            <a href="#" class="dropdown-item">Settings NU</a> -->
                             <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
                                 {% csrf_token %}
                                 <a type="button" class="dropdown-item" onclick="document.getElementById('logoutform').submit(); return false;">Logout</a>
                             </form>
                         </div>
-                    </div>
-                </div>
-            </nav>
-            <!-- Navbar End -->
-
-
-            
-            <div class="container-fluid pt-4 px-4">
-                <div class="row g-4">
-                    <!-- Account Balance Start -->
-                    <div class="col-sm-12 col-xl-2">
-                        <div class="d-flex flex-column gap-3">
-                            <div class="bg-secondary rounded h-100 p-3">
-                                <h4>Accounts</h4>
-                                <hr>
-                                {% for account in accounts %}
-                                    <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                                        <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} fa-3x text-primary"></i>
-                                        <div class="ms-3">
-                                            <p class="mb-2">{{account.name}}</p>
-                                            <h6 class="mb-0">${{account.balance}}</h6>
-                                        </div>
-                                    </div>
-                                    <hr>
-                                {% endfor %}
-                            </div> 
-                        </div>
-                    </div>
-                    <!-- Account Balance End -->
-
-
-                    <!-- All Transactions Start -->
-                    <div class="col-sm-12 col-xl-10">
-                        <div class="d-flex flex-column gap-3">
-                            <div class="row g-4">
-                                <div class="col-sm-12 col-xl-12">
-                                    <div class="bg-secondary text-center rounded p-4">
-                                        <div class="d-flex align-items-center justify-content-between mb-4">
-                                            <h6 class="mb-0">Actions</h6>
-                                            <div class="text-primary">
-                                                {% if appliedfilters %}
-                                                    <span>FILTERS--</span>
-                                                    <span>
-                                                        {{ appliedfilters|join:" | " }}
-                                                    </span>
-                                                {% endif %}    
-                                            </div>
-                                            <div class="d-flex gap-2">
-                                                <button id="submittransactions" form="pendingtransactionform" formaction="{% url 'addpendingtransaction' %}" class="btn btn-sm btn-primary" style="display: none;">Submit Transactions</button>
-                                                <button id="deletetransactions" form="deletetransactionForm" formaction="{% url 'deletetransactions' %}" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button>
-                                                <button id="toggleEdit" type="button" class="btn btn-sm btn-primary" href="">Edit</button>
-                                                <a href="{% url 'alltransactions' %}" class="btn btn-sm btn-primary">Reset</a>
-                                                <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModalTransactions">
-                                                    Filter
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Pending Transactions Start -->
-                                {% if pendingtransactions %}
-                                <div class="col-sm-12 col-xl-12">
-                                    <div class="bg-secondary text-center rounded p-4">
-                                        <div class="d-flex align-items-center justify-content-between mb-4">
-                                            <h6 class="mb-0">Pending Transactions</h6>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <form id="pendingtransactionform" method="POST">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="redirect" value="{{ request.path }}">
-                                                <table class="table text-start align-middle table-bordered table-hover mb-0">
-                                                    <thead>
-                                                        <tr class="text-white">
-                                                            <th scope="col"  class="editcol" hidden></th>
-                                                            <th scope="col">Date</th>
-                                                            <th scope="col">Note</th>
-                                                            <th scope="col">Amount</th>
-                                                            <th scope="col">Account</th>
-                                                            <th scope="col">Category</th>
-                                                        </tr>
-                                                    </thead>
-                                                    {% for transaction in pendingtransactions %}
-                                                    <tbody>
-                                                        <tr>
-                                                            <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
-                                                            <td id="pendingdate">{{ transaction.date }}</td>
-                                                            <td id="pendingnote">{{ transaction.note }}</td>
-                                                            <td id="pendingamount">${{ transaction.amount }}</td>
-                                                            <td id="pendingsourceaccountchoice">{{ transaction.sourceaccount }}</td>
-                                                            <td>
-                                                                <select id="categorychoice_{{ transaction.id }}" name="categorychoice_{{ transaction.id }}" class="form-select category-select">
-                                                                    <option value="" selected>**Select Category**</option>
-                                                                    {% for category in categories %}
-                                                                        <option value="{{ category.id }}">{{ category.name }}</option>
-                                                                    {% endfor %}
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                    {% endfor %}
-                                                </table>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endif %}
-                                <!-- Pending Transactions End -->
-                                <!-- All Transactions Start -->
-                                <div class="col-sm-12 col-xl-12">
-                                    <div class="bg-secondary text-center rounded p-4">
-                                        <div class="d-flex align-items-center justify-content-between mb-4">
-                                            <h6 class="mb-0">All Transactions</h6>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <form id="deletetransactionForm" method="POST" action="{% url 'deletetransactions' %}">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="redirect" value="{{ request.path }}">
-                                                <table class="table text-start align-middle table-bordered table-hover mb-0">
-                                                    <thead>
-                                                        <tr class="text-white">
-                                                            <th scope="col"  class="editcol" hidden></th>
-                                                            <th scope="col">Date</th>
-                                                            <th scope="col">Category</th>
-                                                            <th scope="col">Note</th>
-                                                            <th scope="col">Amount</th>
-                                                            <th scope="col">Account</th>
-                                                        </tr>
-                                                    </thead>
-                                                    {% for transaction in transactions %}
-                                                    <tbody>
-                                                        <tr>
-                                                            <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
-                                                            <td>{{ transaction.date }}</td>
-                                                            <td>{{ transaction.category }}</td>
-                                                            <td>{{ transaction.note }}</td>
-                                                            <td>${{ transaction.amount }}</td>
-                                                            <td>{{ transaction.sourceaccount }}</td>
-                                                        </tr>
-                                                        {% empty %}
-                                                        <tr>
-                                                            <td colspan="7">No transactions found.</td>
-                                                        </tr>
-                                                    </tbody>
-                                                    {% endfor %}
-                                                </table>
-                                            </form>
-                                        </div>
-                                        <!-- Filters Start -->
-                                        <div class="modal fade" id="filterModalTransactions" tabindex="-1" aria-labelledby="filterModalTransactions" aria-hidden="true">
-                                            <div class="modal-dialog modal-lg">
-                                            <div class="modal-content bg-dark text-light">
-                                                <div class="modal-header">
-                                                <h5 class="modal-title" id="filterModalTransactions">Filters</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                <form method="post" action="{% url 'filtertransactions' %}">
-                                                    <div class="row g-4">
-                                                    {% csrf_token %}
-                                                        <div class="col-sm-12 col-xl-12">
-                                                            <div class="bg-secondary rounded h-100 p-3">
-                                                                <h6>Time Period</h6>
-                                                                <hr>
-                                                                <div class="mb-3 d-flex align-items-center justify-content-center">
-                                                                    <input type="hidden" name="mode" id="mode" value="monthyear">
-                                                                    <button type="button" onclick="document.getElementById('mode').value='monthyear'" class="btn btn-outline-primary active" id="monthbutton" name="monthbutton">Month</button>
-                                                                    <div class="mx-2 border-start" style="height: 40px;"></div>
-                                                                    <button type="button" onclick="document.getElementById('mode').value='custom'" class="btn btn-outline-primary" id="custombutton" name="custombutton">Custom</button>
-                                                                </div>
-                                                                <hr>
-                                                                <!-- Month Year Start -->
-                                                                <div id="monthyearsection" name="monthyearsection">
-                                                                    <div class="row mb-3">
-                                                                        <div class="col-sm-6">
-                                                                            <h6>Month</h6>
-                                                                            <select class="form-select mb-3" name="month" id="month" value="{{ selectedmonth|default:'' }}">
-                                                                                <option disabled {% if not selected_month %}selected{% endif %}>Options</option>
-                                                                                <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
-                                                                                <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
-                                                                                <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
-                                                                                <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
-                                                                                <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
-                                                                                <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
-                                                                                <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
-                                                                                <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
-                                                                                <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
-                                                                                <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
-                                                                                <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
-                                                                                <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <div class="col-sm-6">
-                                                                            <h6>Year</h6>
-                                                                            <select class="form-select mb-3" name="year" id="year" value="{{ selectedyear|default:'' }}">
-                                                                                <option disabled {% if not selected_year %}selected{% endif %}>Options</option>
-                                                                                <option value="2025" {% if selected_year == 2025 %}selected{% endif %}>2025</option>
-                                                                                <option value="2026" {% if selected_year == 2026 %}selected{% endif %}>2026</option>
-                                                                                <option value="2027" {% if selected_year == 2027 %}selected{% endif %}>2027</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <hr>
-                                                                </div>
-                                                                <!-- Month Year End -->           
-                                                                <!-- Custom Dates Section -->
-                                                                <div id="customsection" name="customsection">
-                                                                    <div class="row mb-3">
-                                                                        <div class="col-sm-6">
-                                                                            <h6>From</h6>
-                                                                            <input type="text" class="form-control" name="fromdate" id="fromdate" value="{{ selectedfromdate|default:'' }}" placeholder="MM-DD-YYYY" autocomplete="off">
-                                                                        </div>
-                                                                        <div class="col-sm-6">
-                                                                            <h6>To</h6>
-                                                                            <input type="text" class="form-control" name="todate" id="todate" value="{{ selectedtodate|default:'' }}" placeholder="MM-DD-YYYY" autocomplete="off">
-                                                                        </div>
-                                                                    </div>
-                                                                    <hr>
-                                                                        <!-- Preset Buttons -->
-                                                                    <div class="row mb-3">
-                                                                        <div class="mb-3 d-flex align-items-center justify-content-center">
-                                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPreset('last7')">Last 7 Days</button>
-                                                                            <div class="mx-2 border-start" style="height: 40px;"></div>
-                                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPreset('yeartodate')">Year to Date</button>
-                                                                        </div>
-                                                                        <hr>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4">
-                                                                <h6>Amount</h6>
-                                                                <div class="form-check form-check-inline mb-3 minmax">
-                                                                    <input class="form-check-input" type="radio" name="amountoption" id="exactoption" value="exact" checked>
-                                                                    <label class="form-check-label" for="exactoption">Exact</label>
-                                                                </div>
-                                                                <div class="form-check form-check-inline mb-3">
-                                                                    <input class="form-check-input" type="radio" name="amountoption" id="minmaxoption" value="minmax">
-                                                                    <label class="form-check-label" for="minmaxoption">Min/Max</label>
-                                                                </div>
-                                                                <div class="input-group mb-3" id="exactinput">
-                                                                    <span class="input-group-text">Exact:</span>
-                                                                    <input type="text" class="form-control" id="filterexactamount" name="filterexactamount" placeholder="$0.00">
-                                                                </div>
-                                                                <div id="minmaxinput" hidden>
-                                                                    <div class="input-group mb-3">
-                                                                        <span class="input-group-text">Min:</span>
-                                                                        <input type="text" class="form-control" id="filterminamount" name="filterminamount" placeholder="$0.00">
-                                                                    </div>
-                                                                    <div class="input-group mb-3">
-                                                                        <span class="input-group-text">Max:</span>
-                                                                        <input type="text" class="form-control" id="filtermaxamount" name="filtermaxamount" placeholder="$0.00">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4">
-                                                                <h6>Note</h6>
-                                                                <div class="col-sm-12">
-                                                                    <input type="text" class="form-control" id="filternote" name="filternote" placeholder="Description"></input>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4">
-                                                                <h6>Categories</h6>
-                                                                <div>
-                                                                    <ul id="myUL">
-                                                                        <li><span class="caret caret">Options</span>
-                                                                            <hr>
-                                                                            <ul class="nested">
-                                                                                {% for categorytype in categorytypes %}
-                                                                                <li>
-                                                                                    <span class="caret"></span>
-                                                                                    <input class="form-check-input parent-checkbox" type="checkbox" name="filtercategorytypechoice" value="{{ categorytype.id }}" id="filtercategorytype{{categorytype.id}}">
-                                                                                    <span>{{ categorytype.name }}</span>
-                                                                                    <ul class="nested">
-                                                                                        {% for category in categorytype.category_set.all %}
-                                                                                        <li>
-                                                                                            <input class="form-check-input child-checkbox" type="checkbox" name="filtercategorychoice" value="{{ category.id }}" id="filtercategory{{category.id}}">
-                                                                                            {{ category.name }}
-                                                                                        </li>
-                                                                                        {% endfor %}
-                                                                                    </ul>
-                                                                                    <hr>
-                                                                                </li>
-                                                                                {% endfor %}
-                                                                            </ul>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-12 col-xl-6">
-                                                            <div class="bg-secondary rounded h-100 p-4">
-                                                                <h6>Accounts</h6>
-                                                                <div>
-                                                                    <ul id="myUL">
-                                                                        <li><span class="caret caret">Options</span>
-                                                                            <hr>
-                                                                            <ul class="nested">
-                                                                                {% for accounttype in accounttypes %}
-                                                                                <li>
-                                                                                    <span class="caret"></span>
-                                                                                    <input class="form-check-input parent-checkbox" type="checkbox" name="filteraccounttypechoice" value="{{ accounttype.id }}" id="filteraccounttype{{accounttype.id}}">
-                                                                                    <span>{{ accounttype.name }}</span>
-                                                                                    <ul class="nested">
-                                                                                        {% for account in accounttype.account_set.all %}
-                                                                                        <li>
-                                                                                            <input class="form-check-input child-checkbox" type="checkbox" name="filteraccountchoice" value="{{ account.id }}" id="filteraccount{{account.id}}">
-                                                                                            {{ account.name }}
-                                                                                        </li>
-                                                                                        {% endfor %}
-                                                                                    </ul>
-                                                                                    <hr>
-                                                                                </li>
-                                                                                {% endfor %}
-                                                                            </ul>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>    
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="submit" class="btn btn-primary">Filter</button>
-                                                    </div>
-                                                </form>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </div>
-                                        <!-- Filters End -->  
-                                    </div>
-                                </div>
-                                <!-- All Transactions End -->
+                    </div>  
+                    <!-- <h4>Accounts</h4> -->
+                    <div class="row g-3 mt-2">
+                        <div class="section-divider-account-title"></div>
+                        {% for account in accounts %}
+                        <div class="col-12">
+                            <div class="account-item d-flex align-items-center">
+                            <!-- Icon on the left -->
+                            <div class="account-icon-wrapper me-3">
+                                <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }}"></i>
+                            </div>
+                        
+                            <!-- Name and balance stacked -->
+                            <div class="d-flex flex-column justify-content-center text-truncate">
+                                <span class="account-name fw-semibold text-truncate">{{ account.name }}</span>
+                                <span class="account-balance fw-semibold">${{ account.balance }}</span>
+                            </div>
                             </div>
                         </div>
+                        <div class="section-divider-account"></div>                  
+                        {% endfor %}
+                    </div>                    
+                </div>
+            </nav>
+        </div>
+        <!-- Right Sidebar End -->
+
+
+        <!-- Content Start -->
+        <div class="content">
+            <div class="container-fluid pt-4 px-4">
+                <div class="row">
+                    <div class="d-flex justify-content-between">
+                        <div style="width: 50%;">
+                            <div class="px-4 py-2 d-inline-block text-light w-100 text-start">
+                                <h2 class="under fw-semibold text-primary mb-3"><u>All Transactions</u></h2>
+                            </div>                              
+                        </div>
+                        <!-- <div style="width: 40%;">
+                            <div class="px-4 py-2 rounded-pill border border-primary d-inline-block text-light w-100 text-start">
+                                <div><span class="fw-semibold text-primary">Net Income:</span> ${{ total_income }}</div>
+                                <div><span class="fw-semibold text-primary">Total Expenses:</span> ${{ total_expenses }}</div>
+                            </div>                              
+                        </div> -->
                     </div>
+
+
+
+                    <!-- Overview Start -->
+                    <div class="col-sm-12 col-xl-12">
+                        <div class="row">
+                            <div class="col-sm-12 col-xl-12 mb-4">
+                                <div class="bg-secondary text-center rounded p-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-4">
+                                        <h6 class="mb-0">Actions</h6>
+                                        <div class="text-primary">
+                                            {% if appliedfilters %}
+                                                <span>FILTERS--</span>
+                                                <span>
+                                                    {{ appliedfilters|join:" | " }}
+                                                </span>
+                                            {% endif %}    
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button id="submittransactions" form="pendingtransactionform" formaction="{% url 'addpendingtransaction' %}" class="btn btn-sm btn-primary" style="display: none;">Submit Transactions</button>
+                                            <button id="deletetransactions" form="deletetransactionForm" formaction="{% url 'deletetransactions' %}" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button>
+                                            <button id="toggleEdit" type="button" class="btn btn-sm btn-primary" href="">Edit</button>
+                                            <a href="{% url 'alltransactions' %}" class="btn btn-sm btn-primary">Reset</a>
+                                            <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModalTransactions">
+                                                Filter
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Pending Transactions Start -->
+                            {% if pendingtransactions %}
+                            <div class="col-sm-12 col-xl-12 mb-4">
+                                <div class="bg-secondary text-center rounded p-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-4">
+                                        <h6 class="mb-0">Pending Transactions</h6>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <form id="pendingtransactionform" method="POST">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="redirect" value="{{ request.path }}">
+                                            <table class="table text-start align-middle table-bordered table-hover mb-0">
+                                                <thead>
+                                                    <tr class="text-white">
+                                                        <th scope="col"  class="editcol" hidden></th>
+                                                        <th scope="col">Date</th>
+                                                        <th scope="col">Note</th>
+                                                        <th scope="col">Amount</th>
+                                                        <th scope="col">Source Account</th>
+                                                        <th scope="col">Category</th>
+                                                    </tr>
+                                                </thead>
+                                                {% for transaction in pendingtransactions %}
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
+                                                        <td id="pendingdate">{{ transaction.date }}</td>
+                                                        <td id="pendingnote">{{ transaction.note }}</td>
+                                                        <td id="pendingamount">${{ transaction.amount }}</td>
+                                                        <td id="pendingsourceaccountchoice">{{ transaction.sourceaccount }}</td>
+                                                        <td>
+                                                            <select id="categorychoice_{{ transaction.id }}" name="categorychoice_{{ transaction.id }}" class="form-select category-select">
+                                                                <option value="" selected>**Select Category**</option>
+                                                                {% for category in categories %}
+                                                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                {% endfor %}
+                                            </table>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <!-- Pending Transactions End -->
+                            <!-- All Transactions Start -->
+                            <div class="col-sm-12 col-xl-12">
+                                <div class="bg-secondary text-center rounded p-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-4">
+                                        <h6 class="mb-0">All Transactions</h6>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <form id="deletetransactionForm" method="POST" action="{% url 'deletetransactions' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="redirect" value="{{ request.path }}">
+                                            <table class="table text-start align-middle table-bordered table-hover mb-0">
+                                                <thead>
+                                                    <tr class="text-white">
+                                                        <th scope="col"  class="editcol" hidden></th>
+                                                        <th scope="col">Date</th>
+                                                        <th scope="col">Type</th>
+                                                        <th scope="col">Category</th>
+                                                        <th scope="col">Note</th>
+                                                        <th scope="col">Amount</th>
+                                                        <th scope="col">Source Account</th>
+                                                        <th scope="col">Final Account</th>
+                                                    </tr>
+                                                </thead>
+                                                {% for transaction in transactions %}
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
+                                                        <td>{{ transaction.date }}</td>
+                                                        <td>{{ transaction.categorytype }}</td>
+                                                        <td>{{ transaction.category }}</td>
+                                                        <td>{{ transaction.note }}</td>
+                                                        <td>${{ transaction.amount }}</td>
+                                                        <td>{{ transaction.sourceaccount }}</td>
+                                                        <td>{{ transaction.destinationaccount|default:'--' }}</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="7">No transactions found.</td>
+                                                    </tr>
+                                                </tbody>
+                                                {% endfor %}
+                                            </table>
+                                        </form>
+                                    </div>
+                                    <!-- Filters Start -->
+                                    <div class="modal fade" id="filterModalTransactions" tabindex="-1" aria-labelledby="filterModalTransactions" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                            <h5 class="modal-title" id="filterModalTransactions">Filters</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            <form method="post" action="{% url 'filtertransactions' %}">
+                                                <div class="row g-4">
+                                                {% csrf_token %}
+                                                    <div class="col-sm-12 col-xl-12">
+                                                        <div class="bg-secondary rounded h-100 p-3">
+                                                            <h6>Time Period</h6>
+                                                            <hr>
+                                                            <div class="mb-3 d-flex align-items-center justify-content-center">
+                                                                <input type="hidden" name="mode" id="mode" value="monthyear">
+                                                                <button type="button" onclick="document.getElementById('mode').value='monthyear'" class="btn btn-outline-primary active" id="monthbutton" name="monthbutton">Month</button>
+                                                                <div class="mx-2 border-start" style="height: 40px;"></div>
+                                                                <button type="button" onclick="document.getElementById('mode').value='custom'" class="btn btn-outline-primary" id="custombutton" name="custombutton">Custom</button>
+                                                            </div>
+                                                            <hr>
+                                                            <!-- Month Year Start -->
+                                                            <div id="monthyearsection" name="monthyearsection">
+                                                                <div class="row mb-3">
+                                                                    <div class="col-sm-6">
+                                                                        <h6>Month</h6>
+                                                                        <select class="form-select mb-3" name="month" id="month" value="{{ selectedmonth|default:'' }}">
+                                                                            <option disabled {% if not selected_month %}selected{% endif %}>Options</option>
+                                                                            <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
+                                                                            <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
+                                                                            <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
+                                                                            <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
+                                                                            <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
+                                                                            <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
+                                                                            <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
+                                                                            <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
+                                                                            <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
+                                                                            <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                                                                            <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                                                                            <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-sm-6">
+                                                                        <h6>Year</h6>
+                                                                        <select class="form-select mb-3" name="year" id="year" value="{{ selectedyear|default:'' }}">
+                                                                            <option disabled {% if not selected_year %}selected{% endif %}>Options</option>
+                                                                            <option value="2025" {% if selected_year == 2025 %}selected{% endif %}>2025</option>
+                                                                            <option value="2026" {% if selected_year == 2026 %}selected{% endif %}>2026</option>
+                                                                            <option value="2027" {% if selected_year == 2027 %}selected{% endif %}>2027</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <hr>
+                                                            </div>
+                                                            <!-- Month Year End -->           
+                                                            <!-- Custom Dates Section -->
+                                                            <div id="customsection" name="customsection" class="d-none">
+                                                                <div class="row mb-3">
+                                                                    <div class="col-sm-6">
+                                                                        <h6>From</h6>
+                                                                        <input type="text" class="form-control" name="fromdate" id="fromdate" value="{{ selectedfromdate|default:'' }}" placeholder="MM-DD-YYYY" autocomplete="off">
+                                                                    </div>
+                                                                    <div class="col-sm-6">
+                                                                        <h6>To</h6>
+                                                                        <input type="text" class="form-control" name="todate" id="todate" value="{{ selectedtodate|default:'' }}" placeholder="MM-DD-YYYY" autocomplete="off">
+                                                                    </div>
+                                                                </div>
+                                                                <hr>
+                                                                    <!-- Preset Buttons -->
+                                                                <div class="row mb-3">
+                                                                    <div class="mb-3 d-flex align-items-center justify-content-center">
+                                                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPreset('last7')">Last 7 Days</button>
+                                                                        <div class="mx-2 border-start" style="height: 40px;"></div>
+                                                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPreset('yeartodate')">Year to Date</button>
+                                                                    </div>
+                                                                    <hr>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12 col-xl-6">
+                                                        <div class="bg-secondary rounded h-100 p-4">
+                                                            <h6>Amount</h6>
+                                                            <div class="form-check form-check-inline mb-3 minmax">
+                                                                <input class="form-check-input" type="radio" name="amountoption" id="exactoption" value="exact" checked>
+                                                                <label class="form-check-label" for="exactoption">Exact</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline mb-3">
+                                                                <input class="form-check-input" type="radio" name="amountoption" id="minmaxoption" value="minmax">
+                                                                <label class="form-check-label" for="minmaxoption">Min/Max</label>
+                                                            </div>
+                                                            <div class="input-group mb-3" id="exactinput">
+                                                                <span class="input-group-text">Exact:</span>
+                                                                <input type="text" class="form-control" id="filterexactamount" name="filterexactamount" placeholder="$0.00">
+                                                            </div>
+                                                            <div id="minmaxinput" hidden>
+                                                                <div class="input-group mb-3">
+                                                                    <span class="input-group-text">Min:</span>
+                                                                    <input type="text" class="form-control" id="filterminamount" name="filterminamount" placeholder="$0.00">
+                                                                </div>
+                                                                <div class="input-group mb-3">
+                                                                    <span class="input-group-text">Max:</span>
+                                                                    <input type="text" class="form-control" id="filtermaxamount" name="filtermaxamount" placeholder="$0.00">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12 col-xl-6">
+                                                        <div class="bg-secondary rounded h-100 p-4">
+                                                            <h6>Note</h6>
+                                                            <div class="col-sm-12">
+                                                                <input type="text" class="form-control" id="filternote" name="filternote" placeholder="Description"></input>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12 col-xl-6">
+                                                        <div class="bg-secondary rounded h-100 p-4">
+                                                            <h6>Categories</h6>
+                                                            <div>
+                                                                <ul id="myUL">
+                                                                    <li><span class="caret caret">Options</span>
+                                                                        <hr>
+                                                                        <ul class="nested">
+                                                                            {% for categorytype in categorytypes %}
+                                                                            <li>
+                                                                                <span class="caret"></span>
+                                                                                <input class="form-check-input parent-checkbox" type="checkbox" name="filtercategorytypechoice" value="{{ categorytype.id }}" id="filtercategorytype{{categorytype.id}}">
+                                                                                <span>{{ categorytype.name }}</span>
+                                                                                <ul class="nested">
+                                                                                    {% for category in categorytype.category_set.all %}
+                                                                                    <li>
+                                                                                        <input class="form-check-input child-checkbox" type="checkbox" name="filtercategorychoice" value="{{ category.id }}" id="filtercategory{{category.id}}">
+                                                                                        {{ category.name }}
+                                                                                    </li>
+                                                                                    {% endfor %}
+                                                                                </ul>
+                                                                                <hr>
+                                                                            </li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12 col-xl-6">
+                                                        <div class="bg-secondary rounded h-100 p-4">
+                                                            <h6>Accounts</h6>
+                                                            <div>
+                                                                <ul id="myUL">
+                                                                    <li><span class="caret caret">Options</span>
+                                                                        <hr>
+                                                                        <ul class="nested">
+                                                                            {% for accounttype in accounttypes %}
+                                                                            <li>
+                                                                                <span class="caret"></span>
+                                                                                <input class="form-check-input parent-checkbox" type="checkbox" name="filteraccounttypechoice" value="{{ accounttype.id }}" id="filteraccounttype{{accounttype.id}}">
+                                                                                <span>{{ accounttype.name }}</span>
+                                                                                <ul class="nested">
+                                                                                    {% for account in accounttype.account_set.all %}
+                                                                                    <li>
+                                                                                        <input class="form-check-input child-checkbox" type="checkbox" name="filteraccountchoice" value="{{ account.id }}" id="filteraccount{{account.id}}">
+                                                                                        {{ account.name }}
+                                                                                    </li>
+                                                                                    {% endfor %}
+                                                                                </ul>
+                                                                                <hr>
+                                                                            </li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>    
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                                </div>
+                                            </form>
+                                            </div>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <!-- Filters End -->  
+                                </div>
+                            </div>
+                            <!-- All Transactions End -->
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             <!-- Footer Start -->

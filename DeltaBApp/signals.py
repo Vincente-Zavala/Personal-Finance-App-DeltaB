@@ -1,37 +1,36 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db import models
-from .models import Transaction, Account, AccountBalanceHistory
 from django.utils import timezone
+from .models import Transaction, Account, AccountBalanceHistory
 
 
 def recalculatebalance(account, from_date, user):
-    # Include transactions where the account is either the main account or the final_account
-    transactions = (
-        Transaction.objects.filter(
-            user = user,
-            date__gte=from_date
-        ).filter(
-            models.Q(sourceaccount=account) | models.Q(destinationaccount=account)
-        ).order_by("date")
-    )
+    # Wipe history from the recalculation date forward
+    AccountBalanceHistory.objects.filter(
+        account=account, user=user, date__gte=from_date
+    ).delete()
 
-    # Get previous balance
+    # Get the last known balance before this date (if any)
     prev_balance_obj = (
-        AccountBalanceHistory.objects.filter(account=account, date__lt=from_date, user= user)
+        AccountBalanceHistory.objects.filter(account=account, user=user, date__lt=from_date)
         .order_by("-date")
         .first()
     )
 
-    if prev_balance_obj:
-        running_balance = prev_balance_obj.balance
-    else:
-        running_balance = account.startingbalance or 0
+    running_balance = prev_balance_obj.balance if prev_balance_obj else (account.startingbalance or 0)
+
+    # All transactions from that date forward
+    transactions = (
+        Transaction.objects.filter(user=user, date__gte=from_date)
+        .filter(models.Q(sourceaccount=account) | models.Q(destinationaccount=account))
+        .order_by("date", "id")
+    )
 
     current_date = None
     for tx in transactions:
         if current_date != tx.date:
-            if current_date:
+            if current_date is not None:
                 AccountBalanceHistory.objects.update_or_create(
                     user=user,
                     account=account,
@@ -40,11 +39,9 @@ def recalculatebalance(account, from_date, user):
                 )
             current_date = tx.date
 
-        # Add/subtract transaction based on signed_amount()
-        signed = tx.signed_amount(account)
-        running_balance += signed
+        running_balance += tx.signed_amount(account)
 
-    # Save final balance for last date
+    # Save last day
     if current_date:
         AccountBalanceHistory.objects.update_or_create(
             user=user,
@@ -58,26 +55,27 @@ def recalculatebalance(account, from_date, user):
     account.save()
 
 
-
-
 @receiver(post_save, sender=Transaction)
 def update_balance_on_save(sender, instance, created, **kwargs):
     recalculatebalance(instance.sourceaccount, instance.date, instance.user)
-
     if instance.destinationaccount:
         recalculatebalance(instance.destinationaccount, instance.date, instance.user)
 
 
 @receiver(post_delete, sender=Transaction)
 def update_balance_on_delete(sender, instance, **kwargs):
-    recalculatebalance(instance.sourceaccount, instance.date, instance.user)
+    for acc in [instance.sourceaccount, instance.destinationaccount]:
+        if not acc:
+            continue
 
-    if instance.destinationaccount:
-        recalculatebalance(instance.destinationaccount, instance.date, instance.user)
+        # Recalculate starting from the deleted transaction's date
+        from_date = instance.date
+        recalculatebalance(acc, from_date, instance.user)
+
 
 
 @receiver(post_save, sender=Account)
-def setinitialbalance( sender, instance, created, **kwargs):
+def setinitialbalance(sender, instance, created, **kwargs):
     if created:
         instance.balance = instance.startingbalance
         instance.save()
@@ -86,5 +84,5 @@ def setinitialbalance( sender, instance, created, **kwargs):
             user=instance.user,
             account=instance,
             date=timezone.now().date(),
-            balance=instance.startingbalance
+            balance=instance.startingbalance,
         )

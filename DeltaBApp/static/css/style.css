@@ -1,9 +1,10 @@
 /********** Template CSS **********/
 :root {
     --primary: #EB1616;
+    --primary-glow: rgba(235, 22, 22, 0.4);
     --secondary: #191C24;
     --light: #6C7293;
-    --dark: #000000;
+    --dark: #0c0c0c;
 }
 
 .back-to-top {
@@ -68,30 +69,28 @@
 }
 
 /*** Layout ***/
-.sidebar-left {
+.sidebar {
     position: fixed;
     top: 0;
-    left: 0;
     bottom: 0;
     width: 250px;
     height: 100vh;
     overflow-y: auto;
-    background: var(--secondary);
+    background: linear-gradient(180deg, #191c24 0%, #111316 100%);
     transition: 0.5s;
     z-index: 999;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    border-right: 1px solid #22252b;
+    border-left: 1px solid #22252b;
+}
+
+
+.sidebar-left {
+    left: 0;
 }
 
 .sidebar-right {
-    position: fixed;
-    top: 0;
     right: 0;
-    bottom: 0;
-    width: 250px;
-    height: 100vh;
-    overflow-y: auto;
-    background: var(--secondary);
-    transition: 0.5s;
-    z-index: 999;
 }
 
 .content {
@@ -452,4 +451,121 @@ ul, #myUL {
 .custom-date-input::placeholder {
     color: var(--light); /* your theme color */
     opacity: 1; /* ensures it’s not faded out */
+}
+
+.transaction-date-input {
+    display: inline-block;       /* shrink to content */
+    width: 104px;                 /* let it fit text */
+    min-width: 0;                /* remove bootstrap min-width */
+    padding: 0.25rem 0.5rem;     /* optional: adjust padding */
+    border: 1px solid var(--d);  /* match your border color */
+    border-radius: 0.25rem;
+    background-color: var(--dark);
+    color: var(--light) !important;                /* text color */
+    width: 13ch; /* fits MM-DD-YYYY exactly */   
+}
+
+.transaction-date-input::placeholder {
+    color: var(--light); /* your theme color */
+    opacity: 1; /* ensures it’s not faded out */
+}
+
+.profile-dropdown {
+    color: var(--light);
+    text-decoration: none;
+}
+  
+.profile-dropdown:hover,
+.profile-dropdown:focus {
+    color: var(--light);
+    background: transparent;
+}
+
+.profile-dropdown-toggle::before {
+    content: "\f107"; /* Font Awesome down arrow */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 1rem; /* same as .dropdown-toggle::after */
+    color: var(--light);
+    margin-left: 10px;
+    vertical-align: middle;
+    transition: transform 0.5s ease;
+    display: inline-block;
+}
+
+/* Rotate arrow when dropdown is open */
+.profile-dropdown[aria-expanded="true"] .profile-dropdown-toggle::before {
+    transform: rotate(-180deg);
+}
+
+.account-item {
+    border-radius: 12px;
+  }
+  
+  .account-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background-color: var(--dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .account-icon-wrapper i {
+    color: #e50914; /* red accent */
+    font-size: 20px;
+  }
+  
+  .account-name {
+    color: #ddd;
+    font-size: 15px;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .account-balance {
+    color: #aaa;
+    font-size: 14px;
+  }
+  
+  .section-divider {
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 3rem 0;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
+  }
+
+  .section-divider.top-only {
+    margin-top: 40px;
+    margin-bottom: 10px;
+  }
+  
+  .section-divider.bottom-only {
+    margin-top: 10px;
+    margin-bottom: 50px;
+  }
+  
+  .section-divider-account {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 1rem 0;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
+  }
+
+  .section-divider-account-title {
+    height: 5px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 1rem 0;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
   }

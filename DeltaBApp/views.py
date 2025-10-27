@@ -22,6 +22,7 @@ import pandas as pd
 from django.db.models import Prefetch
 from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
+from django.db.models.functions import TruncDate
 User = get_user_model()
 
 
@@ -41,6 +42,21 @@ def savebalancehistory(account, date):
 
 
 
+# Net Calculations
+def netcalculations(categorytype_totals, budgetmap):
+
+    print("Debug categorytype totals: ", categorytype_totals)
+    print("Debug categorytype totals: ", categorytype_totals)
+    print("debug: budgetmap", budgetmap)
+
+    budgettotal = sum(budgetmap.values())
+
+    netincome = 0
+    netbudget = 0
+    savingstotal = 0
+
+
+    return netincome, netbudget, savingstotal
 
 
 # SAVE BUDGET LIMITS #
@@ -59,7 +75,101 @@ def savebudgetlimit(post_data, month, year, user):
             )
 
 
+def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user):
+    # Chart data
+    charts_data = []
+    incomeexpensedata = []
+    budgetexpensedata = []
 
+    for ctype in categorytypes:
+        print("Debug ctype", ctype)
+        categories = ctype.category_set.filter(user=user)
+        print("Debug categories", categories)
+        labels = [cat.name for cat in categories]
+        print("Debug labels", labels)
+        data = [float(category_totals.get(cat.id, 0)) for cat in categories]
+        print("Debug data", data)
+        charts_data.append({
+            "type": ctype.name,
+            "labels": labels,
+            "data": data,
+        })
+
+    
+    # Income vs Expense aggregated
+    incometotal = sum(
+        float(category_totals.get(cat.id, 0))
+        for ctype in categorytypes if ctype.name.lower() == "income"
+        for cat in ctype.category_set.filter(user=user)
+    )
+    expensetotal = sum(
+        float(category_totals.get(cat.id, 0))
+        for ctype in categorytypes if ctype.name.lower() == "expense"
+        for cat in ctype.category_set.filter(user=user)
+    )
+
+    incomeexpensedata = [{
+        "type": "Income vs Expense",
+        "labels": ["Income", "Expense"],
+        "data": [incometotal, expensetotal],
+    }]
+
+    print("Debug type of incomeexpensedata", type(incomeexpensedata))
+
+
+    # Budget vs Expense
+    budgetexpensedata = []
+
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+
+    print("Debug categorytypetotals", categorytype_totals)
+
+
+    for cat in categorytypes:  # assuming categorytypes is a queryset of categories
+        cat_id = cat.id
+        cat_name = cat.name
+        data = categorytype_totals.get(cat_id, {})
+        
+        budgetexpensedata.append({
+            'category': cat_name,
+            'spent': float(data.get('spent', 0)),
+            'budget': float(data.get('budget', 0))
+    })
+
+    print("Debug budgetexpensedata", budgetexpensedata)
+
+
+    # Savings Amount
+    savingstxs = []
+
+    if mode == "monthyear":
+        savingstxs = (Transaction.objects.filter(date__year=selected_year, date__month=selected_month, categorytype__name="Savings", user=user)
+            .annotate(day=TruncDate("date")) 
+            .values("day")  # group by date
+            .annotate(total_amount=Sum("amount"))  # sum amounts per date
+            .order_by("day")
+        )
+
+    elif mode == "custom":
+        selected_fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
+        selected_todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
+
+        savingstxs = (Transaction.objects.filter(date__gte=selected_fromdate, date__lte=selected_todate, categorytype__name="Savings", user=user)
+            .annotate(day=TruncDate("date"))
+            .values("day")
+            .annotate(total_amount=Sum("amount"))
+            .order_by("day")
+        )
+
+    savingsdata = {
+        "labels": [x["day"].strftime("%Y-%m-%d") for x in savingstxs],
+        "data": [float(x["total_amount"]) for x in savingstxs],
+    }
+
+    print("Debug savingsdata", savingsdata)
+    
+
+    return charts_data, incomeexpensedata, budgetexpensedata, savingsdata
 
 
 # GET SELECTED MONTH/YEAR #
@@ -153,10 +263,17 @@ def getselecteddate(request):
 def categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user):
     total = 0
     txs = []
+    refundtxs = []
 
     if mode == "monthyear":
         txs = Transaction.objects.filter(
             category=category,
+            date__year=selected_year,
+            user=user,
+        )
+        
+        refundtxs = Transaction.objects.filter(
+            categorytype__name="Refund",
             date__year=selected_year,
             user=user,
         )
@@ -165,6 +282,7 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
 
         if selected_month != 13:
             txs = txs.filter(date__month=selected_month, user=user)
+            refundtxs = refundtxs.filter(date__month=selected_month, user=user)
 
 
     elif mode == "custom":
@@ -174,11 +292,39 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
         txs = Transaction.objects.filter(category=category, date__gte=fromdate, date__lte=todate, user=user)
+        refundtxs = Transaction.objects.filter(categorytype__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
 
 
+    refund_by_category = {}
+    
+    for refundtx in refundtxs:
+        categoryid = refundtx.category_id
+        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + abs(refundtx.signed_amount(refundtx.sourceaccount))
+
+    print("Debug refund Transactions", refundtxs)
     for tx in txs:
-        total += abs(tx.signed_amount(tx.sourceaccount))
+        print("DEBUG: tx.categorytype, type", tx.categorytype, type(tx.categorytype))
+        print("Debug tx", tx)
 
+        if tx.categorytype and tx.categorytype.name == "Refund":
+            print(f"Skipping refund transaction {tx.id}")
+            continue
+
+        total += abs(tx.signed_amount(tx.sourceaccount))
+        print("Debug total", total)
+
+        print("")
+        
+        
+    refundtotal = sum(
+        abs(refundtx.signed_amount(refundtx.sourceaccount))
+        for refundtx in refundtxs
+        if refundtx.category_id == category.id
+    )
+
+    print("")
+
+    total -= refundtotal
 
     return total
 
@@ -191,7 +337,7 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
     print("Debug, calculate categorytotals: budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
     
-    categorytypes = CategoryType.objects.filter(user=user).prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user))
+    categorytypes = CategoryType.objects.prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user))
 )
 
 
@@ -209,6 +355,8 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
         total = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
         category_totals[category.id] = total
+
+        print("Debug category_totals", category_totals)
 
         print("Debug, budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
 
@@ -255,6 +403,7 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
             adjtype_budget += adjbudget
             type_spent += spent
             type_remaining += remaining
+            print(category, "Debug typespent", type_spent)
 
         if mode == "monthyear":
             typetotalpercent = (type_spent / type_budget * 100) if type_budget > 0 else 0
@@ -477,9 +626,8 @@ def addinput(request):
             category_name = request.POST.get("inputcategory")
             existing_type_id = request.POST.get("categorychoice")
             if existing_type_id:
-                category_type = CategoryType.objects.get(id=existing_type_id, user=user)
-            else:
-                category_type = None
+                category_type = CategoryType.objects.get(id=existing_type_id)
+
             if category_name:
                 Category.objects.create(name=category_name, type=category_type, user=user)
 
@@ -489,7 +637,7 @@ def addinput(request):
             accountstartingbalance = request.POST.get("inputaccountbalance")
             existing_type_id = request.POST.get("accountchoice")
             if existing_type_id:
-                account_type = AccountType.objects.get(id=existing_type_id, user=user)
+                account_type = AccountType.objects.get(id=existing_type_id)
             else:
                 account_type = None
             if account_name:
@@ -543,16 +691,18 @@ def addtransaction(request):
 
         # CONVERT TO DECIMAL
         if amount:
-            amount = Decimal(amount)
+            amount = abs(Decimal(amount))
         else:
             amount = None
+
+        date = datetime.datetime.strptime(date, "%m-%d-%Y").date()
 
 
         #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
         category_id = request.POST.get("categorychoice")
         category = Category.objects.get(id=category_id, user=user) if category_id else None
         
-        categorytype = CategoryType.objects.get(name__iexact=inputtype, user=user)
+        categorytype = CategoryType.objects.get(name__iexact=inputtype)
 
         source_account_id = request.POST.get("sourceaccountchoice")
         source_account = Account.objects.get(id=source_account_id, user=user) if source_account_id else None
@@ -574,7 +724,7 @@ def addtransaction(request):
                 user=user,
             )
 
-        elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "transfer":
+        elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "retirement":
             Transaction.objects.create(
                 amount=amount,
                 note=note,
@@ -586,6 +736,37 @@ def addtransaction(request):
                 refund=refund,
                 user=user,
             )
+
+        elif inputtype == "transfer":
+
+            category = Category.objects.get(name="Transfer")
+
+            Transaction.objects.create(
+                amount=amount,
+                note=note,
+                date=date,
+                categorytype=categorytype,
+                category=category,
+                sourceaccount=source_account,
+                destinationaccount=final_account,
+                refund=refund,
+                user=user,
+            )
+        
+        elif inputtype == "refund":
+            amount = abs(amount)
+
+            Transaction.objects.create(
+                amount=amount,
+                note=note,
+                date=date,
+                categorytype=categorytype,
+                category=category,
+                sourceaccount=source_account,
+                destinationaccount=final_account,
+                refund=refund,
+                user=user,
+            )            
 
 
     return redirect("newtransactions")
@@ -624,9 +805,11 @@ def addpendingtransaction(request):
 
                 category = Category.objects.get(id=transaction.category_id, user=user) if category_id else None
         
-                categorytype = CategoryType.objects.get(id=category.type.id, user=user)
+                categorytype = CategoryType.objects.get(id=category.type.id)
 
                 source_account = transaction.sourceaccount
+
+                destination_account = transaction.destinationaccount
 
                 print("Debug: transaction, category, categorytype, source_account, amount, date, note", transaction, category, categorytype, source_account, transaction.amount, transaction.date, transaction.note)
 
@@ -657,7 +840,7 @@ def addpendingtransaction(request):
                         categorytype=categorytype,
                         category=category,
                         sourceaccount=source_account,
-                        destinationaccount=final_account,
+                        destinationaccount=destination_account,
                         refund=refund,
                         user=user,
                     )
@@ -678,8 +861,10 @@ def deletetransactions (request):
     selectedtransactionids = request.POST.getlist("selectedtransactions")
 
     print("Debug transaciton id", selectedtransactionids)
-    
-    Transaction.objects.filter(id__in=selectedtransactionids, user=user).delete()
+
+    for tx in Transaction.objects.filter(id__in=selectedtransactionids, user=user):
+        tx.delete()
+
     PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user).delete()
 
     redirecturl = request.POST.get("redirect")
@@ -731,7 +916,7 @@ def transactionsum(request, user):
 
     context = {
         "accounts": Account.objects.filter(user=user),
-        "categorytypes": CategoryType.objects.filter(user=user).prefetch_related("category_set"),
+        "categorytypes": CategoryType.objects.prefetch_related("category_set"),
         "budgetmap": budgetmap,
         "category_totals": category_totals,
         "category_remaining": category_remaining,
@@ -782,6 +967,7 @@ def filtertransactions(request):
     user = request.user
 
     transactions = Transaction.objects.filter(user=user)
+    print("Debug transactions", transactions)
     appliedfilters = []
 
     print("Debug within filter transactions")
@@ -792,9 +978,12 @@ def filtertransactions(request):
     print("Debug, selected month", selected_month)
 
     if mode == "monthyear":
-        transactions = transactions.filter(date__year=selected_year, date__month=selected_month, user=user)
+        if selected_month and selected_year:
+            transactions = transactions.filter(date__year=selected_year, date__month=selected_month, user=user)
 
     elif mode == "custom":
+        selected_fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
+        selected_todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
         transactions = transactions.filter(date__gte=selected_fromdate, date__lte=selected_todate, user=user)
 
 
@@ -817,6 +1006,8 @@ def filtertransactions(request):
             # else:
                 # try:
             exactamount = Decimal(exactamount)
+            print("debug exact", exactamount)
+            print("debug transactions", transactions)
             transactions = transactions.filter(amount=exactamount, user=user)
             appliedfilters.append(f"Amount = ${exactamount}")
                 # except Exception:
@@ -829,6 +1020,8 @@ def filtertransactions(request):
         if minamount and maxamount:
             minamount = Decimal(minamount)
             maxamount = Decimal(maxamount)
+
+            print("Debug min max", minamount, maxamount)
 
             if minamount:
                 transactions = transactions.filter(amount__gte=minamount, user=user)
@@ -887,8 +1080,8 @@ def filtertransactions(request):
 
     categories = categorylist(user)
     accounts = accountlist(user)
-    categorytypes = categorytypelist(user)
-    accounttypes = accounttypelist(user)
+    categorytypes = categorytypelist()
+    accounttypes = accounttypelist()
     date_tree = builddatetree(user)
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
 
@@ -1019,11 +1212,11 @@ def adduploaddata(request):
     
     accounts = accountlist(user)
 
-    context = {
-        "accounts": accounts,
+    # context = {
+    #     "accounts": accounts,
 
-    }
-    return render(request, "newtransactions.html", context)
+    # }
+    return redirect("newtransactions")
 
 
 
@@ -1032,6 +1225,59 @@ def adduploaddata(request):
 
 
 ## --------------------BASE VIEWS-------------------- ##
+
+
+@login_required
+def overview(request):
+
+    user=request.user
+
+    name = request.user.get_full_name()
+
+    # dateoption = getselecteddate(request)
+
+    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+
+    print(selected_fromdate, selected_todate)
+
+
+    # Budgets for selected month/year
+    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+
+    print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
+
+    accounts = accountlist(user=user)
+    accounttypes = accounttypelist()
+    
+
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+
+    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user)
+
+    netincome, netbudget, savingstotal = netcalculations(categorytype_totals, budgetmap)
+
+    context = {
+        "name": name,
+        "mode": mode,
+        "accounts": accounts,
+        "accounttypes": accounttypes,
+        "categorytypes": categorytypes,
+        "budgetmap": budgetmap,
+        "adjbudgetmap": adjbudgetmap,
+        "category_totals": category_totals,
+        "category_remaining": category_remaining,
+        "category_percentages": category_percentages,
+        "categorytype_totals": categorytype_totals,
+        "selected_month": selected_month,
+        "selected_year": selected_year,
+        "charts_data": json.dumps(charts_data),
+        "incomeexpensedata": json.dumps(incomeexpensedata),
+        "budgetexpensedata": json.dumps(budgetexpensedata),
+        "savingsdata": json.dumps(savingsdata),
+    }
+
+    return render(request, 'overview.html', context)
+
 
 
 @login_required
@@ -1054,7 +1300,7 @@ def index(request):
     print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
 
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist(user=user)
+    accounttypes = accounttypelist()
     
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
@@ -1100,17 +1346,8 @@ def dashboard(request):
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
 
-    # Chart data
-    charts_data = []
-    for ctype in categorytypes.filter(user=user):
-        categories = ctype.category_set.filter(user=user)
-        labels = [cat.name for cat in categories]
-        data = [category_totals.get(cat.id, 0) for cat in categories]
-        charts_data.append({
-            "type": ctype.name,
-            "labels": labels,
-            "data": [float(category_totals.get(cat.id, 0)) for cat in categories],
-        })
+    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user)
+
 
     context = {
         "name": name,
@@ -1125,6 +1362,7 @@ def dashboard(request):
         "selected_month": selected_month,
         "selected_year": selected_year,
         "charts_data": json.dumps(charts_data),
+        "incomeexpensedata": json.dumps(incomeexpensedata),
     }    
 
     return render(request, 'dashboard.html', context)
@@ -1137,6 +1375,7 @@ def dashboard(request):
 def newtransactions(request):
     user=request.user
     name = request.user.get_full_name()
+    categorytypes = categorytypelist()
     categories = categorylist(user=user)
     accounts = accountlist(user=user)
     transactions = Transaction.objects.filter(user=user).order_by('-id')[:7]
@@ -1146,6 +1385,7 @@ def newtransactions(request):
 
     context = {
         "name": name,
+        "categorytypes": categorytypes,
         "categories": categories,
         "accounts": accounts,
         "transactions": transactions,
@@ -1165,23 +1405,23 @@ def alltransactions(request):
     name = request.user.get_full_name()
 
     categories = categorylist(user=user)
-    categorytypes = categorytypelist(user=user)
+    categorytypes = categorytypelist()
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist(user=user)
+    accounttypes = accounttypelist()
 
     transactionchron = Transaction.objects.filter(user=user).order_by('date')
     pendingtransactions = PendingTransaction.objects.filter(user=user).order_by('-id')
     runningbalance = Decimal('0.00')
 
-    for transaction in transactionchron:
+    for tx in transactionchron:
 
-        if transaction.categorytype.name.lower() == 'income':
-            runningbalance += transaction.amount
+        if tx.categorytype.name.lower() == 'income':
+            runningbalance += tx.amount
         else:
-            runningbalance -= transaction.amount
+            runningbalance -= tx.amount
 
         # Save running balance for this transaction
-        transaction.runningbalance = runningbalance
+        tx.runningbalance = runningbalance
 
     transactionsdisplay = list(transactionchron)[::-1]
 
@@ -1243,12 +1483,16 @@ def budget(request):
     # Budgets for selected month/year
     budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+
     # All lists you had in table()
     categories = Category.objects.filter(user=user)
-    categorytypes = CategoryType.objects.filter(user=user).prefetch_related("category_set")
+    categorytypes = CategoryType.objects.prefetch_related("category_set")
     accounts = Account.objects.filter(user=user)
-    accounttypes = AccountType.objects.filter(user=user)
+    accounttypes = AccountType.objects.filter()
     transactions = Transaction.objects.filter(user=user)
+
+    print("Debug, categorytypes totals", categorytype_totals)
 
     context = {
         "name": name,
@@ -1260,6 +1504,7 @@ def budget(request):
         "budgetmap": budgetmap,
         "selected_month": selected_month,
         "selected_year": selected_year,
+        "categorytype_totals": categorytype_totals,
     }
 
     return render(request, "budget.html", context)
@@ -1273,9 +1518,9 @@ def setup(request):
     user=request.user
     name = request.user.get_full_name()
     categories = categorylist(user=user)
-    categorytypes = categorytypelist(user=user)
+    categorytypes = categorytypelist()
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist(user=user)
+    accounttypes = accounttypelist()
     transactions = transactionlist(user=user)
 
 
@@ -1377,16 +1622,16 @@ def home(request):
 def categorylist(user):
     return Category.objects.filter(user=user)
 
-def categorytypelist(user):
-    return CategoryType.objects.filter(user=user)
+def categorytypelist():
+    return CategoryType.objects.all()
 
 
 def accountlist(user):
     return Account.objects.filter(user=user)
 
 
-def accounttypelist(user):
-    return AccountType.objects.filter(user=user)
+def accounttypelist():
+    return AccountType.objects.all()
 
 def transactionlist(user):
     return Transaction.objects.filter(user=user )

@@ -3,22 +3,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // TRANSACTION TYPE TO FIELDS
   const typeToFields = {
       income: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
-      expense: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields", "refundfields"],
+      expense: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields",],
       savings: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       investment: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
+      retirement: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       debt: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
-      transfer: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
-      fee: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"]
+      transfer: ["datefields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
+      refund: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"]
   };
 
   // TRANSACTION TYPE TO ACCOUNTS
   const typeToInitialAccounts = {
-      income: ["Checking Account", "Savings Account", "Retirement"],
-      expense: ["Checking Account", "Savings Account", "Credit Card"],
-      savings: ["Checking Account"],
-      investment: ["Checking Account", "Savings Account", "Credit Card"],
-      debt: ["Checking Account", "Savings Account", "Credit Card"],
-      transfer: ["Savings Account", "Credit Card", "Investment", "Loan", "Retirement"],
+      income: ["Cash", "Checking Account", "Savings Account", "Digital Wallet"],
+      expense: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet", "Investment"],
+      savings: ["Cash", "Checking Account", "Credit Card", "Digital Wallet", "Loan", "Investment", "Retirement"],
+      investment: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet"],
+      retirement: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet"],
+      debt: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet"],
+      transfer: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Loan", "Retirement", "Digital Wallet"],
+      refund: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Digital Wallet"]
   };
 
   // INPUTS WITH FINAL ACCOUNTS
@@ -27,8 +30,10 @@ document.addEventListener("DOMContentLoaded", function () {
       expense: [],
       savings: ["Savings Account"],
       investment: ["Investment"],
+      retirement: ["Retirement"],
       debt: ["Loan", "Credit Card"],
-      transfer: ["Checking Account", "Credit Card", "Loan"],
+      transfer: ["Cash", "Checking Account", "Digital Wallet"],
+      refund: [],
   };
 
   const allFieldIds = [
@@ -38,7 +43,6 @@ document.addEventListener("DOMContentLoaded", function () {
       "finalaccountfields",
       "amountfields",
       "notefields",
-      "refundfields"
   ];
 
   const transactionType = document.getElementById("inputtransaction");
@@ -57,9 +61,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!container) return;
 
     const categories = container.querySelectorAll(".form-check");
+
+    // For refunds, show expense categories
+    const effectiveType = (type === "refund") ? "expense" : type;
+
     categories.forEach(cat => {
-      if (cat.getAttribute("data-type")?.toLowerCase() === type.toLowerCase())
-      {
+        const catType = cat.getAttribute("data-type")?.toLowerCase();
+        if (catType === effectiveType.toLowerCase()) {
             cat.style.display = "block";
         } else {
             const radio = cat.querySelector("input[type='radio']");
@@ -68,6 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 }
+
 
     // DISPLAY FIELDS FOR TYPE
   function showFieldsForType(type) {
