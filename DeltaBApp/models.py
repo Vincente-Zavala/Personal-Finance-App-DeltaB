@@ -144,13 +144,26 @@ class Transaction(models.Model):
         # Refund
         elif tx_type == "refund":
             if sourceaccount == self.sourceaccount: # from account
-                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
+                sign = -1 if sourceaccount.type.name == "Credit Card" else 1
                 return sign * amt
 
         return 0
 
     def __str__(self):
         return f"{self.amount}"
+
+
+
+
+
+# MONTHLY SUMMARY #
+class MonthlySummary(models.Model):
+    amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    month = models.IntegerField()
+    year = models.IntegerField()
+    categorytype = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="monthlysummaries")
 
 
 
@@ -200,3 +213,40 @@ class AccountBalanceHistory(models.Model):
 
     def __str__(self):
         return f"{self.account.name}"
+
+
+
+
+
+# TASKS #
+class Task(models.Model):
+    name = models.CharField(max_length=255)
+    complete = models.BooleanField(default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tasks")
+
+
+
+
+
+# REMINDERS #
+class Reminder(models.Model):
+    name = models.CharField(max_length=255)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    categorytype = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    complete = models.BooleanField(default=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reminders")
+
+
+
+
+
+# GOAL #
+class Goal(models.Model):
+    name = models.CharField(max_length=255)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    complete = models.BooleanField(default=False)
+    transactions = models.ManyToManyField("Transaction", related_name="goals", blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="goals")

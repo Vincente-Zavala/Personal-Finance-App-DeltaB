@@ -49,10 +49,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // HIDE ALL FIELDS
   function hideAllFields() {
-      allFieldIds.forEach((id) => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = "none";
-      });
+    allFieldIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("hidefield");
+    });
   }
 
   // FILTER BY CATEGORY
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const container = document.getElementById("categoryfields");
     if (!container) return;
 
-    const categories = container.querySelectorAll(".form-check");
+    const categories = container.querySelectorAll(".radio-card");
 
     // For refunds, show expense categories
     const effectiveType = (type === "refund") ? "expense" : type;
@@ -79,19 +79,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // DISPLAY FIELDS FOR TYPE
-  function showFieldsForType(type) {
-      hideAllFields();
-      if (!type || !typeToFields[type]) return;
-      typeToFields[type].forEach((id) => {
+    function showFieldsForType(type) {
+        hideAllFields();
+        if (!type || !typeToFields[type]) return;
+      
+        typeToFields[type].forEach((id) => {
           const el = document.getElementById(id);
-          if (el) el.style.display = "block";
-      });
-      filterRadioOptions("initialaccountfields", typeToInitialAccounts[type]);
-      filterRadioOptions("finalaccountfields", typeToFinalAccounts[type]);
-      if (type && typeToFields[type].includes("categoryfields")) {
-        filterCategoryOptions(type);
-    }
-  }
+          if (el) el.classList.remove("hidefield");
+        });
+      
+        filterRadioOptions("initialaccountfields", typeToInitialAccounts[type]);
+        filterRadioOptions("finalaccountfields", typeToFinalAccounts[type]);
+      
+        if (type && typeToFields[type].includes("categoryfields")) {
+          filterCategoryOptions(type);
+        }
+      }
 
   // FILTER RADIO
   function filterRadioOptions(containerId, allowedTypes) {

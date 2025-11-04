@@ -46,7 +46,7 @@
 
         <!-- Left Sidebar Start -->
         <div class="sidebar-left sidebar pe-4 pb-3">
-            <nav class="navbar bg-secondary navbar-dark">
+            <nav class="navbar navbar-dark">
                 <a href="{% url 'index' %}" class="navbar-brand mx-4 mb-3">
                     <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
                 </a>
@@ -65,13 +65,15 @@
                     <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
+                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Goals</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle active show" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0 show" data-bs-popper="none">
                             <a href="{% url 'setup' %}" class="dropdown-item active">Setup</a>
+                            <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
                             <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
                             <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
                         </div>
@@ -121,22 +123,24 @@
                     <!-- <h4>Accounts</h4> -->
                     <div class="row g-3 mt-2">
                         <div class="section-divider-account-title"></div>
-                        {% for account in accounts %}
+                        {% for accounttype in accounttypes %}
+                        {% for account in accounttype.account_set.all %}
                         <div class="col-12">
                             <div class="account-item d-flex align-items-center">
-                                <!-- Icon on the left -->
-                                <div class="account-icon-wrapper me-3">
+                              <!-- Icon on the left -->
+                              <div class="account-icon-wrapper me-3">
                                 <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }}"></i>
-                                </div>
+                              </div>
                         
-                                <!-- Name and balance stacked -->
-                                <div class="d-flex flex-column justify-content-center text-truncate">
+                              <!-- Name and balance stacked -->
+                              <div class="d-flex flex-column justify-content-center text-truncate">
                                 <span class="account-name fw-semibold text-truncate">{{ account.name }}</span>
                                 <span class="account-balance fw-semibold">${{ account.balance }}</span>
-                                </div>
+                              </div>
                             </div>
                         </div>
                         <div class="section-divider-account"></div>                  
+                        {% endfor %}
                         {% endfor %}
                     </div>                    
                 </div>

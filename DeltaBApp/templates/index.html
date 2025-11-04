@@ -72,13 +72,15 @@
                     <a href="{% url 'index' %}" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
+                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Goals</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'setup' %}" class="dropdown-item">Setup</a>
+                            <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
                             <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
                             <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts</a>-->
                         </div>
@@ -129,7 +131,8 @@
                     <!-- <h4>Accounts</h4> -->
                     <div class="row g-3 mt-2">
                         <div class="section-divider-account-title"></div>
-                        {% for account in accounts %}
+                        {% for accounttype in accounttypes %}
+                        {% for account in accounttype.account_set.all %}
                         <div class="col-12">
                             <div class="account-item d-flex align-items-center">
                               <!-- Icon on the left -->
@@ -144,7 +147,8 @@
                               </div>
                             </div>
                         </div>
-                        <div class="section-divider-account"></div>
+                        <div class="section-divider-account"></div>                  
+                        {% endfor %}
                         {% endfor %}
                     </div>                    
                 </div>
@@ -162,7 +166,7 @@
                     <div class="d-flex justify-content-between">
                         <div style="width: 20%;">
                             <div class="px-4 py-2 d-inline-block text-light w-100 text-start">
-                                <h2 class="under fw-semibold text-primary"><u>Breakdown</u></h2>
+                                <h2 class="under fw-semibold text-white"><u>Breakdown</u></h2>
                             </div>                              
                         </div>
                         <div style="width: 80%;">
@@ -246,103 +250,81 @@
                                 </div>
                             </div>
                             <div class="section-divider bottom-only"></div>
-                            <!-- Categories Start-->
+                            <!-- Categories Start--> 
                             {% for categorytype in categorytypes %}
                             {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
-                            <div class="col-sm-12 col-xl-12">
-                                <div class="bg-secondary text-center rounded p-4 mb-4">
-                                    <div class="d-flex align-items-center mb-4">
-                                        <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
-                                        <h6 class="mb-0 ms-3">{{categorytype.name}}</h6>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="table text-start align-middle table-bordered table-hover mb-0">
-                                            {% if mode == "custom" %}
-                                            <colgroup>
-                                              <col style="width: 20%;">
-                                              <col style="width: 15%;">
-                                              <col style="width: 15%;"> <!-- Adj Budget -->
-                                              <col style="width: 15%;">
-                                              <col style="width: 10%;">
-                                              <col style="width: 25%;">
-                                            </colgroup>
-                                            {% else %}
-                                            <colgroup>
-                                              <col style="width: 25%;">
-                                              <col style="width: 20%;">
-                                              <col style="width: 20%;">
-                                              <col style="width: 15%;">
-                                              <col style="width: 20%;">
-                                            </colgroup>
-                                            {% endif %}
-                                            <thead>
-                                                <tr class="fw-bold table-dark text-white">
-                                                    <th scope="col">Category</th>
-                                                    <th scope="col">Budget</th>
-                                                    {% if mode == "custom" %}
-                                                    <th scope="col">Adjusted Budget</th>
-                                                    {% endif %}
-                                                    <th scope="col">Spent</th>
-                                                    <th scope="col">Remaining</th>
-                                                    <th scope="col">Used (%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for category in categorytype.category_set.all %}
-                                                <tr>
-                                                    <td>{{category.name}}</td>
-                                                    <td>${{ budgetmap|getitem:category.id|default:"—" }}</td>
-                                                    {% if mode == "custom" %}
-                                                    <td>${{ adjbudgetmap|getitem:category.id|default:"—" }}</td>
-                                                    {% endif %}
-                                                    <td>${{ category_totals|getitem:category.id|default:"0" }}</td>
-                                                    <td>{{ category_remaining|getitem:category.id|default:"—" }}</td>
-                                                    <td>
-                                                        {% with percent=category_percentages|getitem:category.id %}
-                                                        <div class="progress" style="height: 20px; min-width: 120px;">
-                                                            <div class="progress-bar 
-                                                                {% if percent >= 100 %}bg-primary
-                                                                {% elif percent >= 75 %}bg-primary
-                                                                {% else %}bg-primary{% endif %}"
-                                                                role="progressbar"
-                                                                style="width: {{ percent|floatformat:0 }}%;"
-                                                                aria-valuenow="{{ percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
-                                                                {{ percent|floatformat:0 }}%
-                                                            </div>
-                                                        </div>
-                                                        {% endwith %}
-                                                    </td>                                    
-                                                </tr>
-                                                {% endfor %}
-                                                <tr class="fw-bold table-dark">
-                                                    <td>Total</td>
-                                                    <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"budget" }}</td>
-                                                    {% if mode == "custom" %}
-                                                    <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"adjbudget" }}</td>
-                                                    {% endif %}
-                                                    <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</td>
-                                                    <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"remaining" }}</td>
-                                                    <td>
-                                                        {% with percent=categorytype_totals|getitem:categorytype.id|getitem:"percent" %}
-                                                        <div class="progress" style="height: 20px; min-width: 120px;">
-                                                            <div class="progress-bar 
-                                                                {% if percent >= 100 %}bg-primary
-                                                                {% elif percent >= 75 %}bg-primary
-                                                                {% else %}bg-primary{% endif %}"
-                                                                role="progressbar"
-                                                                style="width: {{ percent|floatformat:0 }}%;"
-                                                                aria-valuenow="{{ percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
-                                                                {{ percent|floatformat:0 }}%
-                                                            </div>
-                                                        </div>
-                                                        {% endwith %}
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                            <div class="col-sm-12 col-xl-6 mb-4">
+                                <div class="bg-secondary rounded p-4 shadow-sm border border-light" style="min-height: 350px;">
+                                  <div class="d-flex align-items-center mb-3">
+                                    <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-2x text-primary me-3"></i>
+                                    <h5 class="mb-0 text-uppercase text-white-50">{{ categorytype.name }}</h5>
+                                  </div>
+                                  <div class="table-responsive">
+                                    <table class="table table-borderless text-white align-middle small mb-0">
+                                      <thead class="border-bottom border-light">
+                                        <tr class="text-muted text-uppercase">
+                                          <th>Category</th>
+                                          <th>Budget</th>
+                                          {% if mode == "custom" %}
+                                          <th>Adj. Budget</th>
+                                          {% endif %}
+                                          <th>Spent</th>
+                                          <th>Remain</th>
+                                          <th class="text-center">Used</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {% for category in categorytype.category_set.all %}
+                                        <tr class="border-bottom border-light">
+                                          <td class="fw-semibold">{{ category.name }}</td>
+                                          <i class="fa fa-circle text-success me-2"></i>
+                                          <span class="badge bg-dark text-white-50">{{ category.name }}</span> <!-- Testing -->
+                                          <td>${{ budgetmap|getitem:category.id|default:"—" }}</td>
+                                          {% if mode == "custom" %}
+                                          <td>${{ adjbudgetmap|getitem:category.id|default:"—" }}</td>
+                                          {% endif %}
+                                          <td>${{ category_totals|getitem:category.id|default:"0" }}</td>
+                                          <td>${{ category_remaining|getitem:category.id|default:"—" }}</td>
+                                          <td class="text-center" style="min-width: 110px;">
+                                            {% with percent=category_percentages|getitem:category.id %}
+                                            <div class="progress" style="height: 8px; background-color: #2c2c2c;">
+                                              <div class="progress-bar 
+                                                  {% if percent >= 100 %}bg-danger
+                                                  {% elif percent >= 75 %}bg-warning
+                                                  {% else %}bg-success{% endif %}"
+                                                  role="progressbar"
+                                                  style="width: {{ percent|floatformat:0 }}%;">
+                                              </div>
+                                            </div>
+                                            <small class="text-muted">{{ percent|floatformat:0 }}%</small>
+                                            {% endwith %}
+                                          </td>
+                                        </tr>
+                                        {% endfor %}
+                                      </tbody>
+                                      <tfoot>
+                                        <tr class="fw-bold text-primary">
+                                          <td>Total</td>
+                                          <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"budget" }}</td>
+                                          {% if mode == "custom" %}
+                                          <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"adjbudget" }}</td>
+                                          {% endif %}
+                                          <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</td>
+                                          <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"remaining" }}</td>
+                                          <td class="text-center">
+                                            {% with percent=categorytype_totals|getitem:categorytype.id|getitem:"percent" %}
+                                            <div class="progress" style="height: 8px; background-color: #2c2c2c;">
+                                              <div class="progress-bar bg-primary" style="width: {{ percent|floatformat:0 }}%;"></div>
+                                            </div>
+                                            <small class="text-muted">{{ percent|floatformat:0 }}%</small>
+                                            {% endwith %}
+                                          </td>
+                                        </tr>
+                                      </tfoot>
+                                    </table>
+                                  </div>
                                 </div>
-                            </div>    
+                            </div>                                 
                             <!-- Categories End-->
                             {% endif %}
                             {% endfor %}

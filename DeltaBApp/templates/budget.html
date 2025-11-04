@@ -72,13 +72,15 @@
                     <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link active"><i class="fa fa-table me-2"></i>Budget</a>
+                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Goals</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'setup' %}" class="dropdown-item">Setup</a>
+                            <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
                             <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
                             <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
                         </div>
@@ -128,7 +130,8 @@
                     <!-- <h4>Accounts</h4> -->
                     <div class="row g-3 mt-2">
                         <div class="section-divider-account-title"></div>
-                        {% for account in accounts %}
+                        {% for accounttype in accounttypes %}
+                        {% for account in accounttype.account_set.all %}
                         <div class="col-12">
                             <div class="account-item d-flex align-items-center">
                               <!-- Icon on the left -->
@@ -144,6 +147,7 @@
                             </div>
                         </div>
                         <div class="section-divider-account"></div>                  
+                        {% endfor %}
                         {% endfor %}
                     </div>                    
                 </div>
@@ -246,59 +250,69 @@
                             </div>
                             <div class="section-divider bottom-only"></div>
                         </div>
-                        {% for categorytype in categorytypes %}
-                        {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
-                        <div class="col-sm-12 col-xl-12 mb-4">
-                            <div class="bg-secondary rounded h-100 p-4">
+                        <!-- Categories Start -->
+                        <div class="row">
+                            {% for categorytype in categorytypes %}
+                            {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
+                            <div class="col-md-6 col-xl-6 mb-4">
+                            <div class="bg-secondary rounded shadow-sm border border-light p-4 h-100">
+                                
+                                <!-- Header with icon and buttons -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-2x text-primary me-3"></i>
+                                    <h5 class="mb-0 text-uppercase text-white-50">{{ categorytype.name }}</h5>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-light btn-sm edit-btn" data-target="table-{{ categorytype.id }}">
+                                    <i class="fa fa-edit me-1"></i>Edit
+                                    </button>
+                                    <button type="submit" class="btn btn-success btn-sm d-none save-btn" data-target="table-{{ categorytype.id }}">
+                                    <i class="fa fa-save me-1"></i>Save
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm d-none cancel-btn" data-target="table-{{ categorytype.id }}">
+                                    <i class="fa fa-times me-1"></i>Cancel
+                                    </button>
+                                </div>
+                                </div>
+                        
+                                <!-- Form and table -->
                                 <form method="post" action="{% url 'edit_categorytype_limits' categorytype.id %}">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center mb-4">
-                                            <i class="fa {{ typeiconmap|getitem:categorytype.name|default:'fa-folder' }} fa-3x text-primary"></i>
-                                            <h6 class="mb-0 ms-3">{{categorytype.name}}</h6>
-                                        </div>
-                                        <div class="d-flex justify-content-end mt-2">
-                                            <button type="submit" class="btn btn-primary d-none save-btn" data-target="table-{{ categorytype.id }}">Save</button>
-                                            <button type="button" class="btn btn-secondary d-none cancel-btn" data-target="table-{{ categorytype.id }}">Cancel</button>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-primary edit-btn" data-target="table-{{ categorytype.id }}">
-                                            Edit
-                                        </button>                                         
-                                    </div>
-                                    {% csrf_token %}
-                                    <input type="hidden" name="month" value="{{ selected_month }}">
-                                    <input type="hidden" name="year" value="{{ selected_year }}">
-                            
-                                    <table class="table table-striped" id="table-{{ categorytype.id }}">
-                                        <thead>
+                                {% csrf_token %}
+                                <input type="hidden" name="month" value="{{ selected_month }}">
+                                <input type="hidden" name="year" value="{{ selected_year }}">
+                                
+                                <div class="table-responsive rounded" style="max-height: 280px; overflow-y: auto;">
+                                    <table class="table table-dark table-hover table-striped align-middle mb-0" id="table-{{ categorytype.id }}">
+                                        <thead class="text-muted border-bottom border-light">
                                             <tr>
-                                                <th scope="col">ID</th>
-                                                <th scope="col">Category</th>
-                                                <th scope="col">Limit</th>
+                                            <th>Category</th>
+                                            <th class="text-end">Limit</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for category in categorytype.category_set.all %}
                                             <tr>
-                                                <td>{{category.id}}</td>
-                                                <td>{{category.name}}</td>
-                                                <td>
-                                                    <!-- Display span (default) -->
-                                                    <span class="limit-text">{{ budgetmap|getitem:category.id|default:"—" }}</span>
-                                                    
-                                                    <!-- Hidden input for editing -->
-                                                    <input type="number" class="form-control limit-input d-none"
-                                                        name="limit_{{ category.id }}"
-                                                        value="{{ budgetmap|getitem:category.id|default:'' }}">
-                                                </td>
+                                            <td>{{ category.name }}</td>
+                                            <td class="text-end">
+                                                <!-- Display span (default) -->
+                                                <span class="limit-text">${{ budgetmap|getitem:category.id|default:"—" }}</span>
+                                                <!-- Hidden input for editing -->
+                                                <input type="number" class="form-control form-control-sm text-end limit-input d-none"
+                                                    name="limit_{{ category.id }}"
+                                                    value="{{ budgetmap|getitem:category.id|default:'' }}">
+                                            </td>
                                             </tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
+                                </div>
                                 </form>
                             </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
                         </div>
-                        {% endif %}
-                        {% endfor %}
                     </div>
                 </div>
             </div>

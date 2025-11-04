@@ -7,13 +7,16 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from decimal import Decimal
 from django.utils import timezone
-from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction
+from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction, Task, Goal, Reminder, MonthlySummary
 from django.db.models import Q, Sum
 from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
 from collections import defaultdict
+from django.db import models
 import calendar
 from django.core.serializers.json import DjangoJSONEncoder
+from dateutil.relativedelta import relativedelta
 import json
+from django.http import JsonResponse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -23,6 +26,7 @@ from django.db.models import Prefetch
 from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
+from django.views.decorators.csrf import csrf_exempt
 User = get_user_model()
 
 
@@ -332,13 +336,56 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
 
 
 
+# SUMMARY TRANSACTION TOTAL #
+def categorysummarytotal(user, mode, category, selected_month, selected_year, selected_fromdate, selected_todate):
+
+    # Get summaries for that category
+    summaries = MonthlySummary.objects.filter(
+        user=user,
+        category=category,
+        year=selected_year,
+        month=selected_month
+    )
+
+    if not summaries.exists():
+        return 0
+
+    summary = summaries.first()
+    summary_amount = summary.amount or 0
+
+    # If using full-month mode, return full summary
+    if mode == "monthyear":
+        return summary_amount
+
+    # If using a custom range, prorate the summary based on days
+    elif mode == "custom" and selected_fromdate and selected_todate:
+        days_in_month = calendar.monthrange(selected_year, selected_month)[1]
+        overlap_start = max(selected_fromdate, datetime.date(selected_year, selected_month, 1))
+        overlap_end = min(selected_todate, datetime.date(selected_year, selected_month, days_in_month))
+
+        # No overlap (custom range doesn’t intersect this month)
+        if overlap_start > overlap_end:
+            return 0
+
+        overlap_days = (overlap_end - overlap_start).days + 1
+        prorated_amount = summary_amount * (overlap_days / days_in_month)
+
+        return prorated_amount
+
+    return 0
+
+    return 
+
+
+
+
+
 # CALCULATE CATEGORY TOTALS #
 def calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user):
 
     print("Debug, calculate categorytotals: budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
     
-    categorytypes = CategoryType.objects.prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user))
-)
+    categorytypes = CategoryType.objects.prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user)))
 
 
     # Build category totals for selected month/year
@@ -353,7 +400,11 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
     for category in Category.objects.filter(user=user):
 
-        total = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+        transactiontotal = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+        summarytotal = categorysummarytotal(user, mode, category, selected_month, selected_year, selected_fromdate, selected_todate)
+
+        total = transactiontotal + summarytotal
+
         category_totals[category.id] = total
 
         print("Debug category_totals", category_totals)
@@ -675,6 +726,53 @@ def addinput(request):
 
 
 
+# CREATE TRANSACTION #
+def createtransaction(user, inputtype, amount, note, date, category, categorytype, source_account, final_account=None, refund=False):
+    # CREATE TRANSACTION BASED ON TYPE
+    if inputtype in ["income", "expense"]:
+        Transaction.objects.create(
+            amount=amount,
+            note=note,
+            date=date,
+            categorytype=categorytype,
+            category=category,
+            sourceaccount=source_account,
+            refund=refund,
+            user=user,
+        )
+    elif inputtype in ["savings", "investment", "debt", "transfer", "retirement"]:
+        Transaction.objects.create(
+            amount=amount,
+            note=note,
+            date=date,
+            categorytype=categorytype,
+            category=category,
+            sourceaccount=source_account,
+            destinationaccount=final_account,
+            refund=refund,
+            user=user,
+        )
+
+    elif inputtype == "refund":
+        amount = abs(amount)
+
+        Transaction.objects.create(
+            amount=amount,
+            note=note,
+            date=date,
+            categorytype=categorytype,
+            category=category,
+            sourceaccount=source_account,
+            destinationaccount=final_account,
+            refund=refund,
+            user=user,
+        ) 
+
+
+
+
+
+
 # ADD TRANSACTION #
 def addtransaction(request):
 
@@ -711,62 +809,76 @@ def addtransaction(request):
         final_account = Account.objects.get(id=final_account_id, user=user) if final_account_id else None
 
 
+        createtransaction(
+            user,
+            inputtype.lower(),
+            amount,
+            note,
+            date,
+            category,
+            categorytype,
+            source_account,
+            final_account,
+            refund,
+        )
+
+
         # CREATE TRANSACTION BASED ON TYPE
-        if inputtype == "income" or inputtype == "expense":
-            Transaction.objects.create(
-                amount=amount,
-                note=note,
-                date=date,
-                categorytype=categorytype,
-                category=category,
-                sourceaccount=source_account,
-                refund=refund,
-                user=user,
-            )
+        # if inputtype == "income" or inputtype == "expense":
+        #     Transaction.objects.create(
+        #         amount=amount,
+        #         note=note,
+        #         date=date,
+        #         categorytype=categorytype,
+        #         category=category,
+        #         sourceaccount=source_account,
+        #         refund=refund,
+        #         user=user,
+        #     )
 
-        elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "retirement":
-            Transaction.objects.create(
-                amount=amount,
-                note=note,
-                date=date,
-                categorytype=categorytype,
-                category=category,
-                sourceaccount=source_account,
-                destinationaccount=final_account,
-                refund=refund,
-                user=user,
-            )
+        # elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "retirement":
+        #     Transaction.objects.create(
+        #         amount=amount,
+        #         note=note,
+        #         date=date,
+        #         categorytype=categorytype,
+        #         category=category,
+        #         sourceaccount=source_account,
+        #         destinationaccount=final_account,
+        #         refund=refund,
+        #         user=user,
+        #     )
 
-        elif inputtype == "transfer":
+        # elif inputtype == "transfer":
 
-            category = Category.objects.get(name="Transfer")
+        #     category = Category.objects.get(name="Transfer")
 
-            Transaction.objects.create(
-                amount=amount,
-                note=note,
-                date=date,
-                categorytype=categorytype,
-                category=category,
-                sourceaccount=source_account,
-                destinationaccount=final_account,
-                refund=refund,
-                user=user,
-            )
+        #     Transaction.objects.create(
+        #         amount=amount,
+        #         note=note,
+        #         date=date,
+        #         categorytype=categorytype,
+        #         category=category,
+        #         sourceaccount=source_account,
+        #         destinationaccount=final_account,
+        #         refund=refund,
+        #         user=user,
+        #     )
         
-        elif inputtype == "refund":
-            amount = abs(amount)
+        # elif inputtype == "refund":
+        #     amount = abs(amount)
 
-            Transaction.objects.create(
-                amount=amount,
-                note=note,
-                date=date,
-                categorytype=categorytype,
-                category=category,
-                sourceaccount=source_account,
-                destinationaccount=final_account,
-                refund=refund,
-                user=user,
-            )            
+        #     Transaction.objects.create(
+        #         amount=amount,
+        #         note=note,
+        #         date=date,
+        #         categorytype=categorytype,
+        #         category=category,
+        #         sourceaccount=source_account,
+        #         destinationaccount=final_account,
+        #         refund=refund,
+        #         user=user,
+        #     )            
 
 
     return redirect("newtransactions")
@@ -797,55 +909,35 @@ def addpendingtransaction(request):
         pendingtransactions = PendingTransaction.objects.filter(user=user)
 
         for transaction in pendingtransactions:
-            category_id = request.POST.get(f"categorychoice_{transaction.id}")
-            if category_id:
-                # Assign the selected category
-                transaction.category_id = category_id
-                transaction.save()
+            if request.method == "POST":
+                pendingtransactions = PendingTransaction.objects.filter(user=user)
 
-                category = Category.objects.get(id=transaction.category_id, user=user) if category_id else None
-        
-                categorytype = CategoryType.objects.get(id=category.type.id)
-
-                source_account = transaction.sourceaccount
-
-                destination_account = transaction.destinationaccount
-
-                print("Debug: transaction, category, categorytype, source_account, amount, date, note", transaction, category, categorytype, source_account, transaction.amount, transaction.date, transaction.note)
-
-                inputtype = categorytype.name.lower()
-                refund = False
-
-                print("Debug inputtype", inputtype)
+                for transaction in pendingtransactions:
+                    category_id = request.POST.get(f"categorychoice_{transaction.id}")
+                    destinationaccountid = request.POST.get(f"accountchoice_{transaction.id}")
+                    if category_id:
+                        category = Category.objects.get(id=category_id, user=user)
+                        final_account = Account.objects.get(id=destinationaccountid, user=user)
+                        categorytype = category.type
+                        inputtype = categorytype.name
+                        source_account = transaction.sourceaccount
+                        refund = False
 
 
-                # CREATE TRANSACTION BASED ON TYPE
-                if inputtype == "income" or inputtype == "expense":
-                    Transaction.objects.create(
-                        amount=transaction.amount,
-                        note=transaction.note,
-                        date=transaction.date,
-                        categorytype=categorytype,
-                        category=category,
-                        sourceaccount=source_account,
-                        refund=refund,
-                        user=user,
-                    )
+                        createtransaction(
+                            user,
+                            inputtype.lower(),
+                            amount,
+                            note,
+                            date,
+                            category,
+                            categorytype,
+                            source_account,
+                            final_account,
+                            refund,
+                        )
 
-                elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "transfer":
-                    Transaction.objects.create(
-                        amount=transaction.amount,
-                        note=transaction.note,
-                        date=transaction.date,
-                        categorytype=categorytype,
-                        category=category,
-                        sourceaccount=source_account,
-                        destinationaccount=destination_account,
-                        refund=refund,
-                        user=user,
-                    )
-
-                transaction.delete()
+                        transaction.delete()
 
 
     return redirect("alltransactions")
@@ -871,6 +963,243 @@ def deletetransactions (request):
     
     
     return redirect(redirecturl)
+
+
+
+
+
+# ADD HISTORICAL BALANCES #
+@login_required
+def addhistoricaltime(request):
+    if request.method != "POST":
+        return redirect("historicalbalance")
+
+    user = request.user
+    startmonth = int(request.POST.get("starthistorymonth"))
+    startyear = int(request.POST.get("starthistoryyear"))
+    endmonth = int(request.POST.get("endhistorymonth"))
+    endyear = int(request.POST.get("endhistoryyear"))
+
+    start = datetime.date(startyear, startmonth, 1)
+    end = datetime.date(endyear, endmonth, 1)
+    current = start
+
+    categories = categorylist(user=user)
+
+    while current <= end:
+        for category in categories:
+            MonthlySummary.objects.get_or_create(
+                user=user,
+                category=category,
+                categorytype=category.type,
+                month=current.month,
+                year=current.year,
+                defaults={"amount": None},
+            )
+        current += relativedelta(months=1)
+
+    return redirect("historicalbalance")
+
+
+
+
+
+# EDIT SUMMARY AMOUNT #
+@login_required
+def editsummaryamount(request):
+
+    if request.method == "POST":
+        # month = int(request.POST.get("month"))
+        # year = int(request.POST.get("year"))
+        user = request.user
+
+        for key, value in request.POST.items():
+            if key.startswith("limit_") and value.strip():
+                _, cat_id, m, y = key.split("_")
+                MonthlySummary.objects.update_or_create(
+                    user=user,
+                    category_id=int(cat_id),
+                    month=int(m),
+                    year=int(y),
+                    defaults={"amount": float(value)}
+                )
+
+        return redirect("historicalbalance")
+
+
+
+
+
+# ADD TASK #
+def addtask (request):
+
+    user = request.user
+    newtask = request.POST.get("taskinput")
+
+    Task.objects.create(
+        name=newtask,
+        user=user,
+        )
+
+    print("Debug task", newtask)
+
+    return redirect("tasks")
+
+
+
+
+
+# DELETE TASK #
+def deletetask(request):
+    
+    user = request.user
+    taskid = request.POST.get("deletetask")
+
+    Task.objects.filter(id__in=taskid, user=user).delete()
+
+    return redirect("tasks")
+
+
+
+
+
+# TASK COMPLETED #
+@csrf_exempt
+@login_required
+def taskcomplete(request):
+    user=request.user
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        taskid = data.get('id')
+        complete = data.get('complete')
+        Task.objects.filter(id=taskid, user=user).update(complete=complete)
+
+
+    return JsonResponse({'status': 'ok'})
+
+
+
+
+
+# ADD REMINDER #
+def addreminder (request):
+
+    user = request.user
+    inputname = request.POST.get("inputname")
+    inputdate = request.POST.get("inputdate")
+    inputamount = request.POST.get("inputamount")
+    inputcategory = request.POST.get("inputcategory")
+
+    category = Category.objects.get(id=inputcategory)
+    categorytype = category.type
+
+    date = datetime.datetime.strptime(inputdate, "%m-%d-%Y").date()
+
+    Reminder.objects.create(
+        name=inputname,
+        date=date,
+        amount=inputamount,
+        categorytype=categorytype,
+        category=category,
+        user=user,
+        )
+
+    return redirect("tasks")
+
+
+
+
+
+# DELETE TASK #
+def deletereminder(request):
+    
+    user = request.user
+    reminderid = request.POST.get("deletereminder")
+
+    Reminder.objects.filter(id__in=reminderid, user=user).delete()
+
+    return redirect("tasks")
+
+
+
+
+
+# ADD TASK #
+def addgoal(request):
+
+    user = request.user
+    goalname = request.POST.get("goalname")
+    goaldate = request.POST.get("inputdate")
+    goaldate = datetime.datetime.strptime(goaldate, "%m-%d-%Y").date()
+    goalamount = request.POST.get("goalamount")
+
+    print("Debug goal", goalname, "date", goaldate, "amount", goalamount)
+
+    Goal.objects.create(
+        name=goalname,
+        user=user,
+        date=goaldate,
+        amount=goalamount,
+        )
+
+    return redirect("goals")
+
+
+
+
+
+# LINK GOAL TRANSACTIONS #
+@csrf_exempt
+def linkgoaltransaction(request):
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({"status": "error", "message": "Invalid JSON"}, status=400)
+
+    goalid = data.get("goalid")
+    transactionid = data.get("transactionid")
+    checked = data.get("checked")
+
+    try:
+        goal = Goal.objects.get(id=goalid)
+        transaction = Transaction.objects.get(id=transactionid)
+
+        # Link or unlink transaction
+        if checked:
+            goal.transactions.add(transaction)
+        else:
+            goal.transactions.remove(transaction)
+
+        # Recalculate total saved for this goal
+        total_saved = goal.transactions.aggregate(total=Sum("amount"))["total"] or 0
+        goal.saved = total_saved
+        goal.save()
+
+        # Build a map of transactions linked to other goals per goal
+        transaction_goal_map = {}
+        all_goals = Goal.objects.filter(user=goal.user).prefetch_related("transactions")
+        for g in all_goals:
+            transaction_goal_map[g.id] = {}
+            for t in Transaction.objects.filter(user=goal.user):
+                # True if transaction is linked to this goal but NOT the current goal being updated
+                transaction_goal_map[g.id][t.id] = t.goals.exclude(id=g.id).exists()
+
+        return JsonResponse({
+            "status": "success",
+            "saved": total_saved,
+            "goal_id": goal.id,
+            "transaction_goal_map": transaction_goal_map
+        })
+
+    except (Goal.DoesNotExist, Transaction.DoesNotExist):
+        return JsonResponse({"status": "error", "message": "Invalid ID"}, status=400)
+
+
+
 
 
 
@@ -1378,6 +1707,7 @@ def newtransactions(request):
     categorytypes = categorytypelist()
     categories = categorylist(user=user)
     accounts = accountlist(user=user)
+    accounttypes = accounttypelist()
     transactions = Transaction.objects.filter(user=user).order_by('-id')[:7]
 
     source_accounts = accounts
@@ -1388,6 +1718,7 @@ def newtransactions(request):
         "categorytypes": categorytypes,
         "categories": categories,
         "accounts": accounts,
+        "accounttypes": accounttypes,
         "transactions": transactions,
         "source_accounts": source_accounts,
         "final_accounts": final_accounts,
@@ -1539,16 +1870,125 @@ def setup(request):
 
 
 @login_required
+def historicalbalance(request):
+    user = request.user
+    name = request.user.get_full_name()
+
+    categories = Category.objects.filter(user=user)
+    categorytypes = CategoryType.objects.prefetch_related("category_set")
+    accounts = Account.objects.filter(user=user)
+    accounttypes = AccountType.objects.all()
+    transactions = Transaction.objects.filter(user=user)
+
+    # Build time period from existing MonthlySummary records
+    summaries = MonthlySummary.objects.filter(user=user).order_by("year", "month")
+
+    # Build structured list for the template
+    historicalperiodbalance = []
+    seen = set()
+    for s in summaries:
+        key = (s.month, s.year)
+        if key not in seen:
+            seen.add(key)
+            historicalperiodbalance.append({
+                "month": s.month,
+                "year": s.year,
+                "label": f"{calendar.month_abbr[s.month]} {s.year}",
+            })
+
+    # Lookup for easy template access
+    summarymap = {f"{s.category_id}-{s.month}-{s.year}": s.amount for s in summaries}
+
+    print("Debug SUMMARY COUNT:", summaries.count())
+    print("debug SAMPLE:", summaries.values("category_id", "month", "year", "amount")[:5])
+
+    context = {
+        "name": name,
+        "categories": categories,
+        "categorytypes": categorytypes,
+        "accounts": accounts,
+        "accounttypes": accounttypes,
+        "transactions": transactions,
+        "historicalperiodbalance": historicalperiodbalance,
+        "summarymap": summarymap,
+    }
+
+    return render(request, "historicalbalance.html", context)
+
+
+
+
+
+@login_required
 def tasks(request):
     user=request.user
     name = request.user.get_full_name()
 
+    accounts = accountlist(user=user)
+    accounttypes = accounttypelist()
+
+    tasks = tasklist(user)
+    activetasks = tasks.filter(complete=False)
+    completedtasks = tasks.filter(complete=True)
+
+    categories = categorylist(user=user)
+    categorytypes = categorytypelist()
+
+    reminders = reminderlist(user)
+
+
     context = {
         "name": name,
+        "accounts": accounts,
+        "accounttypes": accounttypes,
+        "categories": categories,
+        "categorytypes": categorytypes,
+        "activetasks": activetasks,
+        "completedtasks": completedtasks,
+        "reminders": reminders,
     }
 
 
     return render(request, 'tasks.html', context)
+
+
+
+
+
+@login_required
+def goals(request):
+    user=request.user
+    name = request.user.get_full_name()
+
+    accounts = accountlist(user=user)
+    accounttypes = accounttypelist()
+    savingstransactions = Transaction.objects.filter(user=user, categorytype__name="Savings")
+
+    goals = goallist(user=user)
+
+    for goal in goals:
+        goal.saved = goal.transactions.aggregate(total=models.Sum("amount"))["total"] or 0
+
+    transactionothergoalmap = {}
+
+    for goal in goals:
+        transactionothergoalmap[goal.id] = {}
+        for transaction in savingstransactions:
+            transactionothergoalmap[goal.id][transaction.id] = transaction.goals.exclude(id=goal.id).exists()
+
+
+
+    context = {
+        "name": name,
+        "accounts": accounts,
+        "accounttypes": accounttypes,
+        "goals": goals,
+        "savingstransactions": savingstransactions,
+        "transactionothergoalmap": transactionothergoalmap,
+    }
+
+
+    return render(request, 'goals.html', context)
 
 
 
@@ -1629,9 +2069,23 @@ def categorytypelist():
 def accountlist(user):
     return Account.objects.filter(user=user)
 
+def tasklist(user):
+    return Task.objects.filter(user=user)
+
+def reminderlist(user):
+    return Reminder.objects.filter(user=user)
+
+def goallist(user):
+    return Goal.objects.filter(user=user)
 
 def accounttypelist():
-    return AccountType.objects.all()
+    TYPE_ORDER = ['Checking Account', 'Credit Card', 'Savings Account', 'Investment', 'Retirement', 'Loan', 'Cash', 'Digital Wallet']
+
+    accounttypes = sorted(
+        AccountType.objects.prefetch_related('account_set'),
+        key=lambda t: TYPE_ORDER.index(t.name) if t.name in TYPE_ORDER else 999
+    )
+    return accounttypes
 
 def transactionlist(user):
     return Transaction.objects.filter(user=user )

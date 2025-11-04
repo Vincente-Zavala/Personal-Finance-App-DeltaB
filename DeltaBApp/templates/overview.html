@@ -72,13 +72,15 @@
                     <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
+                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Goals</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="{% url 'setup' %}" class="dropdown-item">Setup</a>
+                            <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
                             <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
                             <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts</a>-->
                         </div>
@@ -133,7 +135,8 @@
                     <!-- <h4>Accounts</h4> -->
                     <div class="row g-3 mt-2">
                         <div class="section-divider-account-title"></div>
-                        {% for account in accounts %}
+                        {% for accounttype in accounttypes %}
+                        {% for account in accounttype.account_set.all %}
                         <div class="col-12">
                             <div class="account-item d-flex align-items-center">
                               <!-- Icon on the left -->
@@ -149,6 +152,7 @@
                             </div>
                         </div>
                         <div class="section-divider-account"></div>                  
+                        {% endfor %}
                         {% endfor %}
                     </div>                    
                 </div>
@@ -251,30 +255,32 @@
                             </div>
                             <div class="section-divider bottom-only"></div>
                             <!-- Categories Start-->
-                            <div class="col-sm-12 col-xl-6 mb-4">
-                                <div class="bg-secondary rounded h-100 p-4 border border-light">
-                                    <h6 class="mb-4">Budget vs Expense</h6>
-                                    <canvas id="budgetexpense-bar" style="width:100%;max-width:600px"></canvas>
+                            <div class="row g-4 mb-4">
+                                <div class="col-sm-12 col-xl-6">
+                                    <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
+                                        <h6 class="mb-4">Budget vs Expense</h6>
+                                        <canvas id="budgetexpense-bar" style="max-height: 300px; width: 100%;"></canvas>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-sm-12 col-xl-6 mb-4">
-                                <div class="bg-secondary rounded h-100 p-4 border border-light">
-                                    <h6 class="mb-4">Savings</h6>
-                                    <canvas id="savingstransaction-line"></canvas>
+                                <div class="col-sm-12 col-xl-6">
+                                    <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
+                                        <h6 class="mb-4">Savings</h6>
+                                        <canvas id="savingstransaction-line" style="max-height: 300px; width: 100%;"></canvas>
+                                    </div>
                                 </div>
-                            </div> 
-                            <div class="col-sm-12 col-xl-6 mb-4">
-                                <div class="bg-secondary rounded h-100 p-4 border border-light">
-                                    <h6 class="mb-4">Income vs Expense</h6>
-                                    <canvas id="incomeexpenses-bar" style="height: 300px;"></canvas>
+                                <div class="col-sm-12 col-xl-6">
+                                    <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
+                                        <h6 class="mb-4">Income vs Expense</h6>
+                                        <canvas id="incomeexpenses-bar" style="max-height: 300px; width: 100%;"></canvas>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-sm-12 col-xl-6 mb-4">
-                                <div class="bg-secondary rounded h-100 p-4 border border-light">
-                                    <h6 class="mb-4">Expense by Category</h6>
-                                    <canvas id="chart-expense" style="height: 300px;"></canvas>
+                                <div class="col-sm-12 col-xl-6">
+                                    <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
+                                        <h6 class="mb-4">Expense by Category</h6>
+                                        <canvas id="chart-expense" style="max-height: 300px; width: 100%;"></canvas>
+                                    </div>
                                 </div>
-                            </div>
+                            </div>                            
                             <!-- Categories End-->
                         </div>
                     </div>

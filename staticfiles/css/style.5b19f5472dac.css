@@ -1,0 +1,663 @@
+/********** Template CSS **********/
+:root {
+    --primary: #EB1616;
+    --primary-glow: rgba(235, 22, 22, 0.4);
+    --secondary: #191C24;
+    --light: #6C7293;
+    --dark: #0c0c0c;
+}
+
+.back-to-top {
+    position: fixed;
+    display: none;
+    right: 45px;
+    bottom: 45px;
+    z-index: 99;
+}
+
+
+/*** Spinner ***/
+#spinner {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .5s ease-out, visibility 0s linear .5s;
+    z-index: 99999;
+}
+
+#spinner.show {
+    transition: opacity .5s ease-out, visibility 0s linear 0s;
+    visibility: visible;
+    opacity: 1;
+}
+
+
+/*** Button ***/
+.btn {
+    transition: .5s;
+}
+
+.btn-square {
+    width: 38px;
+    height: 38px;
+}
+
+.btn-sm-square {
+    width: 32px;
+    height: 32px;
+}
+
+.btn-lg-square {
+    width: 48px;
+    height: 48px;
+}
+
+.btn-square,
+.btn-sm-square,
+.btn-lg-square {
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: normal;
+    border-radius: 50px;
+}
+
+
+/*** Form ***/
+.hidefield {
+    display: none;
+}
+
+/*** Layout ***/
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 250px;
+    height: 100vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #191c24 0%, #111316 100%);
+    transition: 0.5s;
+    z-index: 999;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    border-right: 1px solid #22252b;
+    border-left: 1px solid #22252b;
+}
+
+
+.sidebar-left {
+    left: 0;
+}
+
+.sidebar-right {
+    right: 0;
+}
+
+.content {
+    margin-left: 250px;
+    margin-right: 250px;
+    min-height: 100vh;
+    background: var(--dark);
+    transition: 0.5s;
+}
+
+@media (min-width: 992px) {
+    .sidebar {
+        margin-left: 0;
+    }
+
+    .sidebar.open {
+        margin-left: -250px;
+    }
+
+    .content {
+        width: calc(100% - 500px);
+        margin-left: 250px;
+        margin-right: 250px;
+    }
+
+    .content.open {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: -250px;
+    }
+
+    .sidebar.open {
+        margin-left: 0;
+    }
+
+    .content {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
+
+/*** Navbar ***/
+.sidebar .navbar .navbar-nav .nav-link {
+    padding: 7px 20px;
+    color: var(--light);
+    font-weight: 500;
+    border-left: 3px solid var(--secondary);
+    border-radius: 0 30px 30px 0;
+    outline: none;
+}
+
+.sidebar .navbar .navbar-nav .nav-link:hover,
+.sidebar .navbar .navbar-nav .nav-link.active {
+    color: var(--primary);
+    background: var(--dark);
+    border-color: var(--primary);
+}
+
+.sidebar .navbar .navbar-nav .nav-link i {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--dark);
+    border-radius: 40px;
+}
+
+.sidebar .navbar .navbar-nav .nav-link:hover i,
+.sidebar .navbar .navbar-nav .nav-link.active i {
+    background: var(--secondary);
+}
+
+.sidebar .navbar .dropdown-toggle::after {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    border: none;
+    content: "\f107";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    transition: .5s;
+}
+
+.sidebar-right .dropdown-toggle::after {
+    margin-left: 15px;
+    vertical-align: middle;
+    border: none;
+    content: "\f107";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    transition: .5s;
+}
+
+.sidebar .navbar .dropdown-toggle[aria-expanded=true]::after {
+    transform: rotate(-180deg);
+}
+
+.sidebar .navbar .dropdown-item {
+    padding-left: 25px;
+    border-radius: 0 30px 30px 0;
+    color: var(--light);
+}
+
+.sidebar .navbar .dropdown-item:hover,
+.sidebar .navbar .dropdown-item.active {
+    background: var(--dark);
+}
+
+.content .navbar .navbar-nav .nav-link {
+    margin-left: 25px;
+    padding: 12px 0;
+    color: var(--light);
+    outline: none;
+}
+
+.content .navbar .navbar-nav .nav-link:hover,
+.content .navbar .navbar-nav .nav-link.active {
+    color: var(--primary);
+}
+
+.content .navbar .sidebar-toggler,
+.content .navbar .navbar-nav .nav-link i {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--dark);
+    border-radius: 40px;
+}
+
+.content .navbar .dropdown-item {
+    color: var(--light);
+}
+
+.content .navbar .dropdown-item:hover,
+.content .navbar .dropdown-item.active {
+    background: var(--dark);
+}
+
+.content .navbar .dropdown-toggle::after {
+    margin-left: 6px;
+    vertical-align: middle;
+    border: none;
+    content: "\f107";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    transition: .5s;
+}
+
+.content .navbar .dropdown-toggle[aria-expanded=true]::after {
+    transform: rotate(-180deg);
+}
+
+@media (max-width: 575.98px) {
+    .content .navbar .navbar-nav .nav-link {
+        margin-left: 15px;
+    }
+}
+
+
+/*** Date Picker ***/
+.bootstrap-datetimepicker-widget.bottom {
+    top: auto !important;
+}
+
+.bootstrap-datetimepicker-widget .table * {
+    border-bottom-width: 0px;
+}
+
+.bootstrap-datetimepicker-widget .table th {
+    font-weight: 500;
+}
+
+.bootstrap-datetimepicker-widget.dropdown-menu {
+    padding: 10px;
+    border-radius: 2px;
+}
+
+.bootstrap-datetimepicker-widget table td.active,
+.bootstrap-datetimepicker-widget table td.active:hover {
+    background: var(--primary);
+}
+
+.bootstrap-datetimepicker-widget table td.today::before {
+    border-bottom-color: var(--primary);
+}
+
+/* Ensure Tempus Dominus widget appears above dropdowns/modals */
+.bootstrap-datetimepicker-widget {
+    z-index: 200105 !important;
+}
+
+
+/*** Testimonial ***/
+.progress .progress-bar {
+    width: 0px;
+    transition: 2s;
+}
+
+
+/*** Testimonial ***/
+.testimonial-carousel .owl-dots {
+    margin-top: 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.testimonial-carousel .owl-dot {
+    position: relative;
+    display: inline-block;
+    margin: 0 5px;
+    width: 15px;
+    height: 15px;
+    border: 5px solid var(--primary);
+    border-radius: 15px;
+    transition: .5s;
+}
+
+.testimonial-carousel .owl-dot.active {
+    background: var(--dark);
+    border-color: var(--primary);
+}
+
+/* Date filter input styling - sits on dark modal/card but remains interactive */
+.date-filter-input {
+    background-color: #2b2b2b; /* slightly lighter than modal background */
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: .25rem;
+    padding: .375rem .75rem;
+    /* allow native appearance so browser calendar popup works */
+    cursor: text;
+    pointer-events: auto;
+}
+.date-filter-input:focus {
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(13,110,253,0.15);
+}
+/* Keep the native calendar picker visible and usable */
+.date-filter-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9);
+    opacity: 0.9;
+}
+
+/* Label styling for From/To to match the dark card */
+.date-filter-label {
+    background-color: #2b2b2b;
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Container to constrain the date filter area so buttons align nicely */
+.date-filter-container {
+    max-width: 640px;
+    margin: 0 auto; /* center container */
+}
+
+/* Red filter buttons to match theme primary color */
+.date-filter-container .btn-filter-red,
+.btn.btn-filter-red {
+    /* Solid primary button by default (filled red) */
+    background: var(--primary) !important;
+    border: 1px solid var(--primary) !important;
+    color: #fff !important;
+}
+.date-filter-container .btn-filter-red:hover,
+.btn.btn-filter-red:hover,
+.date-filter-container .btn-filter-red:focus,
+.btn.btn-filter-red:focus {
+    /* Slightly darker on hover/focus to look like a pressed button */
+    background: #c30f0f !important;
+    border-color: #c30f0f !important;
+    color: #fff !important;
+}
+
+/* Remove default bullets */
+ul, #myUL {
+    list-style-type: none;
+  }
+  
+  /* Remove margins and padding from the parent ul */
+  #myUL {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Style the caret/arrow */
+  .caret {
+    cursor: pointer;
+    user-select: none; /* Prevent text selection */
+  }
+  
+  /* Create the caret/arrow with a unicode, and style it */
+  .caret::before {
+    content: "\25B6";
+    color: black;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  
+  /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+  .caret-down::before {
+    transform: rotate(90deg);
+  }
+  
+  /* Hide the nested list */
+  .nested {
+    display: none;
+  }
+  
+  /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+  .active {
+    display: block;
+  }
+
+
+/* Hide but keep clickable */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0;          /* make it invisible */
+        position: absolute;  /* take it out of normal flow */
+        width: 100%;         /* cover entire input */
+        height: 100%;
+        cursor: pointer;     /* still clickable */
+    }
+
+    .custom-date-input,
+    .custom-date-input.flatpickr-input {
+      display: inline-block;       /* shrink to content */
+      width: 104px;                 /* let it fit text */
+      min-width: 0;                /* remove bootstrap min-width */
+      padding: 0.25rem 0.5rem;     /* optional: adjust padding */
+      border: 1px solid var(--primary);  /* match your border color */
+      border-radius: 0.25rem;
+      background-color: transparent;
+      color: var(--light) !important;                /* text color */
+      font-size: 0.875rem;         /* match form-select-sm */
+    }
+  
+  /* Make Flatpickr wrapper also shrink */
+    .flatpickr-wrapper {
+      display: inline-block;
+      width: auto !important;
+    }
+
+  .custom-date-input {
+    width: 13ch; /* fits MM-DD-YYYY exactly */
+}
+
+.custom-date-input::placeholder {
+    color: var(--light); /* your theme color */
+    opacity: 1; /* ensures it’s not faded out */
+}
+
+.transaction-date-input {
+    display: inline-block;       /* shrink to content */
+    width: 104px;                 /* let it fit text */
+    min-width: 0;                /* remove bootstrap min-width */
+    padding: 0.25rem 0.5rem;     /* optional: adjust padding */
+    border: 1px solid var(--d);  /* match your border color */
+    border-radius: 0.25rem;
+    background-color: var(--dark);
+    color: var(--light) !important;                /* text color */
+    width: 13ch; /* fits MM-DD-YYYY exactly */   
+}
+
+.transaction-date-input::placeholder {
+    color: var(--light); /* your theme color */
+    opacity: 1; /* ensures it’s not faded out */
+}
+
+.profile-dropdown {
+    color: var(--light);
+    text-decoration: none;
+}
+  
+.profile-dropdown:hover,
+.profile-dropdown:focus {
+    color: var(--light);
+    background: transparent;
+}
+
+.profile-dropdown-toggle::before {
+    content: "\f107"; /* Font Awesome down arrow */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 1rem; /* same as .dropdown-toggle::after */
+    color: var(--light);
+    margin-left: 10px;
+    vertical-align: middle;
+    transition: transform 0.5s ease;
+    display: inline-block;
+}
+
+/* Rotate arrow when dropdown is open */
+.profile-dropdown[aria-expanded="true"] .profile-dropdown-toggle::before {
+    transform: rotate(-180deg);
+}
+
+.account-item {
+    border-radius: 12px;
+  }
+  
+  .account-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background-color: var(--dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .account-icon-wrapper i {
+    color: #e50914; /* red accent */
+    font-size: 20px;
+  }
+  
+  .account-name {
+    color: #ddd;
+    font-size: 15px;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .account-balance {
+    color: #aaa;
+    font-size: 14px;
+  }
+  
+  .section-divider {
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 3rem 0;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
+  }
+
+  .section-divider.top-only {
+    margin-top: 40px;
+    margin-bottom: 10px;
+  }
+  
+  .section-divider.bottom-only {
+    margin-top: 10px;
+    margin-bottom: 50px;
+  }
+  
+  .section-divider-account {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 1rem 0;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
+  }
+
+  .section-divider-account-title {
+    height: 5px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 1rem 0;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    opacity: 0.4;
+    animation: glowmove 3s linear infinite;
+  }
+
+
+  .table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+tbody tr:nth-child(even) {
+    background-color: rgba(255,255,255,0.02);
+}
+
+.limit-input, .limit-text {
+    transition: all 0.2s ease;
+  }
+
+.table-hover tbody tr:hover {
+background-color: rgba(255, 255, 255, 0.05);
+transition: background-color 0.2s;
+}
+.limit-input, .limit-text {
+transition: all 0.2s ease;
+}
+.table-responsive::-webkit-scrollbar {
+width: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+background-color: rgba(255, 255, 255, 0.2);
+border-radius: 3px;
+}
+.table-responsive::-webkit-scrollbar-track {
+background: transparent;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255,255,255,0.05);
+    border-radius: 6px;
+}
+
+.form-control {
+    background-color: var(--light);
+}
+
+.form-check-input {
+    background-color: var(--light);
+}
+
+#transactionstable tbody tr:nth-child(odd) {
+    background-color: var(--dark) !important; /* dark gray */
+}
+
+#transactionstable tbody tr:nth-child(even) {
+    background-color: var(--light) !important; /* slightly lighter gray */
+}
+
+/* Hover effect */
+#transactionstable tbody tr:hover {
+    background-color: #343a40 !important; /* darker hover */
+    transition: background-color 0.2s ease-in-out !important;
+}
+
+.card {
+    backdrop-filter: blur(10px);
+    background-color: rgba(45, 45, 45, 0.85);
+  }
+  
+  .form-control, .form-select {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+  }
+  
+  .btn-primary {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  }
+  
+  .hidefield {
+    display: none;
+  }
+  
