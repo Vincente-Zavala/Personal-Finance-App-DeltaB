@@ -20,7 +20,7 @@
   bottom: 4px;
   width: 10px;    /* adjust size */
   height: 10px;   /* adjust size */
-  background: red;
+  background: var(--primary);
   clip-path: polygon(100% 0, 0 100%, 100% 100%); /* triangle with apex at bottom-right */
   pointer-events: none;
   z-index: 2;
@@ -30,16 +30,16 @@
 .flatpickr-day:hover,
 .flatpickr-day:focus {
   border-radius: 0 !important; /* square corners */
-  border: 1px solid #0d6efd;   /* blue outline on hover */
+  border: 1px solid var(--primary);   /* blue outline on hover */
   background: transparent;     /* keep background clear */
-  color: red;
+  color: var(--primary);
 }
 
 /* Selected day: solid red square with white text and black border */
 .flatpickr-day.selected,
 .flatpickr-day.selected:hover {
   border-radius: 0 !important; /* square */
-  background: red !important;  /* red box */
-  color: white !important;     /* white text */
+  background: var(--primary) !important;  /* red box */
+  color: var(--primesec) !important;     /* white text */
   border: 1px solid black !important; /* black border */
 }  

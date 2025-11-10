@@ -758,7 +758,7 @@ padding: 1rem;
   
 
 .fc-day-today {
-    background-color: #b91c1c !important;
+    background-color: var(--primary) !important;
     color: white !important;
 }
 
@@ -791,34 +791,22 @@ padding: 1rem;
   
   /* Active button (like "Today") */
   .fc-button-active {
-    background-color: #b91c1c !important;
+    background-color: (var(--primesec)) !important;
     color: #fff !important;
   }
   
   /* ===== Events testing ===== */
-  /* .fc .fc-event {
-    border: 2px solid #0c0c0c !important;
-    border-color: #0c0c0c !important;
-    border-radius: 8px !important;
-    background: linear-gradient(135deg, #dc2626, #7f1d1d) !important;
-    color: #fff !important;
+  .fc .fc-event {
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    background: var(--bs-dark);
+    color: inherit;
     font-weight: 500;
     font-size: 0.9rem;
-    padding: 4px 8px !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    box-shadow: none;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-  } */
-
-.fc-event {
-    outline: 2px solid white !important;
-}
-  
-.fc-event:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    filter: brightness(1.1);
-}
-  
+  } 
   
 
 /* Task Card Styles */
@@ -894,20 +882,20 @@ padding: 1rem;
   
   .divider-label {
     background: var(--secondary);
-    color: #f87171;
+    color: var(--primary);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     padding: 0.25rem 1rem;
     font-size: 0.9rem;
-    border: 1px solid rgba(220,38,38,0.3);
+    border: 1px solid var(--primary);
     border-radius: 20px;
-    box-shadow: 0 0 8px rgba(220,38,38,0.2);
+    box-shadow: 0 0 8px var(--primary);
   }
 
 .task-completed {
     text-decoration: line-through;
-    text-decoration-color:  #EB1616 !important;
+    text-decoration-color: var(--primary) !important;
     text-decoration-thickness: 2px;
     color: white !important;
     opacity: 1;

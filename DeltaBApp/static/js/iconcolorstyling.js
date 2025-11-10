@@ -21,30 +21,44 @@ const categoryTypeStyles = {
     retirement: { color: "#4F46E5", icon: "fa-umbrella-beach" },
     digitalwallet: { color: "#9333EA", icon: "fa-wallet" },
   };
-  
 
-  function applyCategoryStyles(selector, stylesMap) {
-    document.querySelectorAll(selector).forEach(card => {
+
+function applyCategoryStyles(selector, stylesMap) {
+  document.querySelectorAll(selector).forEach(card => {
+    // Try to get type from data-type (preferred for reminders)
+    const badge = card.querySelector(".badge[data-type]");
+    let type = badge?.dataset.type?.toLowerCase()?.trim();
+
+    // If not found, fall back to text from <p> or <h5>
+    if (!type) {
       const typeEl = card.querySelector("p, h5");
-      const type = typeEl?.innerText.toLowerCase().trim().replace(/\s+/g, "");
-      const style = stylesMap[type];
-      
-      if (style) {
-        // Set accent color variables
-        card.style.setProperty("--accent-color", style.color);
-        const rgb = style.color.match(/[A-Fa-f0-9]{2}/g)
-          .map(x => parseInt(x, 16))
-          .join(", ");
-        card.style.setProperty("--accent-rgb", rgb);
-  
-        // Apply color to icon & heading
-        const icon = card.querySelector("i");
-        if (icon) icon.style.color = style.color;
+      type = typeEl?.innerText?.toLowerCase()?.trim()?.replace(/\s+/g, "");
+    }
+
+    console.log("Detected category:", type);
+
+    const style = stylesMap[type];
+    if (style) {
+      // Set accent color CSS variables
+      card.style.setProperty("--accent-color", style.color);
+      const rgb = style.color.match(/[A-Fa-f0-9]{2}/g)
+        .map(x => parseInt(x, 16))
+        .join(", ");
+      card.style.setProperty("--accent-rgb", rgb);
+
+      // Apply color to icon
+      const icon = card.querySelector("i");
+      if (icon) icon.style.color = style.color;
+
+      // Apply color to badge if exists
+      if (badge) {
+        badge.style.backgroundColor = style.color;
       }
-    });
-  }
-  
-  // Run on page load
-  document.addEventListener("DOMContentLoaded", () => {
-    applyCategoryStyles(".category-border", categoryTypeStyles);
+    }
   });
+}
+
+// Run on page load
+document.addEventListener("DOMContentLoaded", () => {
+  applyCategoryStyles(".category-border", categoryTypeStyles);
+});

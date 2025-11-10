@@ -983,6 +983,23 @@ def addhistoricaltime(request):
 
 
 
+# DELETE HISTORICAL BALANCE
+def deleteperiod(request):
+
+    user=request.user
+
+    if request.method == "POST":
+        month = request.POST.get('month')
+        year = request.POST.get('year')
+
+        MonthlySummary.objects.filter(month=month, year=year, user=user).delete()
+
+    return redirect('historicalbalance')
+
+
+
+
+
 # EDIT SUMMARY AMOUNT #
 @login_required
 def editsummaryamount(request):

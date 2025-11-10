@@ -13,6 +13,7 @@ urlpatterns = [
     path('newtransactions/', views.newtransactions, name='newtransactions'),
     path('addpendingtransaction/', views.addpendingtransaction, name='addpendingtransaction'),
     path('addhistoricaltime/', views.addhistoricaltime, name='addhistoricaltime'),
+    path('deleteperiod/', views.deleteperiod, name='deleteperiod'),
     path('alltransactions/', views.alltransactions, name='alltransactions'),
     path('tasks/', views.tasks, name='tasks'),
     path('goals/', views.goals, name='goals'),

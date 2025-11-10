@@ -67,7 +67,7 @@
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
                     <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-sitemap me-2"></i>Goals</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-calendar-alt me-2"></i>Reminders</a>
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link active"><i class="fa fa-calendar-alt me-2"></i>Reminders</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-stream me-2"></i>Add Transaction</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-cogs me-2"></i>Configuration</a>
@@ -188,11 +188,11 @@
                                         <option value="" selected>Select Category...</option>
                                         {% for categorytype in categorytypes %}
                                         {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
-                                        {% for category in categorytype.category_set.all %}
                                         <optgroup label="{{ categorytype.name }}">
-                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% for category in categorytype.category_set.all %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% endfor %}
                                         </optgroup>
-                                        {% endfor %}
                                         {% endif %}
                                         {% endfor %}
                                     </select>                                
@@ -209,7 +209,7 @@
                             {% for reminder in reminders %}
                             <form method="POST" action="{% url 'deletereminder' %}">
                                 {% csrf_token %}
-                                <div class="bill-card position-relative p-3 rounded-3 bg-dark shadow-sm">
+                                <div class="bill-card category-border border border-light position-relative p-3 rounded-3 bg-dark shadow-sm">
                                     <!-- Checkbox on the left -->
                                     <div class="d-flex align-items-center gap-3">
                                         <!-- <input type="checkbox" class="form-check-input m-0"> -->
@@ -222,12 +222,13 @@
                                     </div>
                             
                                     <!-- Floating badge (top-right) -->
-                                    <span class="badge bg-primary position-absolute top-0 end-0 m-2">{{ reminder.category }}</span>
+                                    <span class="badge bg-secondary position-absolute top-0 end-0 m-2"
+                                    data-type="{{ reminder.category.type|lower }}">{{ reminder.category }}</span>
                             
                                     <!-- Amount + Delete button in bottom-right corner -->
                                     <div class="bottom-right d-flex align-items-center gap-2">
                                         <span class="bill-amount text-white fw-bold">${{ reminder.amount }}</span>
-                                        <button id="deletereminder" name="deletereminder" value="{{ reminder.id}}" class="btn btn-sm p-1 text-light"><i class="fa fa-times"></i></button>
+                                        <button id="deletereminder" name="deletereminder" value="{{ reminder.id}}" class="btn btn-sm p-1 text-light"><i class="fa fa-times text-light"></i></button>
                                     </div>
                                 </div>
                             </form>
@@ -360,14 +361,17 @@
         [
           {% for reminder in reminders %}
             {
-              "title": "{{ reminder.name|escapejs }}",
+              "name": "{{ reminder.name|escapejs }}",
+              "amount": "{{ reminder.amount|floatformat:2 }}",
               "start": "{{ reminder.date|date:'Y-m-d' }}",
-              "color": "#dc3545"
+              "categoryType": "{{ reminder.category.type|lower }}"
             }{% if not forloop.last %},{% endif %}
           {% endfor %}
         ]
     </script>      
     <script src="{% static 'js/fullcalendar.js' %}"></script>
+
+    <script src="{% static 'js/iconcolorstyling.js' %}"></script> 
 
     <script src="{% static 'js/tasks.js' %}"></script>
     <script>const taskCompleteUrl = "{% url 'taskcomplete' %}";</script>
