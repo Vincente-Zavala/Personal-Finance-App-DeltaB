@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
     path('', RedirectView.as_view(url='home')),
-    path('index/', views.index, name='index'),
+    path('breakdown/', views.breakdown, name='breakdown'),
     path('overview/', views.overview, name='overview'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('newuser/', views.newuser, name='newuser'),

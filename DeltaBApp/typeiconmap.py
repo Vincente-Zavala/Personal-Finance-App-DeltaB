@@ -3,7 +3,7 @@ TYPEICONMAP = {
     "Expense": "fa-receipt",
     "Savings": "fa-piggy-bank",
     "Investment": "fa-chart-line",
-    "Debt": "fa-book",
+    "Debt": "fa-file-invoice-dollar",
     "Transfer": "fa-retweet",
-    "Checking Account": "fa-file-invoice-dollar",
+    "Retirement": "fa-sun",
 }

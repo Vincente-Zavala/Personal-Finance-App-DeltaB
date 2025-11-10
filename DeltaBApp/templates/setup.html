@@ -46,103 +46,96 @@
 
         <!-- Left Sidebar Start -->
         <div class="sidebar-left sidebar pe-4 pb-3">
-            <nav class="navbar navbar-dark">
-                <a href="{% url 'index' %}" class="navbar-brand mx-4 mb-3">
+            <div class="navbar navbar-dark">
+                <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-3">
                     <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
                 </a>
-                <div class="d-flex align-items-center ms-4 mb-4">
-                    <div class="position-relative">
-                        <img class="rounded-circle" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                        <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
-                    </div>
-                    <div class="ms-3">
-                        <h6 class="mb-0">{{ name }}</h6>
-                        <span>Admin NU</span>
-                    </div>
-                </div>
                 <div class="navbar-nav w-100">
-                    <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Overview</a>
-                    <a href="{% url 'index' %}" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Breakdown</a>
+                    <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-chart-column me-2"></i>Overview</a>
+                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
-                    <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
-                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Goals</a>
-                    <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
-                    <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a>
+                    <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
+                    <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
+                    <a href="{% url 'goals' %}" class="nav-item nav-link"><i class="fa fa-sitemap me-2"></i>Goals</a>
+                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-calendar-alt me-2"></i>Reminders</a>
+                    <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-stream me-2"></i>Add Transaction</a>
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle active show" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
-                        <div class="dropdown-menu bg-transparent border-0 show" data-bs-popper="none">
+                        <a href="#" class="nav-link dropdown-toggle active show" data-bs-toggle="dropdown"><i class="fa fa-cogs me-2"></i>Configuration</a>
+                        <div class="dropdown-menu bg-transparent border-0 show">
                             <a href="{% url 'setup' %}" class="dropdown-item active">Setup</a>
                             <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
                             <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
-                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts NU</a>-->
+                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts</a>-->
                         </div>
                     </div>
                     <!-- <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="{% url 'signin' %}.html" class="dropdown-item">Sign In NU</a>
+                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
                             <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
                             <a href="404.html" class="dropdown-item">404 Error NU</a>
                             <a href="blank.html" class="dropdown-item">Blank Page NU</a>
                         </div> -->
                     </div>
                 </div>
-            </nav>
+            </div>
         </div>
         <!-- Left Sidebar End -->
 
 
         <!-- Right Sidebar Start -->
-        <div class="sidebar-right sidebar ps-4 pb-3">
-            <nav class="navbar navbar-dark">
-                <div class="navbar-nav align-items-center ms-auto mt-2">
-                    <div class="nav-item dropdown mb-4">
-                        <a href="#" class="d-flex align-items-center profile-dropdown" data-bs-toggle="dropdown">
-                            <!-- Avatar + status -->
-                            <div class="position-relative">
-                                <img class="rounded-circle" src="{% static 'img/user.jpg' %}" alt="" style="width: 40px; height: 40px;">
-                                <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
-                            </div>
-            
-                            <!-- Name + Role -->
-                            <div class="ms-3 d-none d-lg-block text-start">
-                                <h6 class="mb-0">{{ name }}</h6>
-                                <small class="text-muted">Admin NU</small>
-                            </div>
-                            <span class="profile-dropdown-toggle"></span>
-                        </a>
-                        <!-- Dropdown -->
-                        <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
-                            <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
-                                {% csrf_token %}
-                                <a type="button" class="dropdown-item" onclick="document.getElementById('logoutform').submit(); return false;">Logout</a>
-                            </form>
+        <div class="sidebar-right sidebar pb-3 bg-dark text-light">
+            <nav class="navbar navbar-dark flex-column align-items-stretch">
+                
+                <!-- Profile Section -->
+                <div class="nav-item dropdown text-center mb-4">
+                    <a href="#" class="d-flex align-items-center justify-content-center profile-dropdown" data-bs-toggle="dropdown">
+                        <div class="position-relative me-2">
+                            <img class="rounded-circle shadow-sm" src="{% static 'img/user.jpg' %}" alt="Profile" style="width: 50px; height: 50px;">
+                            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
                         </div>
+                        <div class="d-none d-lg-block text-start">
+                            <h6 class="mb-0 fw-semibold text-primesec">{{ name }}</h6>
+                            <small class="text-light">Admin NU</small>
+                        </div>
+                        <i class="fa fa-chevron-down ms-2 small text-primesec"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 shadow rounded-3 mt-2">
+                        <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
+                            {% csrf_token %}
+                            <a class="dropdown-item text-primesec py-2" href="#" onclick="document.getElementById('logoutform').submit(); return false;">
+                                <i class="fa fa-sign-out-alt me-2 text-primesec"></i>Logout
+                            </a>
+                        </form>
                     </div>
-                    <!-- <h4>Accounts</h4> -->
-                    <div class="row g-3 mt-2">
-                        <div class="section-divider-account-title"></div>
+                </div>
+
+                <!-- Accounts List -->
+                <div class="account-list-container px-2">
+                    <div class="test-divider my-4">
+                        <span class="test-label">Accounts</span>
+                    </div>  
+                    <div class="account-list">
                         {% for accounttype in accounttypes %}
                         {% for account in accounttype.account_set.all %}
-                        <div class="col-12">
-                            <div class="account-item d-flex align-items-center">
-                              <!-- Icon on the left -->
-                              <div class="account-icon-wrapper me-3">
-                                <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }}"></i>
-                              </div>
-                        
-                              <!-- Name and balance stacked -->
-                              <div class="d-flex flex-column justify-content-center text-truncate">
-                                <span class="account-name fw-semibold text-truncate">{{ account.name }}</span>
-                                <span class="account-balance fw-semibold">${{ account.balance }}</span>
-                              </div>
+                        <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
+                        data-account-type="{{ account.type.name|lower }}">
+                            <div class="d-flex align-items-center">
+                                <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                    <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
+                                </div>
+                                <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
                             </div>
+                            <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
-                        <div class="section-divider-account"></div>                  
                         {% endfor %}
                         {% endfor %}
-                    </div>                    
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="sidebar-footer mt-auto text-center pt-3">
+                    <small class="text-muted">© 2025 FinanceApp</small>
                 </div>
             </nav>
         </div>
@@ -154,19 +147,11 @@
 
             <!-- Button Start -->
             <div class="container-fluid pt-4 px-4">
-                <div class="row">
-                    <div class="d-flex justify-content-between">
-                        <div style="width: 20%;">
-                            <div class="px-4 py-2 d-inline-block text-light w-100 text-start">
-                                <h2 class="under fw-semibold text-primary mb-3"><u>Setup</u></h2>
-                            </div>                              
+                <div class="row g-4">
+                    <div class="card bg-bs-dark border border-light shadow-sm p-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                          <h2 class="fw-semibold text-primesec mb-0"><i class="fa fa-cog me-2"></i>Setup</h2>
                         </div>
-                        <!-- <div style="width: 40%;">
-                            <div class="px-4 py-2 rounded-pill border border-primary d-inline-block text-light w-100 text-start">
-                                <div><span class="fw-semibold text-primary">Net Income:</span> ${{ total_income }}</div>
-                                <div><span class="fw-semibold text-primary">Total Expenses:</span> ${{ total_expenses }}</div>
-                            </div>                              
-                        </div> -->
                     </div>
 
                     <!-- New Category/Account Inputs -->
@@ -190,6 +175,7 @@
                                         <legend class="col-form-label col-sm-2 pt-0">Category Type</legend>
                                         <div class="col-sm-10">
                                             {% for categorytype in categorytypes %}
+                                            {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="categorychoice" value="{{ categorytype.id }}"
                                                     id="categorytype{{categorytype.id}}" value="{{categorytype.id}}" checked>
@@ -197,6 +183,7 @@
                                                     {{ categorytype.name }}
                                                 </label>
                                             </div>
+                                            {% endif %}
                                             {% endfor %}
                                         </div>
                                     </fieldset>
@@ -265,9 +252,15 @@
                                                 <h6 class="mb-0 text-primary">{{ categorytype.name }}</h6>
                                             </div>
                                             <ul class="text-white pt-3 ms-4">
-                                                {% for category in categorytype.category_set.all %}
-                                                <li>{{ category.name }}</li>
-                                                {% endfor %}
+                                                {% if categorytype.name == "Refund" %}
+                                                    {% for category in categorytype.displaycategories %}
+                                                    <li>{{ category.name }}</li>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    {% for category in categorytype.category_set.all %}
+                                                    <li>{{ category.name }}</li>
+                                                    {% endfor %}
+                                                {% endif %}
                                             </ul>
                                         </div>
                                     </div>

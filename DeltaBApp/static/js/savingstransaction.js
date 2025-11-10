@@ -23,11 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
     new Chart(ctx, {
       type: "line",
       data: {
-        labels: savingsData.labels,
         datasets: [{
           data: savingsData.data,
-          borderColor: "rgba(235, 22, 22, 1)",
-          backgroundColor: "rgba(235, 22, 22, 0.2)",
+          borderColor: "rgba(0, 71, 119, 1)",
+          backgroundColor: "rgba(0, 71, 119, 0.2)",
           fill: true,
           tension: 0.3
         }]

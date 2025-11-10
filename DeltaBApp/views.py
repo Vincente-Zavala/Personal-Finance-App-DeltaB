@@ -649,6 +649,10 @@ def newuser(request):
         )
         user.save()
 
+        # CREATE TRANSFER CATEGORY
+        transfertype = CategoryType.objects.get(name="Transfer")
+        Category.objects.create(name="Transfer", type=transfertype, user=user)
+
     return redirect("signin")
 
 
@@ -696,31 +700,6 @@ def addinput(request):
 
 
         return redirect("setup")
-
-
-
-
-
-# FILTER CATEGORIES/ACCOUNTS #
-# def filtertransactions(request):
-
-#     if request.method == "POST":
-#         categorychoices = request.POST.getlist("filtercategorychoice")
-#         print("DEBUG: Category Choice: ", categorychoices)
-#         accountchoices = request.POST.getlist("filteraccountchoice")
-#         print("DEBUG: Category Choice: ", accountchoices)
-
-#         for category in categorychoices:
-#             for account in accountchoices:
-
-#                 transactions = Transaction.objects.filter(category = category, account = account).order_by("-date")
-
-#         context = {
-#             "transactions": transactions
-#         }
-
-
-#         return render(request, "alltransactions.html", context)
 
 
 
@@ -1254,7 +1233,7 @@ def transactionsum(request, user):
         "date_tree": date_tree,
     }
 
-    return render(request, "index.html", context)
+    return render(request, "breakdown.html", context)
 
 
 
@@ -1282,16 +1261,6 @@ def edit_categorytype_limits(request, pk):
 
 # TRANSACTIONS FILTER #
 def filtertransactions(request):
-    """Handle filter form submission and render the alltransactions view with filtered transactions.
-
-    Supported filters (from the modal):
-    - date_start (YYYY-MM-DD)
-    - date_end (YYYY-MM-DD)
-    - filteramount (single number or range like 10-50)
-    - filternote (text, substring match)
-    - categories (multiple checkbox values)
-    - accounts (multiple checkbox values)
-    """
 
     user = request.user
 
@@ -1392,15 +1361,40 @@ def filtertransactions(request):
         selectedcategories = request.POST.getlist("filtercategorychoice")
         selectedaccounts = request.POST.getlist("filteraccountchoice")
 
-        if selectedcategories:
-            transactions = transactions.filter(category__id__in=selectedcategories, user=user)
-            names = list(Category.objects.filter(id__in=selectedcategories, user=user).values_list("name", flat=True))
-            appliedfilters.append("Categories: " + ", ".join(names))
 
-        if selectedaccounts:
-            transactions = transactions.filter(sourceaccount__id__in=selectedaccounts, user=user)
-            names = list(Account.objects.filter(id__in=selectedaccounts, user=user).values_list("name", flat=True))
-            appliedfilters.append("Accounts: " + ", ".join(names))
+        refundtype = CategoryType.objects.get(name="Refund")
+
+        print("Debug refundtype", refundtype)
+
+        if str(refundtype.id) in selectedcategorytypes:
+            transactions = transactions.filter(categorytype__id__in=selectedcategorytypes, user=user)
+
+        else:
+
+            # Apply category and type filters
+            if selectedcategories:
+                transactions = transactions.filter(category__id__in=selectedcategories, user=user)
+                names = list(Category.objects.filter(id__in=selectedcategories, user=user).values_list("name", flat=True))
+                appliedfilters.append("Category: " + ", ".join(names))
+
+            if selectedcategorytypes:
+                transactions = transactions.filter(categorytype__id__in=selectedcategorytypes, user=user)
+                names = list(CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True))
+                appliedfilters.append("Type: " + ", ".join(names))
+
+            # --- Exclude refunds from Expense filter ---
+            selected_type_names = list(
+                CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True)
+            )
+            if "Expense" in selected_type_names and "Refund" not in selected_type_names:
+                transactions = transactions.exclude(categorytype__name__iexact="Refund")
+
+
+            if selectedaccounts:
+                transactions = transactions.filter(sourceaccount__id__in=selectedaccounts, user=user)
+                names = list(Account.objects.filter(id__in=selectedaccounts, user=user).values_list("name", flat=True))
+                appliedfilters.append("Account: " + ", ".join(names))
+
 
 
 
@@ -1409,8 +1403,8 @@ def filtertransactions(request):
 
     categories = categorylist(user)
     accounts = accountlist(user)
-    categorytypes = categorytypelist()
-    accounttypes = accounttypelist()
+    categorytypes = categorytypelist(user)
+    accounttypes = accounttypelist(user)
     date_tree = builddatetree(user)
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
 
@@ -1423,6 +1417,7 @@ def filtertransactions(request):
         "appliedfilters": appliedfilters,
         #"source_accounts": accounts,
         #"final_accounts": accounts,
+        "selectedcategorytypes": selectedcategorytypes,
         "selectedcategories": selectedcategories,
         "selectedaccounts": selectedaccounts,
         "date_tree": {year: dict(months) for year, months in date_tree.items()},
@@ -1576,7 +1571,7 @@ def overview(request):
     print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
 
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
     
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
@@ -1610,7 +1605,7 @@ def overview(request):
 
 
 @login_required
-def index(request):
+def breakdown(request):
 
     user=request.user
 
@@ -1629,7 +1624,7 @@ def index(request):
     print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
 
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
     
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
@@ -1651,7 +1646,7 @@ def index(request):
         "selected_year": selected_year,
     }
 
-    return render(request, 'index.html', context)
+    return render(request, 'breakdown.html', context)
 
 
 
@@ -1704,10 +1699,10 @@ def dashboard(request):
 def newtransactions(request):
     user=request.user
     name = request.user.get_full_name()
-    categorytypes = categorytypelist()
+    categorytypes = categorytypelist(user)
     categories = categorylist(user=user)
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
     transactions = Transaction.objects.filter(user=user).order_by('-id')[:7]
 
     source_accounts = accounts
@@ -1736,9 +1731,9 @@ def alltransactions(request):
     name = request.user.get_full_name()
 
     categories = categorylist(user=user)
-    categorytypes = categorytypelist()
+    categorytypes = categorytypelist(user)
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
 
     transactionchron = Transaction.objects.filter(user=user).order_by('date')
     pendingtransactions = PendingTransaction.objects.filter(user=user).order_by('-id')
@@ -1766,18 +1761,16 @@ def alltransactions(request):
     source_accounts = accounts
     final_accounts = accounts
 
-    # selectedcategories = []
-    # selectedaccounts = []
-
-    # if request.method == "POST":
-    #     selectedcategories = request.POST.getlist("filtercategorychoice")
-    #     selectedaccounts = request.POST.getlist("filteraccountchoice")
-
-    #     if selectedcategories:
-    #         transactions = transactions.filter(category__id__in=selectedcategories)
-
-    #     if selectedaccounts:
-    #         transactions = transactions.filter(sourceaccount__id__in=selectedaccounts)
+    try:
+        expensetype = CategoryType.objects.get(name="Expense")
+        expensecategories = Category.objects.filter(user=user, type=expensetype)
+        
+        # Attach displaycategories to the Refund object in the list
+        for ct in categorytypes:
+            if ct.name == "Refund":
+                ct.displaycategories = expensecategories
+    except CategoryType.DoesNotExist:
+        pass
 
 
     context = {
@@ -1816,11 +1809,11 @@ def budget(request):
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
 
-    # All lists you had in table()
-    categories = Category.objects.filter(user=user)
-    categorytypes = CategoryType.objects.prefetch_related("category_set")
-    accounts = Account.objects.filter(user=user)
-    accounttypes = AccountType.objects.filter()
+    # All lists you had in table
+    categories = categorylist(user)
+    categorytypes = categorytypelist(user)
+    accounts = accountlist(user)
+    accounttypes = accounttypelist(user)
     transactions = Transaction.objects.filter(user=user)
 
     print("Debug, categorytypes totals", categorytype_totals)
@@ -1849,10 +1842,23 @@ def setup(request):
     user=request.user
     name = request.user.get_full_name()
     categories = categorylist(user=user)
-    categorytypes = categorytypelist()
+    categorytypes = categorytypelist(user)
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
     transactions = transactionlist(user=user)
+
+    try:
+        expensetype = CategoryType.objects.get(name="Expense")
+        expensecategories = Category.objects.filter(user=user, type=expensetype)
+        
+        # Attach displaycategories to the Refund object in the list
+        for ct in categorytypes:
+            if ct.name == "Refund":
+                ct.displaycategories = expensecategories
+    except CategoryType.DoesNotExist:
+        pass
+
+    print("Debug user", name, user.id)
 
 
     context = {
@@ -1874,10 +1880,10 @@ def historicalbalance(request):
     user = request.user
     name = request.user.get_full_name()
 
-    categories = Category.objects.filter(user=user)
-    categorytypes = CategoryType.objects.prefetch_related("category_set")
-    accounts = Account.objects.filter(user=user)
-    accounttypes = AccountType.objects.all()
+    categories = categorylist(user)
+    categorytypes = categorytypelist(user)
+    accounts = accountlist(user)
+    accounttypes = accounttypelist(user)
     transactions = Transaction.objects.filter(user=user)
 
     # Build time period from existing MonthlySummary records
@@ -1925,14 +1931,14 @@ def tasks(request):
     name = request.user.get_full_name()
 
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
 
     tasks = tasklist(user)
     activetasks = tasks.filter(complete=False)
     completedtasks = tasks.filter(complete=True)
 
     categories = categorylist(user=user)
-    categorytypes = categorytypelist()
+    categorytypes = categorytypelist(user)
 
     reminders = reminderlist(user)
 
@@ -1961,7 +1967,7 @@ def goals(request):
     name = request.user.get_full_name()
 
     accounts = accountlist(user=user)
-    accounttypes = accounttypelist()
+    accounttypes = accounttypelist(user)
     savingstransactions = Transaction.objects.filter(user=user, categorytype__name="Savings")
 
     goals = goallist(user=user)
@@ -2025,7 +2031,7 @@ def signin(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect("index")
+            return redirect("overview")
     else:
         form = AuthenticationForm()
 
@@ -2062,8 +2068,17 @@ def home(request):
 def categorylist(user):
     return Category.objects.filter(user=user)
 
-def categorytypelist():
-    return CategoryType.objects.all()
+def categorytypelist(user):
+    TYPE_ORDER = ['Income', 'Expense', 'Savings', 'Debt', 'Investment', 'Retirement', 'Transfer', 'Refund']
+
+    categorytypes = sorted(
+        CategoryType.objects.prefetch_related(
+            Prefetch('category_set', queryset=Category.objects.filter(user=user))
+        ),
+        key=lambda t: TYPE_ORDER.index(t.name) if t.name in TYPE_ORDER else 999
+    )
+
+    return categorytypes
 
 
 def accountlist(user):
@@ -2078,11 +2093,11 @@ def reminderlist(user):
 def goallist(user):
     return Goal.objects.filter(user=user)
 
-def accounttypelist():
+def accounttypelist(user):
     TYPE_ORDER = ['Checking Account', 'Credit Card', 'Savings Account', 'Investment', 'Retirement', 'Loan', 'Cash', 'Digital Wallet']
 
     accounttypes = sorted(
-        AccountType.objects.prefetch_related('account_set'),
+        AccountType.objects.prefetch_related(Prefetch('account_set', queryset=Account.objects.filter(user=user))),
         key=lambda t: TYPE_ORDER.index(t.name) if t.name in TYPE_ORDER else 999
     )
     return accounttypes

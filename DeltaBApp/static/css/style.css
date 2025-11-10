@@ -1,6 +1,7 @@
 /********** Template CSS **********/
 :root {
-    --primary: #EB1616;
+    --primary: #00ab89;
+    --primesec: #E6EFED;
     --primary-glow: rgba(235, 22, 22, 0.4);
     --secondary: #191C24;
     --light: #6C7293;
@@ -87,6 +88,7 @@
 
 .sidebar-left {
     left: 0;
+    background: var(--secondary);
 }
 
 .sidebar-right {
@@ -100,6 +102,56 @@
     background: var(--dark);
     transition: 0.5s;
 }
+
+.account-list {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .account-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .sidebar-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+  }
+  
+  
+
+/* Divider line between accounts */
+.section-divider-account {
+    width: 85%;
+    height: 1px;
+    background-color: #333;
+    margin: 4px 0;
+}
+
+
+
+.sidebar-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+#periodForm select:focus,
+#periodForm input:focus {
+    box-shadow: none !important;
+    border-color: var(--bs-primary);
+}
+
+#periodForm .btn-group .btn.active {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
 
 @media (min-width: 992px) {
     .sidebar {
@@ -141,7 +193,7 @@
 /*** Navbar ***/
 .sidebar .navbar .navbar-nav .nav-link {
     padding: 7px 20px;
-    color: var(--light);
+    color: var(--primesec);
     font-weight: 500;
     border-left: 3px solid var(--secondary);
     border-radius: 0 30px 30px 0;
@@ -198,7 +250,7 @@
 .sidebar .navbar .dropdown-item {
     padding-left: 25px;
     border-radius: 0 30px 30px 0;
-    color: var(--light);
+    color: var(--primesec);
 }
 
 .sidebar .navbar .dropdown-item:hover,
@@ -209,7 +261,7 @@
 .content .navbar .navbar-nav .nav-link {
     margin-left: 25px;
     padding: 12px 0;
-    color: var(--light);
+    color: var(--primesec);
     outline: none;
 }
 
@@ -230,7 +282,7 @@
 }
 
 .content .navbar .dropdown-item {
-    color: var(--light);
+    color: var(--primesec);
 }
 
 .content .navbar .dropdown-item:hover,
@@ -434,7 +486,7 @@ ul, #myUL {
       border: 1px solid var(--primary);  /* match your border color */
       border-radius: 0.25rem;
       background-color: transparent;
-      color: var(--light) !important;                /* text color */
+      color: var(--primesec) !important;                /* text color */
       font-size: 0.875rem;         /* match form-select-sm */
     }
   
@@ -449,7 +501,7 @@ ul, #myUL {
 }
 
 .custom-date-input::placeholder {
-    color: var(--light); /* your theme color */
+    color: var(--primesec); /* your theme color */
     opacity: 1; /* ensures it’s not faded out */
 }
 
@@ -471,13 +523,13 @@ ul, #myUL {
 }
 
 .profile-dropdown {
-    color: var(--light);
+    color: var(--primesec);
     text-decoration: none;
 }
   
 .profile-dropdown:hover,
 .profile-dropdown:focus {
-    color: var(--light);
+    color: var(--primesec);
     background: transparent;
 }
 
@@ -486,7 +538,7 @@ ul, #myUL {
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
     font-size: 1rem; /* same as .dropdown-toggle::after */
-    color: var(--light);
+    color: var(--primesec);
     margin-left: 10px;
     vertical-align: middle;
     transition: transform 0.5s ease;
@@ -532,23 +584,33 @@ ul, #myUL {
     font-size: 14px;
   }
   
-  .section-divider {
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    margin: 3rem 0;
-    opacity: 0.4;
-    animation: glowmove 3s linear infinite;
+  .section-divider.top-only {
+    border-bottom: 2px solid var(--light);
+    opacity: 0.8;
+    margin: 2rem 0;
+    margin-top: 1px;
+    margin-bottom: 10px;
   }
 
-  .section-divider.top-only {
-    margin-top: 40px;
+  .section-divider.bottom-only {
+    border-top: 2px solid var(--light);
+    opacity: 0.8;
+    margin: 2rem 0;
+    margin-top: 10px;
+    margin-bottom: 50px;
+  }
+  
+   
+
+  /* .section-divider.top-only {
+    margin-top: 1px;
     margin-bottom: 10px;
   }
   
   .section-divider.bottom-only {
     margin-top: 10px;
     margin-bottom: 50px;
-  }
+  } */
   
   .section-divider-account {
     height: 2px;
@@ -612,11 +674,11 @@ background: transparent;
 }
 
 .form-control {
-    background-color: var(--light);
+    background-color: var(--primesec);
 }
 
 .form-check-input {
-    background-color: var(--light);
+    background-color: var(--primesec);
 }
 
 #transactionstable tbody tr:nth-child(odd) {
@@ -966,3 +1028,129 @@ padding: 1rem;
     letter-spacing: 0.3px;
     transition: all 0.3s ease;
 }
+
+.sidebar-right {
+    width: 250px;
+    background: var(--secondary) !important;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .account-list-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+  }
+  
+  .account-list-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  .account-list-container::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 10px;
+  }
+  
+  .hover-glow {
+    transition: all 0.2s ease;
+  }
+  .hover-glow:hover {
+    background-color: #2c2c2c;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+
+
+  .test-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-muted, #bbb);
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .test-divider::before,
+  .test-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .test-divider:not(:empty)::before {
+    margin-right: 0.75em;
+  }
+  .test-divider:not(:empty)::after {
+    margin-left: 0.75em;
+  }
+  .test-label {
+    color: var(--primesec);
+    opacity: 0.7;
+  }
+
+  #monthyearsection select,
+  #customsection input {
+    width: 140px; /* or whatever fits your layout */
+    border: 1px solid var(--dark); /* or use a color like #0d6efd */
+    border-radius: 6px; /* optional: smooth corners */
+  }
+
+  .bg-bs-dark {
+    background-color: var(--bs-dark) !important;
+  }
+  
+  
+  .category-card {
+    background-color: var(--bs-dark);
+    color: var(--primesec);
+    padding: 1rem;
+    height: 100%;
+    transition: 0.2s ease;
+    transform: translateY(-2px);
+  }
+  
+  
+.category-border {
+    --accent-color: var(--bs-primary);
+    border: 2px solid var(--primesec);
+    border-radius: 0.75rem;
+    transform: translateY(-2px);
+}
+
+.category-border i {
+    color: var(--accent-color);
+  }
+
+  .category-border tfoot tr {
+    background-color: transparent; /* no fill */
+    color: var(--accent-color);
+  }
+  
+  .category-border tfoot tr td {
+    border-color: rgba(255, 255, 255, 0.2); /* optional subtle border */
+  }
+  
+  .account-border {
+    border: 1px solid var(--light);
+    background-color: var(--bs-dark);
+    color: var(--primary);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .account-border i {
+    color: var(--primary);
+  }  
+
+  .badge {
+    background-color: var(--bs-dark); /* faint tint */
+    color: var(--accent-color);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+  }
+  
+  .category-bullet {
+    color: var(--accent-color);
+  }
+  

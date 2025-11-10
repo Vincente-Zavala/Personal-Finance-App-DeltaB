@@ -58,7 +58,7 @@ INSTALLED_APPS = [
 ]
 
 LOGIN_URL = 'signin'
-LOGIN_REDIRECT_URL = 'index'
+LOGIN_REDIRECT_URL = 'overview'
 AUTH_USER_MODEL = 'DeltaBApp.CustomUser'
 
 
