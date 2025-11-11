@@ -1003,21 +1003,21 @@ def deleteperiod(request):
 # EDIT SUMMARY AMOUNT #
 @login_required
 def editsummaryamount(request):
-
     if request.method == "POST":
-        # month = int(request.POST.get("month"))
-        # year = int(request.POST.get("year"))
         user = request.user
 
         for key, value in request.POST.items():
             if key.startswith("limit_") and value.strip():
                 _, cat_id, m, y = key.split("_")
+                category = Category.objects.get(id=int(cat_id), user=user)
+
                 MonthlySummary.objects.update_or_create(
                     user=user,
-                    category_id=int(cat_id),
+                    category=category,
+                    categorytype=category.type,
                     month=int(m),
                     year=int(y),
-                    defaults={"amount": float(value)}
+                    defaults={"amount": float(value)},
                 )
 
         return redirect("historicalbalance")
