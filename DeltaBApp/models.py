@@ -31,7 +31,7 @@ class CategoryType(models.Model):
 
 # CATEGORY #
 class Category(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
 
@@ -55,7 +55,7 @@ class AccountType(models.Model):
 
 # ACCOUNT #
 class Account(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
