@@ -102,7 +102,7 @@ WSGI_APPLICATION = "DeltaB.wsgi.application"
 DATABASES = {
     "default": dj_database_url.parse(
         "REDACTED_DB_URL/postgres",
-        conn_max_age=30,
+        conn_max_age=60,
         ssl_require=True
     )
 }
