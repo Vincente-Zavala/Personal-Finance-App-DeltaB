@@ -228,7 +228,7 @@
                                             <tbody>
                                                 {% for transaction in pendingtransactions %}
                                                 <tr>
-                                                    <td hidden>
+                                                    <td class="editcol" hidden>
                                                         <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}">
                                                     </td>
                                                     <td>{{ transaction.date }}</td>

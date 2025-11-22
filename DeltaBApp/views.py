@@ -1542,6 +1542,8 @@ def adduploaddata(request):
         date, note, amount, account = row
         print("Debug: row", date, note, amount, account)
 
+        date = datetime.datetime.strptime(str(date), "%m/%d/%y").date()
+
         PendingTransaction.objects.create(
                     amount=amount,
                     note=note,

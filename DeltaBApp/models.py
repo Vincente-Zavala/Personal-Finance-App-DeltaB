@@ -53,13 +53,31 @@ class AccountType(models.Model):
 
 
 
+# INSTITUTION #
+class Institution(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    type = models.CharField(max_length=250)
+
+    def __str__(self):
+        return self.name
+
+
+
+
+
+
 # ACCOUNT #
 class Account(models.Model):
     name = models.CharField(max_length=255)
-    type = models.ForeignKey(AccountType, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, related_name="accounts")
+    type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name="accounts")
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -68,89 +86,46 @@ class Account(models.Model):
 
 
 
+# STATEMENT UPLOAD #
+class StatementUpload(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="statementuploads")
+    file = models.FileField(upload_to='statements/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    # optional metadata
+    institution = models.ForeignKey('Institution', on_delete=models.SET_NULL, null=True, blank=True)
+    account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True, blank=True)
+
+
+
+
+
 # TRANSACTION #
 class Transaction(models.Model):
-    amount = models.DecimalField(max_digits=20, decimal_places=2)
     note = models.CharField(max_length=255)
     date = models.DateField()
-    categorytype = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
-    destinationaccount = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True, related_name='final_transactions')
-    refund = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
+    uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL, null=True, blank=True)
 
-    def signed_amount(self, sourceaccount):
-        amt = self.amount
-        sign = 1
-
-        tx_type = self.categorytype.name.lower()
-
-        # Income
-        if tx_type == "income":
-            return sign * amt
-
-        # Expense
-        elif tx_type == "expense":
-            if sourceaccount == self.sourceaccount:
-                sign = 1 if sourceaccount.type.name in ["Credit Card"] else -1
-                return sign * amt
-
-        # Debt
-        elif tx_type == "debt":
-            if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
-                return sign * amt
-            elif sourceaccount == self.destinationaccount:  # to account
-                sign = -1 if sourceaccount.type.name in ["Credit Card", "Loan"] else 1
-                return sign * amt
-
-        # Savings
-        elif tx_type == "savings":
-            if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
-                return sign * amt
-            elif sourceaccount == self.destinationaccount:  # to account
-                sign = 1 if sourceaccount.type.name == "Savings Account" else -1
-                return sign * amt
-
-        # Investment
-        elif tx_type == "investment":
-            if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
-                return sign * amt
-            elif sourceaccount == self.destinationaccount:  # to account
-                sign = 1 if sourceaccount.type.name == "Investment" else -1
-                return sign * amt
-
-        # Retirement
-        elif tx_type == "retirement":
-            if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name == "Credit Card" else -1
-                return sign * amt
-            elif sourceaccount == self.destinationaccount:  # to account
-                sign = 1 if sourceaccount.type.name == "Retirement" else -1
-                return sign * amt
-
-        # Transfer
-        elif tx_type == "transfer":
-            if sourceaccount == self.sourceaccount:  # from account
-                sign = 1 if sourceaccount.type.name in ["Credit Card", "Loan"] else -1
-                return sign * amt
-            elif sourceaccount == self.destinationaccount:  # to account
-                sign = 1 if sourceaccount.type.name in ["Cash", "Checking Account", "Digital Wallet"] else -1
-                return sign * amt
-
-        # Refund
-        elif tx_type == "refund":
-            if sourceaccount == self.sourceaccount: # from account
-                sign = -1 if sourceaccount.type.name == "Credit Card" else 1
-                return sign * amt
-
-        return 0
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.amount}"
+        return f"{self.note}"
+
+
+
+
+
+# ENTRY #
+class Entry(models.Model):
+    transaction = models.ForeignKey(Transaction,on_delete=models.CASCADE,related_name='entries')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="entries")
+
+    def __str__(self):
+        return f"{self.account.name} {self.amount}"
 
 
 
@@ -171,14 +146,29 @@ class MonthlySummary(models.Model):
 
 # PENDING TRANSACTIONS #
 class PendingTransaction(models.Model):
-    amount = models.DecimalField(max_digits=20, decimal_places=2)
     note = models.CharField(max_length=255)
     date = models.DateField()
-    sourceaccount = models.ForeignKey(Account, on_delete=models.CASCADE)
+    uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL,null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingtransactions")
 
     def __str__(self):
-        return f"{self.amount}"
+        return f"{self.note}"
+
+
+
+
+# PENDING ENTRIES #
+class PendingEntry(models.Model):
+    transaction = models.ForeignKey(PendingTransaction,on_delete=models.CASCADE,related_name='pendingentries')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingentries")
+
+    def __str__(self):
+        return f"{self.account.name} {self.amount}"
+
 
 
 
