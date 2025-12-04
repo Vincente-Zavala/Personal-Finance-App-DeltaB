@@ -39,6 +39,8 @@ function applyCategoryStyles(selector, stylesMap) {
 
     const style = stylesMap[type];
     if (style) {
+      // Progress Bar
+      card.style.setProperty("--accent-color", style.color);
       // Set accent color CSS variables
       card.style.setProperty("--accent-color", style.color);
       const rgb = style.color.match(/[A-Fa-f0-9]{2}/g)
@@ -57,6 +59,7 @@ function applyCategoryStyles(selector, stylesMap) {
     }
   });
 }
+
 
 // Run on page load
 document.addEventListener("DOMContentLoaded", () => {

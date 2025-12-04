@@ -52,7 +52,7 @@
                 </a>
                 <div class="navbar-nav w-100">
                     <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-chart-column me-2"></i>Overview</a>
-                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Breakdown</a>
+                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-scale-balanced me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
@@ -112,19 +112,19 @@
 
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
-                    <div class="test-divider my-4">
+                    <div class="accounts-divider my-4">
                         <span class="test-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
-                        {% for account in accounttype.account_set.all %}
+                        {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
                         data-account-type="{{ account.type.name|lower }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                <span class="account-name fw-medium text-primesec">{{ account.institution.name}} {{ account.name }}</span>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
@@ -156,8 +156,8 @@
 
                     <!-- New Category/Account Inputs -->
                     <div class="col-sm-12 col-xl-12">
-                        <div class="bg-secondary rounded h-100 p-4">
-                            <h6 class="mb-4">New Category/Account Inputs</h6>
+                        <div class="transaction-card rounded-4 p-4 shadow-sm">
+                            <h6 class="mb-4">New Inputs</h6>
                             <form method="POST" action="{% url 'addinput' %}">
                                 {% csrf_token %}
                                 <div class="row mb-3">
@@ -166,8 +166,17 @@
                                         <select id="inputtype" name="inputtype" class="form-select mb-3" aria-label="Default select example">
                                             <option selected>**Options**</option>
                                             <option value="category">Category</option>
+                                            <option value="institution">Bank Institution</option>
                                             <option value="account">Account</option>
                                         </select>
+                                    </div>
+                                </div>
+                                <div id="institutionfields" class="hidefield">
+                                    <div class="row mb-3">
+                                        <label for="inputinstitution" class="col-sm-2 col-form-label">New Institution</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control" id="inputinstitution" name="inputinstitution">
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="categoryfields" class="hidefield">
@@ -176,13 +185,13 @@
                                         <div class="col-sm-10">
                                             {% for categorytype in categorytypes %}
                                             {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="categorychoice" value="{{ categorytype.id }}"
-                                                    id="categorytype{{categorytype.id}}" value="{{categorytype.id}}" checked>
-                                                <label class="form-check-label">
+                                            <label class="radio-card">
+                                                <input type="radio" name="categorytypechoice" value="{{ categorytype.id }}"
+                                                    id="categorytype{{categorytype.id}}">
+                                                <div class="radio-card-body">
                                                     {{ categorytype.name }}
-                                                </label>
-                                            </div>
+                                                </div>
+                                            </label>
                                             {% endif %}
                                             {% endfor %}
                                         </div>
@@ -199,13 +208,27 @@
                                         <legend class="col-form-label col-sm-2 pt-0">Account Type</legend>
                                         <div class="col-sm-10">
                                             {% for accounttype in accounttypes %}
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="accountchoice" value="{{ accounttype.id }}"
-                                                    id="accountype{accounttype.id}}" checked>
-                                                <label class="form-check-label">
+                                            <label class="radio-card">
+                                                <input type="radio" name="accountchoice" value="{{ accounttype.id }}"
+                                                    id="accounttype{{accounttype.id}}">
+                                                <div class="radio-card-body">
                                                     {{ accounttype.name }}
-                                                </label>
-                                            </div>
+                                                </div>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </fieldset>
+                                    <fieldset class="row mb-3">
+                                        <legend class="col-form-label col-sm-2 pt-0">Bank Institution</legend>
+                                        <div class="col-sm-10">
+                                            {% for institution in institutions %}
+                                            <label class="radio-card">
+                                                <input type="radio" name="institutionchoice" value="{{ institution.id }}"
+                                                    id="institution{{institution.id}}">
+                                                <div class="radio-card-body">
+                                                    {{ institution.name }}
+                                                </div>
+                                            </label>
                                             {% endfor %}
                                         </div>
                                     </fieldset>
@@ -286,8 +309,8 @@
                                                 <h5 class="mb-0 text-primary">{{ accounttype.name }}</h5>
                                             </div>
                                             <ul class="text-white pt-3 ms-4">
-                                                {% for account in accounttype.account_set.all %}
-                                                <li>{{ account.name }} - Starting Balance: {{ account.startingbalance }}</li>
+                                                {% for account in accounttype.accounts.all %}
+                                                <li>{{ account.institution.name }} {{ account.name }} - Starting Balance: {{ account.startingbalance }}</li>
                                                 {% endfor %}
                                             </ul>
                                         </div>

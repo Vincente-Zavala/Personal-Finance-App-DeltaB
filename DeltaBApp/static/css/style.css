@@ -6,6 +6,9 @@
     --secondary: #191C24;
     --light: #6C7293;
     --dark: #0c0c0c;
+    --income: #38EB14;
+    --expense: #EB1616;
+
 }
 
 .back-to-top {
@@ -619,7 +622,6 @@ ul, #myUL {
     margin-top: 15px;
     margin-bottom: 5px;
     opacity: 0.4;
-    animation: glowmove 3s linear infinite;
   }
 
   .section-divider-account-title {
@@ -629,7 +631,6 @@ ul, #myUL {
     margin-top: 15px;
     margin-bottom: 5px;
     opacity: 0.4;
-    animation: glowmove 3s linear infinite;
   }
 
 
@@ -742,10 +743,10 @@ background: transparent;
   }
   
   .radio-card input:checked + .radio-card-body {
-    background: linear-gradient(135deg, #dc3545, #a71d2a);
+    background: var(--primary);
     border-color: transparent;
     color: #fff;
-    box-shadow: 0 0 10px rgba(220, 53, 69, 0.4);
+    box-shadow: 0 0 10px rgba(0, 171, 137, 0.4);
   }
   
 
@@ -930,7 +931,7 @@ padding: 1rem;
 }
 
 .progress-bar {
-    background: linear-gradient(90deg, #0d6efd, #4dabf7);
+    background: linear-gradient(90deg, #fff, var(--accent-color));
     border-radius: 10px;
     transition: width 0.6s ease;
 }
@@ -1051,30 +1052,30 @@ padding: 1rem;
   
 
 
-  .test-divider {
+  .accounts-divider {
     display: flex;
     align-items: center;
     text-align: center;
-    color: var(--text-muted, #bbb);
+    color: var(--light);
     font-size: 0.8rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     font-weight: 600;
   }
-  .test-divider::before,
-  .test-divider::after {
+  .accounts-divider::before,
+  .accounts-divider::after {
     content: "";
     flex: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid var(--light);
   }
-  .test-divider:not(:empty)::before {
+  .accounts-divider:not(:empty)::before {
     margin-right: 0.75em;
   }
-  .test-divider:not(:empty)::after {
+  .accounts-divider:not(:empty)::after {
     margin-left: 0.75em;
   }
-  .test-label {
-    color: var(--primesec);
+  .accounts-label {
+    color: var(--primary);
     opacity: 0.7;
   }
 
@@ -1142,3 +1143,48 @@ padding: 1rem;
     color: var(--accent-color);
   }
   
+
+  .btn-outline-primary:focus,
+  .btn-check:checked + .btn-outline-primary:focus {
+      box-shadow: 0 0 0 .25rem rgba(255,255,255,0.7) !important;
+  }
+
+
+.btn-check:focus + .btn-primary,
+.btn-primary:focus {
+    box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.85) !important;
+}
+
+.sidebar,
+.sidebar-left,
+.sidebar-right,
+.section-divider-account,
+.section-divider-account-title {
+    will-change: transform;
+}
+
+* {
+    scroll-behavior: auto !important;
+}
+
+.border-income { border-color: var(--income) !important; }
+
+.text-income { color: var(--income) !important; }
+
+.border-expense { border-color: var(--expense) !important; }
+
+.text-expense { color: var(--expense) !important; }
+
+/* Amount text: normal primary, white when row selected */
+.amount-cell {
+  color: var(--bs-primary) !important; /* normal state */
+}
+
+.selected-row {
+  background-color: var(--bs-primary) !important; /* row background */
+  color: white !important; /* text in row */
+}
+
+.selected-row .amount-cell {
+  color: white !important; /* amount text when selected */
+}

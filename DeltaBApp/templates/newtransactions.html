@@ -5,7 +5,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>DeltaB - Overview</title>
+    <title>DeltaB - Add Transaction</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -59,7 +59,7 @@
                 </a>
                 <div class="navbar-nav w-100">
                     <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-chart-column me-2"></i>Overview</a>
-                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Breakdown</a>
+                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-scale-balanced me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
@@ -119,19 +119,20 @@
 
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
-                    <div class="test-divider my-4">
+                    <div class="accounts-divider my-4">
                         <span class="test-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
-                        {% for account in accounttype.account_set.all %}
+                        {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                        data-account-type="{{ account.type.name|lower }}">
+                        data-account-type="{{ account.type.name|lower }}""
+                        data-account-id="{{ account.id }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                <span class="account-name fw-medium text-primesec">{{ account.institution.name }} {{ account.name }}</span>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
@@ -157,7 +158,12 @@
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                           <h2 class="fw-semibold text-primesec mb-0"><i class="fa fa-stream me-2"></i>Add Transaction</h2>
                             <div class="d-flex flex-wrap gap-2">
-                                <button type="submit" form="deletetransactionForm" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button>
+                                <!-- <button type="submit" form="deletetransactionForm" class="btn btn-sm btn-primary editcol" href="" hidden>Delete</button> -->
+                                <button id="deletetransactions" form="newtransactionsForm" type="button"
+                                    formaction="{% url 'delete_transactions' %}" 
+                                    class="btn btn-sm btn-light editcol" hidden>
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
                                 <button id="toggleEdit" type="button" class="btn btn-sm btn-primary" href="">Edit</button>
                             </div>
                         </div>
@@ -172,25 +178,25 @@
                     </div> -->
 
                     <!-- New Transactions Start -->
-                    <div class="col-sm-12 col-xl-12 mb-4">
-                        <div class="transaction-card rounded-4 p-4 shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-semibold mb-0">
-                                    <i class="bi bi-plus-circle me-2 text-primary"></i>
-                                    New Transaction
-                                </h5>
-                                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadfile">
-                                    <i class="bi bi-upload me-1"></i>Upload File
-                                </button>
-                            </div>
-                            <form method="POST" action="{% url 'addtransaction' %}">
-                                {% csrf_token %}
+                    <form id="addtransactionsForm" method="POST">
+                        {% csrf_token %}
+                        <div class="col-sm-12 col-xl-12 mb-4">
+                            <div class="transaction-card rounded-4 p-4 shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-semibold mb-0">
+                                        <i class="bi bi-plus-circle me-2 text-primary"></i>
+                                        New Transaction
+                                    </h5>
+                                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadfile">
+                                        <i class="bi bi-upload me-1"></i>Upload File
+                                    </button>
+                                </div>
                                 <!-- Transaction Type Start -->
                                 <div class="row align-items-center mb-4">
                                     <label for="inputtype" class="col-sm-3 col-form-label">Transaction Type</label>
                                     <div class="col-sm-5">
                                         <select id="inputtransaction" name="inputtransaction" class="form-select" required>
-                                            <option value="" selected disabled>**Options**</option>
+                                            <option value="" selected>**Options**</option>
                                             <option value="income">Income</option>
                                             <option value="expense">Expense</option>
                                             <option value="savings">Savings</option>
@@ -271,58 +277,62 @@
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-primary px-4 py-2">
-                                      <i class="bi bi-check2 me-1"></i>Add Transaction
+                                    <!-- <button type="button" class="btn btn-primary px-4 py-2">
+                                    <i class="bi bi-check2 me-1"></i>Add Transaction
+                                    </button> -->
+                                    <button id="addtransactions" form="addtransactionsForm" type="button"
+                                        formaction="{% url 'duplicateaddtransaction' %}" 
+                                        class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check2 me-1"></i>Add Transaction
                                     </button>
                                 </div>
-                            </form>
+                            </div>
                         </div>
-                    </div>
-                    <!-- New Transactions End -->
+                        <!-- New Transactions End -->
 
-                    <!-- Recent Transactions Start -->
-                    <div class="p-3">
-                        <h6 class="text-primary fw-semibold mb-2">Recent Transactions</h6>
-                        <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 700px;">
-                            <form id="deletetransactionForm" method="POST" action="{% url 'deletetransactions' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="redirect" value="{{ request.path }}">
-                                <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
-                                    <thead class="bg-light text-white sticky-top">
-                                        <tr>
-                                            <th scope="col"  class="editcol" hidden></th>
-                                            <th>Date</th>
-                                            <th>Type</th>
-                                            <th>Category</th>
-                                            <th>Note</th>
-                                            <th>Source Account</th>
-                                            <th>Destination Account</th>
-                                            <th class="text-end">Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for transaction in transactions %}
-                                        <tr class="text-light">
-                                            <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}"></td>
-                                            <td>{{ transaction.date }}</td>
-                                            <td>{{ transaction.categorytype }}</td>
-                                            <td>{{ transaction.category }}</td>
-                                            <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
-                                            <td>{{ transaction.sourceaccount }}</td>
-                                            <td>{{ transaction.destinationaccount|default:'--' }}</td>
-                                            <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="8" class="text-center text-muted">No transactions found.</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </form>
+                        <!-- Recent Transactions Start -->
+                        <div class="col-12 mb-3 mt-3">
+                            <h6 class="text-primary fw-semibold mb-2">Recent Transactions</h6>
+                            <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 700px;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="redirect" value="{{ request.path }}">
+                                    <table class="table table-bordered table-hover table-sm align-middle mb-0" style="border-color: var(--light);">
+                                        <thead class="bg-light text-white sticky-top">
+                                            <tr>
+                                                <th scope="col"  class="editcol" hidden></th>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Category</th>
+                                                <th>Note</th>
+                                                <th>Accounts</th>
+                                                <th class="text-end">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="addTransactionsBody">
+                                            {% for transaction in transactions %}
+                                            <tr class="transaction-row" data-type="{{ transaction.category.type|lower}}">
+                                                <td class="editcol" hidden>
+                                                    <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}">
+                                                </td>
+                                                <td>{{ transaction.date }}</td>
+                                                <td class="category-cell">{{ transaction.category.type }}</td>
+                                                <td>{{ transaction.category }}</td>
+                                                <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
+                                                <td>{{ transaction.account }}</td>
+                                                <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted">No transactions found.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                     <!-- Recent Transactions End -->
+
                     <!-- Uploda File Modal Start -->
                     <div class="modal fade" id="uploadfile" aria-labelledby="uploadfile" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
@@ -331,7 +341,7 @@
                                     <h5 class="modal-title" id="">File Input</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <form method="post" enctype="multipart/form-data" action="{% url 'uploadfile' %}">
+                                <form id="uploadfile-form" enctype="multipart/form-data">
                                     <div class="row g-4">
                                     {% csrf_token %}
                                         <div class="modal-body">
@@ -346,7 +356,7 @@
                                                 <div class="bg-secondary rounded h-100 p-4">
                                                     <div class="mb-3">
                                                         <label for="uploadfile" class="form-label">Default file input example</label>
-                                                        <input class="form-control bg-dark" name="uploadfile" type="file" id="uploadfile" onchange="this.form.submit()" required>
+                                                        <input class="form-control bg-dark" name="uploadfile" type="file" id="uploadfileinput">
                                                     </div>
                                                 </div>
                                             </div>
@@ -366,10 +376,8 @@
                             <div class="modal-content bg-dark text-light">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="filterModalTransactions">Map Columns</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <form method="post" action="{% url 'adduploaddata' %}">
-                                    {% csrf_token %}
+                                <form id="mapcolumns_form">
                                     <div class="modal-body">
                                         <div class="bg-secondary rounded p-4 mb-3">
                                             <label class="form-label">Instructions</label>
@@ -379,7 +387,7 @@
                                             <div class="row align-items-center">
                                                 <label for="dateselection" class="col-sm-6 col-form-label">Date</label>
                                                 <div class="col-sm-4">
-                                                    <select id="dateselection" name="dateselection" class="form-select" required>
+                                                    <select id="dateselection" name="dateselection" class="form-select column-select">
                                                         <option value="" selected disabled>**Select Column**</option>
                                                         {% for col in columns %}
                                                             <option value="{{ col }}">{{ col }}</option>
@@ -392,7 +400,7 @@
                                             <div class="row align-items-center">
                                                 <label for="noteselection" class="col-sm-6 col-form-label">Note</label>
                                                 <div class="col-sm-4">
-                                                    <select id="noteselection" name="noteselection" class="form-select" required>
+                                                    <select id="noteselection" name="noteselection" class="form-select column-select">
                                                         <option value="" selected disabled>**Select Column**</option>
                                                         {% for col in columns %}
                                                             <option value="{{ col }}">{{ col }}</option>
@@ -405,7 +413,7 @@
                                             <div class="row align-items-center">
                                                 <label for="amountselection" class="col-sm-6 col-form-label">Amount</label>
                                                 <div class="col-sm-4">
-                                                    <select id="amountselection" name="amountselection" class="form-select" required>
+                                                    <select id="amountselection" name="amountselection" class="form-select column-select">
                                                         <option value="" selected disabled>**Select Column**</option>
                                                         {% for col in columns %}
                                                             <option value="{{ col }}">{{ col }}</option>
@@ -418,7 +426,7 @@
                                             <div class="row align-items-center">
                                                 <label for="accountselection" class="col-sm-6 col-form-label">Account</label>
                                                 <div class="col-sm-4">
-                                                    <select id="accountselection" name="accountselection" class="form-select" required>
+                                                    <select id="accountselection" name="accountselection" class="form-select">
                                                         <option value="" selected disabled>**Select Account**</option>
                                                         {% for account in accounts %}
                                                             <option value="{{ account.id }}">{{ account.name }}</option>
@@ -429,8 +437,8 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary" data-bs-target="#uploadfile" data-bs-toggle="modal" data-bs-dismiss="modal">
-                                            Back
+                                        <button type="button" class="btn btn-outline-primary" onclick="startOver()">
+                                            Cancel Import
                                         </button>
                                         <button type="submit" class="btn btn-primary">
                                             Next
@@ -440,7 +448,146 @@
                             </div>
                         </div>
                     </div>
+                    <div class="modal fade" id="uploadpreview" aria-labelledby="uploadpreview" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content bg-dark text-light">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="uploadpreviewmodal">Transactions</h5>
+                                </div>
+                                <form id="uploadpreview-form">
+                                    {% csrf_token %}
+                                    <div class="modal-body">
+                                        <div class="bg-secondary rounded p-4 mb-3">
+                                            <label class="form-label">Instructions</label>
+                                        </div>
+                                        <hr>
+                                        <div class="bg-secondary rounded p-4 mb-3">
+                                            <label for="" class="col-sm-6 col-form-label">Upload Preview</label>
+                                            <div class="row align-items-center">
+                                                <div class="col-sm-12">
+                                                    <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
+                                                        <thead class="bg-light text-white sticky-top">
+                                                            <tr>
+                                                                <th scope="col"  class="editcol" hidden></th>
+                                                                <th>Date</th>
+                                                                <th>Note</th>
+                                                                <th>Accounts</th>
+                                                                <th class="text-end">Amount</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="previewTableBody">
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+
+                                        <button type="button" class="btn btn-outline-primary" onclick="startOver()">
+                                            Cancel Import
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            Submit
+                                        </button>
+                                    </div>
+                                </form>    
+                            </div>
+                        </div>
+                    </div>
                     <!-- Upload File Modal End -->
+
+                    <!-- Duplicate Modal Start -->
+                    <div class="modal fade" id="duplicatesModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                          <div class="modal-content bg-dark text-light">
+                            <div class="modal-header">
+                              <h5 class="modal-title">
+                                Duplicate Transactions Found • <span id="duplicateCount">0</span> Duplicate Rows
+                              </h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+                    
+                                <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 400px;">
+                                    <label class="col-sm-6 col-form-label">Upload Preview</label>
+                    
+                                    <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
+                                        <thead class="table-light text-white sticky-top">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Note</th>
+                                                <th>Accounts</th>
+                                                <th class="text-end">Amount</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="duplicatesTableBody"></tbody>
+                                    </table>
+                                </div>
+                    
+                            </div>
+                    
+                            <p class="text-warning text-center mb-0">Yellow = new row, Red = already imported</p>
+                    
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-primary" onclick="startOver()">Cancel Import</button>
+                                <button type="button" class="btn btn-primary" id="confirmImportBtn">Continue</button>
+                            </div>
+                    
+                          </div>
+                        </div>
+                    </div>
+                    <form id="addtransactionsForm" action="/addtransaction/">
+                        <div class="modal fade" id="manualduplicatesModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                            <div class="modal-content bg-dark text-light">
+                                <div class="modal-header">
+                                <h5 class="modal-title">
+                                    Duplicate Transactions Found • <span id="manualduplicateCount">0</span> Duplicate Rows
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                        
+                                    <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 400px;">
+                                        <label class="col-sm-6 col-form-label">Upload Preview</label>
+                        
+                                        <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
+                                            <thead class="table-light text-white sticky-top">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Note</th>
+                                                    <th>Accounts</th>
+                                                    <th class="text-end">Amount</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="manualduplicatesTableBody"></tbody>
+                                        </table>
+                                    </div>
+                        
+                                </div>
+                        
+                                <p class="text-warning text-center mb-0">Yellow = new row, Red = already imported</p>
+                        
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-primary" onclick="startOver()">Cancel Import</button>
+                                    <!-- <button type="button" class="btn btn-primary" id="confirmImportBtn">Continue</button> -->
+                                    <button id="confirmtransactions" form="addtransactionsForm" type="button"
+                                    formaction="{% url 'addtransaction' %}" 
+                                    class="btn btn-sm btn-primary editcol">
+                                    Continue
+                                </button>
+                                </div>
+                        
+                            </div>
+                            </div>
+                        </div> 
+                    </form>                                        
+                    <!-- Duplicate Modal End -->
                 </div>
             </div>
             <!-- Form End -->
@@ -486,9 +633,18 @@
     <script src="{% static 'js/transactioninputfield.js' %}"></script>
     <script src="{% static 'js/toggleedit.js' %}"></script>
 
+    <script src="{% static 'js/uploadmodal.js' %}"></script>
+    <script src="{% static 'js/startover.js' %}"></script>
+    <script src="{% static 'js/highlightrows.js' %}"></script>
+    <script src="{% static 'js/updateaccounts.js' %}"></script>
+    <script src="{% static 'js/adddeletetransactions.js' %}"></script>
+
+
+
+
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 
-    <script src="{% static 'js/flatpickr.js' %}"></script> 
+    <script src="{% static 'js/flatpickr.js' %}"></script>
 
     {% if open_map_modal %}
     <script src="{% static 'js/filecolumnmap.js' %}"></script>

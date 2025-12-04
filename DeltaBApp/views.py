@@ -7,15 +7,17 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from decimal import Decimal
 from django.utils import timezone
-from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction, Task, Goal, Reminder, MonthlySummary
+from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction, PendingEntry, Task, Goal, Reminder, MonthlySummary, Institution, Entry, StatementUpload
 from django.db.models import Q, Sum
 from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
 from collections import defaultdict
 from django.db import models
 import calendar
+from django.db import transaction
 from django.core.serializers.json import DjangoJSONEncoder
 from dateutil.relativedelta import relativedelta
 import json
+from django.template.loader import render_to_string
 from django.http import JsonResponse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
@@ -27,6 +29,7 @@ from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
 from django.views.decorators.csrf import csrf_exempt
+import pytz
 User = get_user_model()
 
 
@@ -47,13 +50,13 @@ def savebalancehistory(account, date):
 
 
 # Net Calculations
-def netcalculations(categorytype_totals, budgetmap):
+def netcalculations(categorytype_totals, budgetmap_category):
 
     print("Debug categorytype totals: ", categorytype_totals)
     print("Debug categorytype totals: ", categorytype_totals)
-    print("debug: budgetmap", budgetmap)
+    print("debug: budgetmap", budgetmap_category)
 
-    budgettotal = sum(budgetmap.values())
+    budgettotal = sum(budgetmap_category.values())
 
     netincome = 0
     netbudget = 0
@@ -65,12 +68,15 @@ def netcalculations(categorytype_totals, budgetmap):
 
 # SAVE BUDGET LIMITS #
 def savebudgetlimit(post_data, month, year, user):
+
+    updated_limits = {}
+
     for key, value in post_data.items():
         if key.startswith("limit_") and value.strip() != "":
             category_id = int(key.split("_")[1])
             category = get_object_or_404(Category, id=category_id, user=user)
 
-            Budget.objects.update_or_create(
+            budget_obj, created = Budget.objects.update_or_create(
                 user=user,
                 month=month,
                 year=year,
@@ -78,8 +84,12 @@ def savebudgetlimit(post_data, month, year, user):
                 defaults={"limit": value}
             )
 
+            updated_limits[category_id] = str(budget_obj.limit)
 
-def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user):
+    return updated_limits
+
+
+def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user):
     # Chart data
     charts_data = []
     incomeexpensedata = []
@@ -124,7 +134,7 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
     # Budget vs Expense
     budgetexpensedata = []
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
     print("Debug categorytypetotals", categorytype_totals)
 
@@ -147,10 +157,16 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
     savingstxs = []
 
     if mode == "monthyear":
-        savingstxs = (Transaction.objects.filter(date__year=selected_year, date__month=selected_month, categorytype__name="Savings", user=user)
-            .annotate(day=TruncDate("date")) 
-            .values("day")  # group by date
-            .annotate(total_amount=Sum("amount"))  # sum amounts per date
+        savingstxs = (
+            Entry.objects.filter(
+                transaction__date__year=selected_year,
+                transaction__date__month=selected_month,
+                transaction__category__type__name="Savings",
+                user=user
+            )
+            .annotate(day=TruncDate("transaction__date"))
+            .values("day")
+            .annotate(total_amount=Sum("amount"))
             .order_by("day")
         )
 
@@ -158,12 +174,19 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
         selected_fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
         selected_todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
-        savingstxs = (Transaction.objects.filter(date__gte=selected_fromdate, date__lte=selected_todate, categorytype__name="Savings", user=user)
-            .annotate(day=TruncDate("date"))
+        savingstxs = (
+            Entry.objects.filter(
+                transaction__date__gte=selected_fromdate,
+                transaction__date__lte=selected_todate,
+                transaction__category__type__name="Savings",
+                user=user
+            )
+            .annotate(day=TruncDate("transaction__date"))
             .values("day")
             .annotate(total_amount=Sum("amount"))
             .order_by("day")
         )
+
 
     savingsdata = {
         "labels": [x["day"].strftime("%Y-%m-%d") for x in savingstxs],
@@ -179,67 +202,106 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
 # GET SELECTED MONTH/YEAR #
 def getselecteddate(request):
 
-    # Initialize defaults to None
-    selected_month = None
-    selected_year = None
-    selected_fromdate = None
-    selected_todate = None
+    user = request.user
 
-    request.session["mode"] = request.POST.get("mode")
-    mode = request.session.get("mode")
+    user_tz = pytz.timezone(request.user.timezone)
+    user_now = timezone.localtime(timezone.now(), user_tz)
+    today = user_now.date()
 
-    print("Debug mode", mode)
+    # Determine mode: POST → session → default
+    mode = request.POST.get("mode") or request.session.get("mode") or "monthyear"
+    request.session["mode"] = mode
+
+    # Initialize all selections
+    selected_month = selected_year = selected_fromdate = selected_todate = None
 
     if mode == "monthyear":
-        # --- Handle Month/Year selection ---
-        if "month" in request.POST and "year" in request.POST:
-            request.session["month"] = int(request.POST["month"])
-            request.session["year"] = int(request.POST["year"])
+        # Get from POST first, fallback to session, then to today
+        selected_month = int(request.POST.get("month") or request.session.get("month") or today.month)
+        selected_year = int(request.POST.get("year") or request.session.get("year") or today.year)
 
-            # Clear custom range if switching to month/year
-            request.session.pop("fromdate", None)
-            request.session.pop("todate", None)
+        # Save to session
+        request.session["month"] = selected_month
+        request.session["year"] = selected_year
 
-            # --- Pull from session ---
-            selected_month = request.session.get("month")
-            selected_year = request.session.get("year")
-
-            selected_fromdate = None
-            selected_todate = None
-            print("Debug, selected month", selected_month)
+        # Clear custom range
+        request.session.pop("fromdate", None)
+        request.session.pop("todate", None)
 
     elif mode == "custom":
-        # --- Handle From/To range selection ---
-        if "fromdate" in request.POST and "todate" in request.POST:
+        # Get from POST first, fallback to session
+        selected_fromdate = request.POST.get("fromdate") or request.session.get("fromdate")
+        selected_todate = request.POST.get("todate") or request.session.get("todate")
 
-            request.session["fromdate"] = request.POST["fromdate"]
-            request.session["todate"] = request.POST["todate"]
+        # Save to session
+        if selected_fromdate:
+            request.session["fromdate"] = selected_fromdate
+        if selected_todate:
+            request.session["todate"] = selected_todate
 
-            # Clear month/year if switching to custom range
-            request.session.pop("month", None)
-            request.session.pop("year", None)
+        # Clear month/year
+        request.session.pop("month", None)
+        request.session.pop("year", None)
 
-            # --- Pull from session ---
-            selected_fromdate = request.session.get("fromdate")
-            selected_todate = request.session.get("todate")
-            
-            selected_month = None
-            selected_year = None
-
-    # --- Default if nothing chosen ---
-    # if not ((selected_month and selected_year) or (selected_fromdate and selected_todate)):
-    #     today = timezone.now()
-    #     selected_month = today.month
-    #     selected_year = today.year
-    #     request.session["month"] = selected_month
-    #     request.session["year"] = selected_year
-
-    # print("GET params:", request.GET)
-    # print("Session after processing:", dict(request.session))
-    # print("Final values:", selected_month, selected_year, selected_fromdate, selected_todate)
-
+    print("Debug, selected month/year:", selected_month, selected_year)
 
     return mode, selected_month, selected_year, selected_fromdate, selected_todate
+
+    # user = request.user
+
+    # # Initialize defaults to None
+    # selected_month = None
+    # selected_year = None
+    # selected_fromdate = None
+    # selected_todate = None
+
+    # user_tz = pytz.timezone(request.user.timezone)
+    # user_now = timezone.localtime(timezone.now(), user_tz)
+    # today = user_now.date()
+
+    # request.session["mode"] = request.POST.get("mode")
+    # mode = request.session.get("mode")
+
+
+    # if mode == "monthyear":
+    #     # --- Handle Month/Year selection ---
+    #     if "month" in request.POST and "year" in request.POST:
+    #         request.session["month"] = int(request.POST["month"]) or today.month
+    #         request.session["year"] = int(request.POST["year"]) or today.year
+
+    #         # Clear custom range if switching to month/year
+    #         request.session.pop("fromdate", None)
+    #         request.session.pop("todate", None)
+
+    #         # --- Pull from session ---
+    #         selected_month = request.session.get("month")
+    #         selected_year = request.session.get("year")
+
+    #         selected_fromdate = None
+    #         selected_todate = None
+    #         print("Debug, selected month", selected_month)
+
+    # elif mode == "custom":
+    #     # --- Handle From/To range selection ---
+    #     if "fromdate" in request.POST and "todate" in request.POST:
+
+    #         request.session["fromdate"] = request.POST["fromdate"]
+    #         request.session["todate"] = request.POST["todate"]
+
+    #         # Clear month/year if switching to custom range
+    #         request.session.pop("month", None)
+    #         request.session.pop("year", None)
+
+    #         # --- Pull from session ---
+    #         selected_fromdate = request.session.get("fromdate")
+    #         selected_todate = request.session.get("todate")
+            
+    #         selected_month = None
+    #         selected_year = None
+
+
+
+    # return mode, selected_month, selected_year, selected_fromdate, selected_todate
 
 
 
@@ -277,7 +339,7 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
         )
         
         refundtxs = Transaction.objects.filter(
-            categorytype__name="Refund",
+            category__type__name="Refund",
             date__year=selected_year,
             user=user,
         )
@@ -296,37 +358,35 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
         txs = Transaction.objects.filter(category=category, date__gte=fromdate, date__lte=todate, user=user)
-        refundtxs = Transaction.objects.filter(categorytype__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
+        refundtxs = Transaction.objects.filter(category__type__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
 
 
     refund_by_category = {}
     
     for refundtx in refundtxs:
         categoryid = refundtx.category_id
-        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + abs(refundtx.signed_amount(refundtx.sourceaccount))
+        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + abs(refundtx.amount)
 
     print("Debug refund Transactions", refundtxs)
     for tx in txs:
-        print("DEBUG: tx.categorytype, type", tx.categorytype, type(tx.categorytype))
+        print("DEBUG: tx.categorytype, type", tx.category.type, type(tx.category.type))
         print("Debug tx", tx)
 
-        if tx.categorytype and tx.categorytype.name == "Refund":
+        if tx.category.type and tx.category.type.name == "Refund":
             print(f"Skipping refund transaction {tx.id}")
             continue
 
-        total += abs(tx.signed_amount(tx.sourceaccount))
+        total += abs(tx.amount)
         print("Debug total", total)
 
         print("")
         
         
     refundtotal = sum(
-        abs(refundtx.signed_amount(refundtx.sourceaccount))
+        abs(refundtx.amount)
         for refundtx in refundtxs
         if refundtx.category_id == category.id
     )
-
-    print("")
 
     total -= refundtotal
 
@@ -381,11 +441,11 @@ def categorysummarytotal(user, mode, category, selected_month, selected_year, se
 
 
 # CALCULATE CATEGORY TOTALS #
-def calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user):
+def calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user):
 
-    print("Debug, calculate categorytotals: budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
+    print("Debug, calculate categorytotals: budgetmap", budgetmap_category," adjbudgetmap: ", adjbudgetmap_category)
     
-    categorytypes = CategoryType.objects.prefetch_related(Prefetch("category_set", queryset=Category.objects.filter(user=user)))
+    categorytypes = categorytypelist(user)
 
 
     # Build category totals for selected month/year
@@ -409,10 +469,10 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
         print("Debug category_totals", category_totals)
 
-        print("Debug, budgetmap", budgetmap," adjbudgetmap: ", adjbudgetmap)
+        print("Debug, budgetmap", budgetmap_category," adjbudgetmap: ", adjbudgetmap_category)
 
-        budget_limit = budgetmap.get(category.id, 0)
-        adjbudget_limit = adjbudgetmap.get(category.id, 0)
+        budget_limit = budgetmap_category.get(category.id, 0)
+        adjbudget_limit = adjbudgetmap_category.get(category.id, 0)
 
         if mode == "monthyear":
             category_remaining[category.id] = budget_limit - total
@@ -444,8 +504,8 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
         for category in categorytype.category_set.filter(user=user):
 
-            budget = budgetmap.get(category.id, 0)
-            adjbudget = adjbudgetmap.get(category.id, 0)
+            budget = budgetmap_category.get(category.id, 0)
+            adjbudget = adjbudgetmap_category.get(category.id, 0)
 
             spent = category_totals.get(category.id, 0)
             remaining = category_remaining.get(category.id, 0)
@@ -484,8 +544,9 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
     budgets = []
     adjbudgets = []
 
-    budgetmap = defaultdict(Decimal)
-    adjbudgetmap = defaultdict(Decimal)
+    budgetmap_category = defaultdict(Decimal)
+    adjbudgetmap_category = defaultdict(Decimal)
+    budgetmap_type = defaultdict(Decimal)
 
 
 
@@ -501,13 +562,15 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
         # Budget Map for month or multiple months added together
         for b in budgets:
-            if b.category_id in budgetmap:
+            if b.category_id in budgetmap_category:
                 print("DEBUG: b in Budgets: ", b)
-                budgetmap[b.category_id] += b.limit
-                print("Debug, budgetmap, b.month, b.limit: ", budgetmap, b.month, b.limit)
+                budgetmap_category[b.category_id] += b.limit
+                print("Debug, budgetmap, b.month, b.limit: ", budgetmap_category, b.month, b.limit)
             else:
-                budgetmap[b.category_id] = b.limit
-        print("DEBUG, last budgetmap", budgetmap)
+                budgetmap_category[b.category_id] = b.limit
+
+            budgetmap_type[b.category.type.id] += b.limit
+        print("DEBUG, budgetmap HERE", budgetmap_category, budgetmap_type)
 
     elif mode == "custom":
 
@@ -575,27 +638,27 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
             dayrange = (enddate - startdate).days + 1
             adjmonthlimit = round(dayrange * dailylimit, 2)
-            adjbudgetmap[b.category_id] += adjmonthlimit
+            adjbudgetmap_category[b.category_id] += adjmonthlimit
 
-            print("Debug: dayrange, adjmonthlimit, adjbudgetmap", dayrange, adjmonthlimit, adjbudgetmap)
+            print("Debug: dayrange, adjmonthlimit, adjbudgetmap", dayrange, adjmonthlimit, adjbudgetmap_category)
 
 
-            if b.category_id in budgetmap:
+            if b.category_id in budgetmap_category:
                 print("DEBUG: b in Budgets: ", b)
-                budgetmap[b.category_id] += b.limit
-                print("Debug, budgetmap, b.month, b.limit: ", budgetmap, b.month, b.limit)
+                budgetmap_category[b.category_id] += b.limit
+                print("Debug, budgetmap, b.month, b.limit: ", budgetmap_category, b.month, b.limit)
             else:
-                budgetmap[b.category_id] = b.limit
+                budgetmap_category[b.category_id] = b.limit
 
-            print("DEBUG, dayrange, adjmonthlimit, budgetmap", dayrange, adjmonthlimit, budgetmap)
+            print("DEBUG, dayrange, adjmonthlimit, budgetmap", dayrange, adjmonthlimit, budgetmap_category)
 
     
-    print("DEBUG, last budgetmap", budgetmap)
+    print("DEBUG, last budgetmap", budgetmap_category)
 
         
     
 
-    return budgetmap, adjbudgetmap
+    return budgetmap_category, adjbudgetmap_category, budgetmap_type
 
 
 
@@ -637,6 +700,7 @@ def newuser(request):
         username = request.POST['username']
         email = request.POST['email']
         password = request.POST['password']
+        timezone = request.POST['timezone']
         staff = False
 
         user = User.objects.create_user(
@@ -645,7 +709,8 @@ def newuser(request):
             password=password,
             first_name = firstname,
             last_name = lastname,
-            is_staff = staff
+            is_staff = staff,
+            timezone = timezone,
         )
         user.save()
 
@@ -676,10 +741,17 @@ def addinput(request):
     if request.method == "POST":
         input_type = request.POST.get("inputtype")
 
+        # INSTITUTION
+        if input_type == "institution":
+            institution_name = request.POST.get("inputinstitution")
+
+            if institution_name:
+                Institution.objects.create(name=institution_name, user=user)
+
         # CATEGORY
         if input_type == "category":
             category_name = request.POST.get("inputcategory")
-            existing_type_id = request.POST.get("categorychoice")
+            existing_type_id = request.POST.get("categorytypechoice")
             if existing_type_id:
                 category_type = CategoryType.objects.get(id=existing_type_id)
 
@@ -691,12 +763,15 @@ def addinput(request):
             account_name = request.POST.get("inputaccount")
             accountstartingbalance = request.POST.get("inputaccountbalance")
             existing_type_id = request.POST.get("accountchoice")
-            if existing_type_id:
+            existing_institution_id = request.POST.get("institutionchoice")
+            if existing_type_id and existing_institution_id:
                 account_type = AccountType.objects.get(id=existing_type_id)
+                institution_name = Institution.objects.get(id=existing_institution_id)
             else:
                 account_type = None
+                institution_name = None
             if account_name:
-                Account.objects.create(name=account_name, type=account_type, startingbalance = accountstartingbalance, user=user)
+                Account.objects.create(name=account_name, type=account_type, institution=institution_name, startingbalance = accountstartingbalance, user=user)
 
 
         return redirect("setup")
@@ -705,55 +780,141 @@ def addinput(request):
 
 
 
+# CREATE KEY #
+def generatebasekey(date, amount_value, source_account_id):
+
+    date_key = date.strftime("%Y-%m-%d")
+    amount_key_str = f"{amount_value:.2f}"
+    amount_key = Decimal(amount_key_str)
+
+
+    return f"{date_key}:{amount_key}:{source_account_id}"
+
+
+
+def generatemanualkey (date, amount, source_account_id, categorytype_id, category_id):
+
+    date_key = date.strftime("%Y-%m-%d")
+    amount_key_str = f"{amount:.2f}"
+    amount_key = Decimal(amount_key_str)
+
+
+    return f"{date_key}:{amount_key}:{source_account_id}:{categorytype_id}:{category_id}"
+
+
+
+def generateimportkey(date, amount_value, account_id, note, upload_id):
+
+    date_key = date.strftime("%Y-%m-%d")
+    amount_key = Decimal(str(amount_value).replace(",", "").strip())
+    note_key = note.lower()
+
+    return f"{date_key}:{amount_key}:{account_id}:{note_key}:{upload_id}"
+
+
+
+
+
+# CHECK DUPLICATES #
+def checkduplicate(user, basekey, manualkey, importkey):
+
+    print("Debug within checkduplicate")
+
+    if importkey is None:
+        dupl_txs = Transaction.objects.filter(user=user).filter(models.Q(base_key=basekey) | models.Q(manual_key=manualkey))
+        dupl_ptxs = PendingTransaction.objects.filter(user=user).filter(models.Q(base_key=basekey) | models.Q(manual_key=manualkey))
+
+    elif manualkey is None:
+        dupl_txs = Transaction.objects.filter(user=user).filter(models.Q(base_key=basekey) | models.Q(import_key=importkey))
+        dupl_ptxs = PendingTransaction.objects.filter(user=user).filter(models.Q(base_key=basekey) | models.Q(import_key=importkey))
+
+
+    return {
+        "existing": list(dupl_txs) + list(dupl_ptxs)
+    }
+
+
+
+
+
+
 # CREATE TRANSACTION #
-def createtransaction(user, inputtype, amount, note, date, category, categorytype, source_account, final_account=None, refund=False):
-    # CREATE TRANSACTION BASED ON TYPE
+def createtransaction(user, inputtype, amount, note, date, category, categorytype, source_account, final_account, basekey, manualkey, importkey):
+
+    if importkey is None:
+        transaction = Transaction.objects.create(
+            note=note,
+            date=date,
+            category=category,
+            user=user,
+            base_key = basekey,
+            manual_key = manualkey,
+        )
+
+    elif manualkey is None:
+        transaction = Transaction.objects.create(
+            note=note,
+            date=date,
+            category=category,
+            user=user,
+            base_key = basekey,
+            import_key = importkey,
+            #upload source
+        )
+
+    amount = abs(amount)
+
+    # ----- NORMAL TRANSACTIONS (income, expense) -----
     if inputtype in ["income", "expense"]:
-        Transaction.objects.create(
-            amount=amount,
-            note=note,
-            date=date,
-            categorytype=categorytype,
-            category=category,
-            sourceaccount=source_account,
-            refund=refund,
-            user=user,
+        # Income = positive, Expense = negative
+        signed_amount = amount if inputtype == "income" else -amount
+
+        Entry.objects.create(
+            transaction=transaction,
+            account=source_account,
+            amount=signed_amount,
+            user=user
         )
-    elif inputtype in ["savings", "investment", "debt", "transfer", "retirement"]:
-        Transaction.objects.create(
-            amount=amount,
-            note=note,
-            date=date,
-            categorytype=categorytype,
-            category=category,
-            sourceaccount=source_account,
-            destinationaccount=final_account,
-            refund=refund,
-            user=user,
+        return transaction
+
+    # ----- TRANSFERS, SAVINGS, DEBT, INVESTING, RETIREMENT -----
+    if inputtype in ["savings", "investment", "debt", "retirement", "transfer"]:
+        # source (outgoing)
+        Entry.objects.create(
+            transaction=transaction,
+            account=source_account,
+            amount=-abs(amount),
+            user=user
         )
 
-    elif inputtype == "refund":
-        amount = abs(amount)
+        # destination (incoming)
+        Entry.objects.create(
+            transaction=transaction,
+            account=final_account,
+            amount=abs(amount),
+            user=user
+        )
+        return transaction
 
-        Transaction.objects.create(
-            amount=amount,
-            note=note,
-            date=date,
-            categorytype=categorytype,
-            category=category,
-            sourceaccount=source_account,
-            destinationaccount=final_account,
-            refund=refund,
-            user=user,
-        ) 
+    # ----- REFUNDS -----
+    if inputtype == "refund":
+        Entry.objects.create(
+            transaction=transaction,
+            account=source_account,
+            amount=abs(amount),
+            user=user
+        )
+        return transaction
 
 
 
 
 
 
-# ADD TRANSACTION #
-def addtransaction(request):
+# DUPLICATE ADD TRANSACTION #
+def duplicateaddtransaction(request):
+
+
 
     user=request.user
 
@@ -762,8 +923,113 @@ def addtransaction(request):
         amount = request.POST.get("inputamount")
         note = request.POST.get("inputnote")
         date = request.POST.get("inputdate")
-        refund_value = request.POST.get("inputrefund")
-        refund = True if refund_value == "on" else False
+
+        # add_transactions = []
+        groups = []
+
+
+        # CONVERT TO DECIMAL
+        if amount:
+            amount = abs(Decimal(amount))
+        else:
+            amount = None
+
+        date = datetime.datetime.strptime(date, "%m-%d-%Y").date()
+        formatted_date = date.strftime("%b. %-d, %Y")
+
+        #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
+        category_id = request.POST.get("categorychoice")
+        category = Category.objects.get(id=category_id, user=user) if category_id else None
+        
+        categorytype = CategoryType.objects.get(name__iexact=inputtype)
+        categorytype_id = categorytype.id
+
+        source_account_id = request.POST.get("sourceaccountchoice")
+        source_account = Account.objects.get(id=source_account_id, user=user) if source_account_id else None
+
+        final_account_id = request.POST.get("finalaccountchoice")
+        final_account = Account.objects.get(id=final_account_id, user=user) if final_account_id else None
+
+        amount_key = Decimal(str(amount).replace(",", "").strip())
+
+        basekey = generatebasekey(date, amount_key, source_account_id)
+        manualkey = generatemanualkey(date, amount_key, source_account_id, categorytype_id, category_id)
+        importkey = None
+
+        duplicates = checkduplicate(user, basekey, manualkey, importkey)
+
+        print("Debug duplicates", duplicates)
+
+        print("Debug basekey", basekey, "manualkey", manualkey)
+
+        new_tx = {
+            "date": formatted_date,
+            "note": note,
+            "account": source_account.name,
+            "amount": amount,
+            "category": category_id,
+            "categorytype": categorytype_id,
+        }
+
+        print("Debug GET PREVIEW basekey", basekey, "importkey", importkey)
+
+        if duplicates["existing"]:
+            print("debug within if duplicates")
+            print("Debug duplicates existing", duplicates["existing"])
+            print("debug duplicate new", new_tx)
+            groups.append({
+                "new": new_tx,
+                "existing": [
+                    {
+                        "date": d.date.strftime("%b. %d, %Y"),
+                        "note": d.note,
+                        "account": d.account,
+                        "amount": str(d.amount),
+                    }
+                    for d in duplicates["existing"]
+                ]
+            })
+
+
+
+        duplicates_exist = any(len(g["existing"]) > 0 for g in groups)
+
+        if duplicates_exist:
+
+            print("Debug duplicates exist", groups)
+
+            try:
+                return JsonResponse({
+                    "status": "duplicates",
+                    "groups": groups
+                })
+            except Exception as e:
+                print("Error in addtransaction:", e)
+                return JsonResponse({"status": "error", "error": str(e)})
+
+    
+    return JsonResponse({
+        "status": "ok"
+        })
+
+
+
+
+
+# ADD TRANSACTION #
+def addtransaction(request):
+
+    print("Debug within add transaction")
+
+    user=request.user
+
+    if request.method == "POST":
+        inputtype = request.POST.get("inputtransaction")
+        amount = request.POST.get("inputamount")
+        note = request.POST.get("inputnote")
+        date = request.POST.get("inputdate")
+
+        add_transactions = []
 
 
         # CONVERT TO DECIMAL
@@ -775,11 +1041,13 @@ def addtransaction(request):
         date = datetime.datetime.strptime(date, "%m-%d-%Y").date()
 
 
+
         #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
         category_id = request.POST.get("categorychoice")
         category = Category.objects.get(id=category_id, user=user) if category_id else None
         
         categorytype = CategoryType.objects.get(name__iexact=inputtype)
+        categorytype_id = categorytype.id
 
         source_account_id = request.POST.get("sourceaccountchoice")
         source_account = Account.objects.get(id=source_account_id, user=user) if source_account_id else None
@@ -787,8 +1055,16 @@ def addtransaction(request):
         final_account_id = request.POST.get("finalaccountchoice")
         final_account = Account.objects.get(id=final_account_id, user=user) if final_account_id else None
 
+        basekey = generatebasekey(date, amount, source_account_id)
+        manualkey = generatemanualkey(date, amount, source_account_id, categorytype_id, category_id)
+        importkey = None
 
-        createtransaction(
+        print("Debug basekey", basekey, "manualkey", manualkey)
+
+        
+
+
+        newtx = createtransaction(
             user,
             inputtype.lower(),
             amount,
@@ -798,69 +1074,29 @@ def addtransaction(request):
             categorytype,
             source_account,
             final_account,
-            refund,
+            basekey,
+            manualkey,
+            importkey,
         )
 
+        formatted_date = newtx.date.strftime("%b. %-d, %Y")
 
-        # CREATE TRANSACTION BASED ON TYPE
-        # if inputtype == "income" or inputtype == "expense":
-        #     Transaction.objects.create(
-        #         amount=amount,
-        #         note=note,
-        #         date=date,
-        #         categorytype=categorytype,
-        #         category=category,
-        #         sourceaccount=source_account,
-        #         refund=refund,
-        #         user=user,
-        #     )
+        add_transactions.append({
+            "id": newtx.id,
+            "date": str(formatted_date),
+            "category_type": str(newtx.category.type),
+            "category": str(newtx.category),
+            "note": newtx.note,
+            "account": newtx.account,
+            "amount": str(newtx.amount),
+        })
 
-        # elif inputtype == "savings" or inputtype == "investment" or inputtype == "debt" or inputtype == "retirement":
-        #     Transaction.objects.create(
-        #         amount=amount,
-        #         note=note,
-        #         date=date,
-        #         categorytype=categorytype,
-        #         category=category,
-        #         sourceaccount=source_account,
-        #         destinationaccount=final_account,
-        #         refund=refund,
-        #         user=user,
-        #     )
+        print("Debug add_transactions", add_transactions)
 
-        # elif inputtype == "transfer":
-
-        #     category = Category.objects.get(name="Transfer")
-
-        #     Transaction.objects.create(
-        #         amount=amount,
-        #         note=note,
-        #         date=date,
-        #         categorytype=categorytype,
-        #         category=category,
-        #         sourceaccount=source_account,
-        #         destinationaccount=final_account,
-        #         refund=refund,
-        #         user=user,
-        #     )
-        
-        # elif inputtype == "refund":
-        #     amount = abs(amount)
-
-        #     Transaction.objects.create(
-        #         amount=amount,
-        #         note=note,
-        #         date=date,
-        #         categorytype=categorytype,
-        #         category=category,
-        #         sourceaccount=source_account,
-        #         destinationaccount=final_account,
-        #         refund=refund,
-        #         user=user,
-        #     )            
-
-
-    return redirect("newtransactions")
+    return JsonResponse({
+        "status": "ok",
+        "add_transactions": add_transactions,
+        })
 
 
 
@@ -872,54 +1108,89 @@ def addpendingtransaction(request):
     user=request.user
 
     if request.method == "POST":
-        amount = request.POST.get("pendingamount")
-        note = request.POST.get("pendingnote")
-        date = request.POST.get("pendingdate")
-
-
-        # CONVERT TO DECIMAL
-        if amount:
-            amount = Decimal(amount)
-        else:
-            amount = None
-
 
         #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
         pendingtransactions = PendingTransaction.objects.filter(user=user)
+        deleted_ids = []
+        new_transactions = []
 
         for transaction in pendingtransactions:
-            if request.method == "POST":
-                pendingtransactions = PendingTransaction.objects.filter(user=user)
 
-                for transaction in pendingtransactions:
-                    category_id = request.POST.get(f"categorychoice_{transaction.id}")
-                    destinationaccountid = request.POST.get(f"accountchoice_{transaction.id}")
-                    if category_id:
-                        category = Category.objects.get(id=category_id, user=user)
-                        final_account = Account.objects.get(id=destinationaccountid, user=user)
-                        categorytype = category.type
-                        inputtype = categorytype.name
-                        source_account = transaction.sourceaccount
-                        refund = False
+            amount = transaction.amount
+            note = transaction.note
+            date = transaction.date
+            basekey = transaction.base_key
+            importkey = transaction.import_key
+            manualkey = None
+
+            # CONVERT TO DECIMAL
+            if amount:
+                amount = Decimal(amount)
+            else:
+                amount = None
+
+            category_id = request.POST.get(f"categorychoice_{transaction.id}")
+            
+            destinationaccountid = request.POST.get(f"accountchoice_{transaction.id}")
+
+            if destinationaccountid:
+                final_account = Account.objects.get(id=destinationaccountid, user=user)
+            
+            else:
+                final_account = None
+
+            if category_id:
+                category = Category.objects.get(id=category_id, user=user)
+                categorytype = category.type
+                inputtype = categorytype.name
 
 
-                        createtransaction(
-                            user,
-                            inputtype.lower(),
-                            amount,
-                            note,
-                            date,
-                            category,
-                            categorytype,
-                            source_account,
-                            final_account,
-                            refund,
-                        )
+                pendingentries = transaction.pendingentries.all()
 
-                        transaction.delete()
+                if transaction.is_accounttransfer:
+                    source_entry = pendingentries.filter(amount__lt=0).first()
+                    source_account = source_entry.account if source_entry else None
+                else:
+                    # single-entry pending transaction
+                    source_account = pendingentries.first().account if pendingentries.exists() else None
 
 
-    return redirect("alltransactions")
+
+                newtx = createtransaction(
+                    user,
+                    inputtype.lower(),
+                    amount,
+                    note,
+                    date,
+                    category,
+                    categorytype,
+                    source_account,
+                    final_account,
+                    basekey,
+                    manualkey,
+                    importkey,
+                )    
+
+                deleted_ids.append(transaction.id)
+                transaction.delete()
+
+                new_transactions.append({
+                    "id": newtx.id,
+                    "date": str(newtx.date),
+                    "category_type": str(newtx.category.type),
+                    "category": str(newtx.category),
+                    "note": newtx.note,
+                    "account": str(newtx.account),
+                    "amount": str(newtx.amount),
+                })
+
+
+
+    return JsonResponse({
+        "status": "ok",
+        "deleted_ids": deleted_ids,
+        "new_transactions": new_transactions,
+        })
 
 
 
@@ -928,20 +1199,27 @@ def addpendingtransaction(request):
 # DELETE TRANSACTIONS #
 def deletetransactions (request):
 
-    user=request.user
-    selectedtransactionids = request.POST.getlist("selectedtransactions")
+    if request.method == "POST":
 
-    print("Debug transaciton id", selectedtransactionids)
+        user=request.user
+        selectedtransactionids = request.POST.getlist("selectedtransactions")
 
-    for tx in Transaction.objects.filter(id__in=selectedtransactionids, user=user):
-        tx.delete()
+        print("Debug transaciton id", selectedtransactionids)
 
-    PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user).delete()
+        deleted_ids = []
 
-    redirecturl = request.POST.get("redirect")
-    
-    
-    return redirect(redirecturl)
+        for tx in Transaction.objects.filter(id__in=selectedtransactionids, user=user):
+            deleted_ids.append(str(tx.id))
+            tx.delete()
+
+        for ptx in PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user):
+            deleted_ids.append(str(ptx.id))
+            ptx.delete()
+
+    return JsonResponse({
+        "status": "ok",
+        "deleted_ids": deleted_ids
+    })
 
 
 
@@ -950,7 +1228,7 @@ def deletetransactions (request):
 # ADD HISTORICAL BALANCES #
 @login_required
 def addhistoricaltime(request):
-    if request.method != "POST":
+    if request.method == "POST":
         return redirect("historicalbalance")
 
     user = request.user
@@ -1171,7 +1449,8 @@ def linkgoaltransaction(request):
             goal.transactions.remove(transaction)
 
         # Recalculate total saved for this goal
-        total_saved = goal.transactions.aggregate(total=Sum("amount"))["total"] or 0
+        total_saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+
         goal.saved = total_saved
         goal.save()
 
@@ -1203,15 +1482,14 @@ def linkgoaltransaction(request):
 
 # CREATE BUDGET LIMITS #
 def budgetlimit(request):
-    today = datetime.today()
     selected_month, selected_year = getselecteddate(request)
     categorytypes = CategoryType.objects.prefetch_related("category_set")
 
-    budgetmap = getbudgetmap(selected_month, selected_year)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(selected_month, selected_year)
 
     context = {
         "categorytypes": categorytypes,
-        "budgetmap": budgetmap,
+        "budgetmap_category": budgetmap_category,
         "month": int(selected_month),
         "year": int(selected_year),
     }
@@ -1229,11 +1507,11 @@ def transactionsum(request, user):
     selected_month, selected_year = getselecteddate(request)
 
     # budgets lookup
-    budgetmap = getbudgetmap(selected_month, selected_year)
+    budgetmap_category, adjbudgetmap_cateogory, budgetmap_type = getbudgetmap(selected_month, selected_year)
 
     date_tree = builddatetree()
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(selected_month, selected_year, budgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(selected_month, selected_year, budgetmap_category, user)
 
 
 
@@ -1242,7 +1520,7 @@ def transactionsum(request, user):
     context = {
         "accounts": Account.objects.filter(user=user),
         "categorytypes": CategoryType.objects.prefetch_related("category_set"),
-        "budgetmap": budgetmap,
+        "budgetmap_category": budgetmap_category,
         "category_totals": category_totals,
         "category_remaining": category_remaining,
         "selected_month": selected_month,
@@ -1266,11 +1544,41 @@ def edit_categorytype_limits(request, pk):
         month = int(request.POST["month"])
         year = int(request.POST["year"])
 
-        savebudgetlimit(request.POST, month, year, user)
+        updated_limits = savebudgetlimit(request.POST, month, year, user)
+
+        print("Debug updated limits", updated_limits)
+
+        # recalculate type totals
+        budgets = Budget.objects.filter(month=month, year=year, user=user)
+
+        updated_type_totals = {}
+
+        for b in budgets:
+            updated_type_totals[b.category.type.id] = updated_type_totals.get(b.category.type.id, 0) + b.limit
 
 
-        return redirect("budget")
 
+        return JsonResponse({
+                "status": "ok",
+                "updated_limits": updated_limits,
+                "updated_type_totals": updated_type_totals,
+            })
+
+
+
+
+
+# UPDATE ACCOUNTS #
+def updateaccounts(request):
+    balances = {
+    account.id: float(account.balance)
+    for account in Account.objects.filter(user=request.user)
+    }
+
+    return JsonResponse({
+        "status": "ok",
+        "balances": balances
+    })
 
 
 
@@ -1308,26 +1616,16 @@ def filtertransactions(request):
 
     if amountoption == "exact":
         exactamount = request.POST.get('filterexactamount')
+
         if exactamount:
-            #amount = amount.strip()
-            # if '-' in amount:
-            #     parts = amount.split('-')
-            #     try:
-            #         low = Decimal(parts[0].strip())
-            #         high = Decimal(parts[1].strip())
-            #         transactions = transactions.filter(amount__gte=low, amount__lte=high)
-            #     except Exception:
-            #         pass
-            # else:
-                # try:
+
             exactamount = Decimal(exactamount)
-            print("debug exact", exactamount)
-            print("debug transactions", transactions)
-            transactions = transactions.filter(amount=exactamount, user=user)
+
+            transactions = transactions.filter(entries__amount__in=[exactamount, -exactamount], user=user).distinct()
+
             appliedfilters.append(f"Amount = ${exactamount}")
-                # except Exception:
-                    # fallback: contains
-            #transactions = transactions.filter(note__icontains=amount)
+
+
     elif amountoption == "minmax":
         minamount = request.POST.get('filterminamount')
         maxamount = request.POST.get('filtermaxamount')
@@ -1338,12 +1636,16 @@ def filtertransactions(request):
 
             print("Debug min max", minamount, maxamount)
 
-            if minamount:
-                transactions = transactions.filter(amount__gte=minamount, user=user)
+            # MIN
+            if minamount is not None:
+                transactions = transactions.filter(entries__amount__gte=minamount).distinct()
                 appliedfilters.append(f"Min Amount: ${minamount}")
-            if maxamount:
-                transactions = transactions.filter(amount__lte=maxamount, user=user)
+
+            # MAX
+            if maxamount is not None:
+                transactions = transactions.filter(entries__amount__lte=maxamount).distinct()
                 appliedfilters.append(f"Max Amount: ${maxamount}")
+
 
 
 
@@ -1395,7 +1697,7 @@ def filtertransactions(request):
                 appliedfilters.append("Category: " + ", ".join(names))
 
             if selectedcategorytypes:
-                transactions = transactions.filter(categorytype__id__in=selectedcategorytypes, user=user)
+                transactions = transactions.filter(category__type__id__in=selectedcategorytypes, user=user)
                 names = list(CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True))
                 appliedfilters.append("Type: " + ", ".join(names))
 
@@ -1404,11 +1706,12 @@ def filtertransactions(request):
                 CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True)
             )
             if "Expense" in selected_type_names and "Refund" not in selected_type_names:
-                transactions = transactions.exclude(categorytype__name__iexact="Refund")
+                transactions = transactions.exclude(category__type__name__iexact="Refund")
 
 
             if selectedaccounts:
-                transactions = transactions.filter(sourceaccount__id__in=selectedaccounts, user=user)
+                transactions = transactions.filter(entries__account__id__in=selectedaccounts, user=user).distinct()
+
                 names = list(Account.objects.filter(id__in=selectedaccounts, user=user).values_list("name", flat=True))
                 appliedfilters.append("Account: " + ", ".join(names))
 
@@ -1448,38 +1751,49 @@ def filtertransactions(request):
 
 
 # FILE UPLOAD
+from django.http import JsonResponse
 def uploadfile(request):
-    if request.method == "POST" and request.FILES.get("uploadfile"):
-        file = request.FILES["uploadfile"]
-        filename = file.name.lower()
 
-        print("Debug, file", file)
+    user = request.user
+
+    if request.method == "POST" and request.FILES.get("uploadfile"):
+        uploadfile = request.FILES["uploadfile"]
+        filename = uploadfile.name.lower()
 
         try:
-            # Read the uploaded file
             if filename.endswith(".csv"):
-                df = pd.read_csv(file)
-                print("debug csv", df)
+                file = pd.read_csv(uploadfile)
             elif filename.endswith((".xlsx", ".xls")):
-                df = pd.read_excel(file)
-                print("debug excel", df)
+                file = pd.read_excel(uploadfile)
             else:
-                messages.error(request, "Unsupported file type. Please upload a CSV or Excel file.")
-                return redirect("newtransactions")
+                return JsonResponse({"success": False, "error": "Unsupported file type."})
 
-            # Store the data and columns in session
-            request.session["upload_data"] = df.to_json(orient="records")
-            request.session["upload_columns"] = df.columns.tolist()
+            # Save to session
+            request.session["upload_sample"] = json.loads(file.iloc[[0]].to_json(orient="records"))[0]
+            request.session["upload_data"] = file.to_json(orient="records")
+            request.session["upload_columns"] = file.columns.tolist()
 
-            # Redirect to mapping modal/page
-            return redirect("mapcolumnsview")
+            # Load accounts
+            accounts = accountlist(user)
+
+            # Create Statement Upload
+            print("DEBUG within upload file")
+            upload = StatementUpload.objects.create(user=user, filename=filename, file=uploadfile)
+
+            request.session["upload_id"] = upload.id
+
+            return JsonResponse({
+                "success": True,
+                "columns": file.columns.tolist(),
+                "accounts": [{"id": a.id, "name": a.name} for a in accounts],
+            })
 
         except Exception as e:
-            messages.error(request, f"Error reading file: {e}")
-            return redirect("newtransactions")
+            print("Error updating file", e)
+            return JsonResponse({"success": False, "error": str(e)})
 
-    # Default render if GET or no file
-    return render(request, "newtransactions.html")
+    return JsonResponse({"success": False, "error": "Invalid request"})
+
 
 
 
@@ -1488,6 +1802,14 @@ def mapcolumnsview(request):
     user=request.user
     print("Debug within mapcolumns")
     columns = request.session.get("upload_columns", [])
+    sample = request.session.get("upload_sample", [])
+
+    print("Debug sample: ", sample)
+    print("Columns being sent to template:", columns)
+
+
+
+
     print("Debug, columns", columns)
     accounts = accountlist(user)
 
@@ -1495,6 +1817,7 @@ def mapcolumnsview(request):
         "columns": columns,
         "open_map_modal": True,
         "accounts": accounts,
+        "sample": sample,
 
     }
     return render(request, "newtransactions.html", context)
@@ -1504,62 +1827,315 @@ def mapcolumnsview(request):
 
 
 # MAP COLUMNS #
-def adduploaddata(request):
-    user=request.user
+def processupload(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
 
-    
-    if request.method == "POST":
-        datecolumn = request.POST.get("dateselection")
-        notecolumn = request.POST.get("noteselection")
-        amountcolumn = request.POST.get("amountselection")
-        accountcolumn = request.POST.get("accountselection")
+    user = request.user
 
-    print("DEBUG, column selection date, note, amount, account", datecolumn, notecolumn, amountcolumn, accountcolumn)
+    # Column selections
+    date_col = request.POST.get("dateselection")
+    note_col = request.POST.get("noteselection")
+    amount_col = request.POST.get("amountselection")
+    account_id = request.POST.get("accountselection")
 
-    upload_data_json = request.session.get("upload_data")
-    
-    if not upload_data_json:
-        print("ERROR: No uploaded data found in session.")
-        messages.error(request, "No uploaded data found. Please re-upload your file.")
-        return redirect("newtransactions")
+    # Load uploaded data
+    upload_json = request.session.get("upload_data")
+    if not upload_json:
+        return JsonResponse({"error": "No uploaded data found"}, status=400)
+
+    df = pd.read_json(upload_json, orient="records")
+    sample_row = df.iloc[0]
+
+    account = Account.objects.get(id=account_id, user=user)
+
+    upload_id = request.session.get("upload_id")
+    upload = StatementUpload.objects.get(id=upload_id, user=user)
+
+    upload.account = account
+    upload.institution = account.institution
+    upload.save()
+
+    # Save the selected columns in session (even if polarity missing)
+    request.session["selected_columns"] = {
+        "date": date_col,
+        "note": note_col,
+        "amount": amount_col,
+        "account": account_id,
+    }
+
+    # From other view
+    selected = request.session.get("selected_columns")
+    upload_json = request.session.get("upload_data")
+
+    if not selected or not upload_json:
+        return JsonResponse({"error": "No data"}, status=400)
+
+    df = pd.read_json(upload_json, orient="records")
+
+    account = Account.objects.get(id=selected["account"], user=user)
+    account_id = account.id
+
+    new_tx = []
+    all_existing = []
+    all_new = []
+    groups = []
+
+    for row in df.itertuples(index=False):
+        row_dict = row._asdict()
+
+        # Parse date field
+        raw_date = row_dict[selected["date"]]
+        try:
+            # Automatically parse various date formats
+            parsed_date = pd.to_datetime(raw_date)
+            formatted_date = parsed_date.strftime("%b. %d, %Y")
+            date_key = parsed_date.strftime("%Y-%m-%d")
+        except:
+            formatted_date = str(raw_date)
+
+        # Format amount
+        amount_raw = row_dict[selected["amount"]]
+        try:
+            amount_key = Decimal(str(amount_raw).replace(",", "").strip())
+        except:
+            amount_key = Decimal("0")
+
+        amount_display = f"{amount_key:,.2f}"
+
+        new_tx.append({
+            "date": formatted_date,
+            "note": row_dict[selected["note"]],
+            "account": account.name,
+            "amount": amount_display
+        })
+
+        print("Debug new_tx", new_tx)
+
+        request.session["uploadrows"] = new_tx
+        request.session.modified = True
+
+        note_lower = row_dict[selected["note"]].lower()
+
+        upload_id = request.session.get("upload_id")
 
 
-    # Convert JSON back to a DataFrame
-    df = pd.read_json(upload_data_json, orient="records")
+        basekey = generatebasekey(parsed_date, amount_key, account_id)
+        importkey = generateimportkey(parsed_date, amount_key, account_id, note_lower, upload_id)
+        manualkey = None
 
-    # Now you can work with df safely
-    print("DEBUG, DataFrame loaded from session:")
-    print(df.head())
+        new_transactions = {
+            "date": formatted_date,
+            "note": row_dict[selected["note"]],
+            "account": account.name,
+            "amount": amount_display,
+        }
 
-    # Example: access columns dynamically
-    selected_data = df[[datecolumn, notecolumn, amountcolumn]].copy()
-    print("DEBUG, selected data:")
-    selected_data['Account'] = accountcolumn
-    print("DEBUG, selected data after account+:")
-    print(selected_data.head())
+        print("Debug new_transactions", new_transactions)
 
-    for row in selected_data.itertuples(index=False, name=None):
-        date, note, amount, account = row
-        print("Debug: row", date, note, amount, account)
+        duplicates = checkduplicate(user, basekey, manualkey, importkey)
+        print("Debug duplicates", duplicates)
+        #duplicates["new"] = [new_transactions]
 
-        date = datetime.datetime.strptime(str(date), "%m/%d/%y").date()
+        print("Debug GET PREVIEW basekey", basekey, "importkey", importkey)
 
-        PendingTransaction.objects.create(
-                    amount=amount,
-                    note=note,
-                    date=date,
-                    sourceaccount=Account.objects.get(id=account),
+        if duplicates["existing"]:
+            print("debug within if duplicates")
+            print("Debug duplicates existing", duplicates["existing"])
+            print("debug duplicate new", new_transactions)
+            groups.append({
+                "new": new_transactions,
+                "existing": [
+                    {
+                        "date": d.date.strftime("%b. %d, %Y"),
+                        "note": d.note,
+                        "account": d.account,
+                        "amount": str(d.amount),
+                    }
+                    for d in duplicates["existing"]
+                ]
+            })
+
+
+
+    duplicates_exist = any(len(g["existing"]) > 0 for g in groups)
+
+    if duplicates_exist:
+        return JsonResponse({
+            "status": "duplicates",
+            "groups": groups
+        })
+
+
+    return JsonResponse({
+        "status": "preview_ready"
+        })
+
+
+
+
+
+# SET POLARITY
+# def setpolarity(request):
+#     if request.method != "POST":
+#         return JsonResponse({"error": "Invalid request"}, status=400)
+
+#     user = request.user
+#     acct_id = request.POST.get("account_id")
+#     polarity = request.POST.get("polarity")
+
+#     account = Account.objects.get(id=acct_id, user=user)
+#     account.polarity = polarity
+#     account.save()
+
+#     return JsonResponse({"status": "ok"})
+
+
+
+
+
+
+# PREVIEW
+def getpreview(request):
+
+    user = request.user
+
+    transactions = request.session.get("uploadrows")
+
+
+
+
+    return JsonResponse({"transactions": transactions})
+
+
+
+
+
+# ADD DUPLICATES #
+def addduplicates(request):
+    return JsonResponse
+
+
+
+
+
+# SUBMIT UPLOAD
+def submitupload(request):
+
+    user = request.user
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    uploadrows = request.session.get("uploadrows")
+    selected = request.session.get("selected_columns")
+    upload_id = request.session.get("upload_id")
+
+    upload = StatementUpload.objects.get(id=upload_id, user=user)
+
+    if not uploadrows:
+        return JsonResponse({"error": "No preview rows found"}, status=400)
+
+    print("Debug json", uploadrows)
+
+    user = request.user
+    account = Account.objects.get(id=selected["account"])
+
+    try:
+        with transaction.atomic():
+            for row in uploadrows:
+                # ---- DATE ----
+                try:
+                    parsed_date = pd.to_datetime(row["date"])
+                    date_value = parsed_date.date()
+                except:
+                    raise ValueError(f"Invalid date format: {row['date']}")
+
+                amount_str = row["amount"].replace(",", "")
+
+
+                amount_key = Decimal(str(amount_str).replace(",", "").strip())
+                note_key = row.get("note", "").lower()
+                account_key = account.id
+                upload_key = upload.id
+
+                basekey = generatebasekey(parsed_date, amount_key, account_key)
+                importkey = generateimportkey(parsed_date, amount_key, account_key, note_key, upload_key)
+
+                # ---- CREATE PendingTransaction ----
+                pendingtx = PendingTransaction.objects.create(
+                    note=row.get("note", ""),
+                    date=date_value,
+                    user=user,
+                    base_key = basekey,
+                    import_key = importkey,
+                    uploadsource = upload
+                )
+
+                # ---- AMOUNT ----
+
+                try:
+                    amount_value = Decimal(amount_str)
+                except:
+                    raise ValueError(f"Invalid amount: {row['amount']}")
+
+                # ---- CREATE PendingEntry ----
+                PendingEntry.objects.create(
+                    transaction=pendingtx,
+                    account=account,
+                    amount=amount_value,
                     user=user,
                 )
 
-    
-    accounts = accountlist(user)
+        # Success
+        return JsonResponse({"status": "ok", "redirect": "/newtransactions/"})
 
-    # context = {
-    #     "accounts": accounts,
+    except Exception as e:
+        # If anything fails, delete the upload and all created transactions/entries
+        PendingEntry.objects.filter(transaction__uploadsource=upload).delete()
+        PendingTransaction.objects.filter(uploadsource=upload).delete()
+        upload.delete()
+        return JsonResponse({"error": str(e)}, status=400)
 
-    # }
-    return redirect("newtransactions")
+
+
+
+
+# START OVER UPLOAD FILE #
+def start_over(request):
+    if request.method == "POST":
+        user = request.user
+        upload_id = request.session.get("upload_id")
+
+        if upload_id:
+            # Delete pending entries and transactions
+            PendingEntry.objects.filter(transaction__uploadsource_id=upload_id).delete()
+            PendingTransaction.objects.filter(uploadsource_id=upload_id).delete()
+
+            # Delete the upload
+            from .models import StatementUpload
+            StatementUpload.objects.filter(id=upload_id, user=user).delete()
+
+            # Clear session data
+            keys_to_clear = [
+                "upload_id",
+                "upload_data",
+                "upload_columns",
+                "upload_sample",
+                "selected_columns",
+                "uploadrows",
+                "basekey",
+                "importkey",
+                "manualkey",
+            ]
+            for key in keys_to_clear:
+                request.session.pop(key, None)
+
+        return JsonResponse({"status": "ok"})
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
 
 
 
@@ -1585,19 +2161,19 @@ def overview(request):
 
 
     # Budgets for selected month/year
-    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
+    print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user)
     
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
-    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user)
+    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user)
 
-    netincome, netbudget, savingstotal = netcalculations(categorytype_totals, budgetmap)
+    netincome, netbudget, savingstotal = netcalculations(categorytype_totals, budgetmap_category)
 
     context = {
         "name": name,
@@ -1605,14 +2181,16 @@ def overview(request):
         "accounts": accounts,
         "accounttypes": accounttypes,
         "categorytypes": categorytypes,
-        "budgetmap": budgetmap,
-        "adjbudgetmap": adjbudgetmap,
+        "budgetmap_category": budgetmap_category,
+        "adjbudgetmap_category": adjbudgetmap_category,
         "category_totals": category_totals,
         "category_remaining": category_remaining,
         "category_percentages": category_percentages,
         "categorytype_totals": categorytype_totals,
         "selected_month": selected_month,
         "selected_year": selected_year,
+        "selected_fromdate": selected_fromdate,
+        "selected_todate": selected_todate,
         "charts_data": json.dumps(charts_data),
         "incomeexpensedata": json.dumps(incomeexpensedata),
         "budgetexpensedata": json.dumps(budgetexpensedata),
@@ -1638,16 +2216,17 @@ def breakdown(request):
 
 
     # Budgets for selected month/year
-    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    print("Debug, budgets before calculatecategorytotals: ", budgetmap," adjbudgetmap", adjbudgetmap)
+    print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user)
     
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
+    print("Debug, budgets after calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
     context = {
         "name": name,
@@ -1655,14 +2234,16 @@ def breakdown(request):
         "accounts": accounts,
         "accounttypes": accounttypes,
         "categorytypes": categorytypes,
-        "budgetmap": budgetmap,
-        "adjbudgetmap": adjbudgetmap,
+        "budgetmap_category": budgetmap_category,
+        "adjbudgetmap_category": adjbudgetmap_category,
         "category_totals": category_totals,
         "category_remaining": category_remaining,
         "category_percentages": category_percentages,
         "categorytype_totals": categorytype_totals,
         "selected_month": selected_month,
         "selected_year": selected_year,
+        "selected_fromdate": selected_fromdate,
+        "selected_todate": selected_todate,
     }
 
     return render(request, 'breakdown.html', context)
@@ -1685,11 +2266,11 @@ def dashboard(request):
     accounts = accountlist(user)
 
     # Budgets for selected month/year
-    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
-    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, categorytypes, category_totals, user)
+    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user)
 
 
     context = {
@@ -1697,7 +2278,7 @@ def dashboard(request):
         "categories": categories,
         "accounts": accounts,
         "categorytypes": categorytypes,
-        "budgetmap": budgetmap,
+        "budgetmap_category": budgetmap_category,
         "category_totals": category_totals,
         "category_remaining": category_remaining,
         "category_percentages": category_percentages,
@@ -1760,7 +2341,7 @@ def alltransactions(request):
 
     for tx in transactionchron:
 
-        if tx.categorytype.name.lower() == 'income':
+        if tx.category.type.name.lower() == 'income':
             runningbalance += tx.amount
         else:
             runningbalance -= tx.amount
@@ -1824,10 +2405,13 @@ def budget(request):
     mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
 
     # Budgets for selected month/year
-    budgetmap, adjbudgetmap = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
 
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap, adjbudgetmap, user)
+    print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
+    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
+
+    print("Debug, budgets after calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
     # All lists you had in table
     categories = categorylist(user)
     categorytypes = categorytypelist(user)
@@ -1844,9 +2428,12 @@ def budget(request):
         "accounts": accounts,
         "accounttypes": accounttypes,
         "transactions": transactions,
-        "budgetmap": budgetmap,
+        "budgetmap_category": budgetmap_category,
+        "budgetmap_type": budgetmap_type,
         "selected_month": selected_month,
         "selected_year": selected_year,
+        "selected_fromdate": selected_fromdate,
+        "selected_todate": selected_todate,
         "categorytype_totals": categorytype_totals,
     }
 
@@ -1863,6 +2450,7 @@ def setup(request):
     categories = categorylist(user=user)
     categorytypes = categorytypelist(user)
     accounts = accountlist(user=user)
+    institutions = institutionlist(user)
     accounttypes = accounttypelist(user)
     transactions = transactionlist(user=user)
 
@@ -1886,6 +2474,7 @@ def setup(request):
         "categorytypes": categorytypes,
         "accounts": accounts,
         "accounttypes": accounttypes,
+        "institutions": institutions,
     }
 
     return render(request, 'setup.html', context)
@@ -1953,8 +2542,8 @@ def tasks(request):
     accounttypes = accounttypelist(user)
 
     tasks = tasklist(user)
-    activetasks = tasks.filter(complete=False)
-    completedtasks = tasks.filter(complete=True)
+    activetasks = tasks.filter(is_active=True)
+    completedtasks = tasks.filter(is_active=False)
 
     categories = categorylist(user=user)
     categorytypes = categorytypelist(user)
@@ -1985,14 +2574,82 @@ def goals(request):
     user=request.user
     name = request.user.get_full_name()
 
+    user_tz = pytz.timezone(request.user.timezone)
+    user_now = timezone.localtime(timezone.now(), user_tz)
+    today = user_now.date()
+
+    selected_month = today.month
+    selected_year = today.year
+
+    monthname = calendar.month_name[today.month]
+    yearname = selected_year
+
+    savingbudget = (Budget.objects.filter(year=selected_year, month=selected_month, category__type__name="Savings", user=user).aggregate(total=Sum("limit"))["total"] or 0)
+    savingamount = (Entry.objects.filter(transaction__date__year=selected_year, transaction__date__month=selected_month, transaction__category__type__name="Savings", amount__gt=0, transaction__user=user)
+    .aggregate(total=Sum("amount"))["total"] or 0)
+
+    incomeamount = (Entry.objects.filter(transaction__date__year=selected_year, transaction__date__month=selected_month, transaction__category__type__name="Income", amount__gt=0, transaction__user=user)
+    .aggregate(total=Sum("amount"))["total"] or 0)
+
+    if incomeamount > 0:
+        savingincomepercent = round(savingamount / incomeamount * 100, 2)
+    else:
+        savingincomepercent = 0
+
+
+
+
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user)
-    savingstransactions = Transaction.objects.filter(user=user, categorytype__name="Savings")
+    savingstransactions = Transaction.objects.filter(user=user, category__type__name="Savings")
+    savingstransactionscount = savingstransactions.count()
 
     goals = goallist(user=user)
 
+    goalcount = goals.count()
+
+    unlinkedcount = savingstransactions.filter(goals__isnull=True).count()
+    upcominggoal = goals.filter(date__gte=timezone.now()).first()
+    upcominggoal.daysremaining = (upcominggoal.date - today).days
+    upcominggoal.saved = (Entry.objects.filter(transaction__goals=upcominggoal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+    upcominggoalpercent = round(upcominggoal.saved / upcominggoal.amount * 100, 2)
+
     for goal in goals:
-        goal.saved = goal.transactions.aggregate(total=models.Sum("amount"))["total"] or 0
+
+        goalfirsttransaction = goal.transactions.order_by('date').first()
+        if goalfirsttransaction:
+            # If the field is a datetime, convert to date
+            goal.startdate = goalfirsttransaction.date
+            if isinstance(goal.startdate, datetime.datetime):
+                goal.startdate = goal.startdate.date()
+        else:
+            goal.startdate = goal.created_at.date()
+
+
+        goal.daysremaining = (goal.date - today).days
+        goal.totaldays = (goal.date - goal.startdate).days if (goal.date - goal.startdate).days > 0 else 1
+
+        goal.saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+        goal.percent = (goal.saved / goal.amount * 100) if goal.amount else 0
+
+        elapsed_days = (today - goal.startdate).days
+        expected_percent = min((elapsed_days / goal.totaldays) * 100, 100)
+
+        print("Debug: goal: goal.percent: ", goal.percent, "expected_percent", expected_percent, "elaspsed days", elapsed_days, "goal.totaldays", goal.totaldays, "goal.startdate", goal.startdate)
+
+        # Status
+        if goal.percent >= 100:
+            goal.status = "Completed"
+            goal.statuscolor = "income"
+        elif goal.percent > expected_percent + 5:   # ahead if 5% more than expected
+            goal.status = "Ahead"
+            goal.statuscolor = "income"
+        elif goal.percent >= expected_percent - 5: # on track within ±5%
+            goal.status = "On Track"
+            goal.statuscolor = "primary"
+        else:
+            goal.status = "Behind"
+            goal.statuscolor = "expense"
 
     transactionothergoalmap = {}
 
@@ -2003,12 +2660,23 @@ def goals(request):
 
 
 
+
     context = {
         "name": name,
         "accounts": accounts,
         "accounttypes": accounttypes,
+        "savingbudget": savingbudget,
+        "savingamount": savingamount,
+        "savingincomepercent": savingincomepercent,
+        "upcominggoalpercent": upcominggoalpercent,
         "goals": goals,
+        "goalcount": goalcount,
+        "unlinkedcount": unlinkedcount,
+        "upcominggoal": upcominggoal,
         "savingstransactions": savingstransactions,
+        "savingstransactionscount": savingstransactionscount,
+        "monthname": monthname,
+        "yearname": yearname,
         "transactionothergoalmap": transactionothergoalmap,
     }
 
@@ -2037,7 +2705,11 @@ def color(request):
 
 def signup(request):
 
-    return render(request, 'signup.html')
+    context = {
+    'timezones': pytz.all_timezones,
+    }
+
+    return render(request, 'signup.html', context)
 
 
 
@@ -2103,6 +2775,9 @@ def categorytypelist(user):
 def accountlist(user):
     return Account.objects.filter(user=user)
 
+def institutionlist(user):
+    return Institution.objects.filter(user=user)
+
 def tasklist(user):
     return Task.objects.filter(user=user)
 
@@ -2110,13 +2785,13 @@ def reminderlist(user):
     return Reminder.objects.filter(user=user)
 
 def goallist(user):
-    return Goal.objects.filter(user=user)
+    return Goal.objects.filter(user=user).order_by('date')
 
 def accounttypelist(user):
     TYPE_ORDER = ['Checking Account', 'Credit Card', 'Savings Account', 'Investment', 'Retirement', 'Loan', 'Cash', 'Digital Wallet']
 
     accounttypes = sorted(
-        AccountType.objects.prefetch_related(Prefetch('account_set', queryset=Account.objects.filter(user=user))),
+        AccountType.objects.prefetch_related(Prefetch('accounts', queryset=Account.objects.filter(user=user))),
         key=lambda t: TYPE_ORDER.index(t.name) if t.name in TYPE_ORDER else 999
     )
     return accounttypes

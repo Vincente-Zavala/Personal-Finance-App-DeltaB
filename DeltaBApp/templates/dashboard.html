@@ -74,7 +74,7 @@
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-table me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>All Transactions</a>
                     <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-keyboard me-2"></i>New Transactions</a>
-                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Tasks</a> -->
+                    <!-- <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-scale-balanced me-2"></i>Tasks</a> -->
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Configuration</a>
                         <div class="dropdown-menu bg-transparent border-0">
@@ -139,7 +139,7 @@
                         
                               <!-- Name and balance stacked -->
                               <div class="d-flex flex-column justify-content-center text-truncate">
-                                <span class="account-name fw-semibold text-truncate">{{ account.name }}</span>
+                                <span class="account-name fw-semibold text-truncate">{{ account.institution.name }} {{ account.name }}</span>
                                 <span class="account-balance fw-semibold">${{ account.balance }}</span>
                               </div>
                             </div>

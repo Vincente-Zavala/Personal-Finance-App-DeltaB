@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="account",
             name="created_at",
-            field=models.DateTimeField(auto_now_add=True, default=184.0909090909091),
+            field=models.DateTimeField(auto_now_add=True),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -54,13 +54,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="pendingtransaction",
             name="created_at",
-            field=models.DateTimeField(auto_now_add=True, default=184.0909090909091),
+            field=models.DateTimeField(auto_now_add=True),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name="transaction",
             name="created_at",
-            field=models.DateTimeField(auto_now_add=True, default=184.0909090909091),
+            field=models.DateTimeField(auto_now_add=True),
             preserve_default=False,
         ),
         migrations.AlterField(

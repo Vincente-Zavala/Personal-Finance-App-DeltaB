@@ -4,3 +4,8 @@ db.sqlite3
 # Python Cache
 __pycache__/
 *.pyc
+
+# Env
+.env
+*.env
+.env.local

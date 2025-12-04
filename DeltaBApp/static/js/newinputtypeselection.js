@@ -1,7 +1,7 @@
     // Hide Field Input
     const formType = document.getElementById("inputtype");
     const sections = document.querySelectorAll(
-    "#categoryfields, #categorytypefields, #accountfields, #accounttypefields"
+    "#categoryfields, #categorytypefields, #accountfields, #accounttypefields, #institutionfields"
     );
 
     if (formType) {

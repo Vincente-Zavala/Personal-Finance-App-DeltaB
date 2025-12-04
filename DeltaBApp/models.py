@@ -1,7 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-
+from . supabaseupload import SupabaseStorage
+from django.db.models import Sum
+from django.utils.safestring import mark_safe
+import pytz
 
 
 
@@ -9,6 +12,7 @@ from django.conf import settings
 
 # USERS #
 class CustomUser(AbstractUser):
+    timezone = models.CharField(max_length=50, choices=[(tz, tz) for tz in pytz.all_timezones], default='America/Chicago')
     pass
 
     def __str__(self):
@@ -35,6 +39,10 @@ class Category(models.Model):
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.name}"
 
@@ -56,7 +64,11 @@ class AccountType(models.Model):
 # INSTITUTION #
 class Institution(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    type = models.CharField(max_length=250)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="institutions")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -77,7 +89,7 @@ class Account(models.Model):
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -89,12 +101,20 @@ class Account(models.Model):
 # STATEMENT UPLOAD #
 class StatementUpload(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="statementuploads")
-    file = models.FileField(upload_to='statements/')
+    filename = models.CharField(max_length=255, null=True, blank=True)
+    file = models.FileField(upload_to='statements/', storage=SupabaseStorage)
     uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    # optional metadata
+    supabase_url = models.URLField(blank=True, null=True)
     institution = models.ForeignKey('Institution', on_delete=models.SET_NULL, null=True, blank=True)
     account = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        initial_save = not self.pk
+        super().save(*args, **kwargs)
+        if self.file and (initial_save or not self.supabase_url):
+            self.supabase_url = self.file.url
+            super().save(update_fields=["supabase_url"])
+
 
 
 
@@ -110,6 +130,55 @@ class Transaction(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Hash / keys
+    base_key = models.CharField(max_length=128, db_index=True)
+    import_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
+    manual_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
+
+    @property
+    def is_accounttransfer(self):
+        return self.entries.count() == 2
+
+    @property
+    def amount(self):
+        if self.is_accounttransfer:
+            entry = self.entries.filter(amount__gt=0).first()
+            if entry:
+                return entry.amount
+            return abs(self.entries.first().amount)
+        else:
+            total = self.entries.aggregate(total=Sum('amount'))["total"]
+            return total or 0
+
+    @property
+    def account(self):
+
+        entries = self.entries.all()
+
+        # No entries fallback
+        if not entries:
+            return ""
+
+        # Normal transaction (single entry)
+        if entries.count() == 1:
+            return entries.first().account.name
+
+        # Transfer (two entries)
+        source = entries.filter(amount__lt=0).first()
+        dest = entries.filter(amount__gt=0).first()
+
+        # Build with Font Awesome icon
+        if source and dest:
+            html = f"{source.account.name} <i class='fa-solid fa-arrow-right mx-1'></i> {dest.account.name}"
+            return mark_safe(html)
+
+        # Fallback
+        html = " <i class='fa-solid fa-arrow-right mx-1'></i> ".join(
+            e.account.name for e in entries
+        )
+        return mark_safe(html)
+
+
     def __str__(self):
         return f"{self.note}"
 
@@ -119,7 +188,7 @@ class Transaction(models.Model):
 
 # ENTRY #
 class Entry(models.Model):
-    transaction = models.ForeignKey(Transaction,on_delete=models.CASCADE,related_name='entries')
+    transaction = models.ForeignKey(Transaction,on_delete=models.CASCADE, related_name='entries')
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="entries")
@@ -152,6 +221,56 @@ class PendingTransaction(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingtransactions")
+
+    # Hash / keys
+    base_key = models.CharField(max_length=128, db_index=True)
+    import_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
+    manual_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
+
+
+    @property
+    def is_accounttransfer(self):
+        return self.pendingentries.count() == 2
+
+    @property
+    def amount(self):
+        if self.is_accounttransfer:
+            pendingentry = self.pendingentries.filter(amount__gt=0).first()
+            if pendingentry:
+                return pendingentry.amount
+            return abs(self.pendingentries.first().amount)
+        else:
+            total = self.pendingentries.aggregate(total=Sum('amount'))["total"]
+            return total or 0
+
+    @property
+    def account(self):
+
+        pendingentries = self.pendingentries.all()
+
+        # No entries fallback
+        if not pendingentries:
+            return ""
+
+        # Normal transaction (single entry)
+        if pendingentries.count() == 1:
+            return pendingentries.first().account.name
+
+        # Transfer (two entries)
+        source = pendingentries.filter(amount__lt=0).first()
+        dest = pendingentries.filter(amount__gt=0).first()
+
+        # Build with Font Awesome icon
+        if source and dest:
+            html = f"{source.account.name} <i class='fa-solid fa-arrow-right mx-1'></i> {dest.account.name}"
+            return mark_safe(html)
+
+        # Fallback
+        html = " <i class='fa-solid fa-arrow-right mx-1'></i> ".join(
+            e.account.name for e in pendingentries
+        )
+        return mark_safe(html)
+
 
     def __str__(self):
         return f"{self.note}"
@@ -211,8 +330,11 @@ class AccountBalanceHistory(models.Model):
 # TASKS #
 class Task(models.Model):
     name = models.CharField(max_length=255)
-    complete = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tasks")
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
 
 
 
@@ -223,10 +345,19 @@ class Reminder(models.Model):
     name = models.CharField(max_length=255)
     date = models.DateField()
     amount = models.DecimalField(max_digits=20, decimal_places=2)
-    categorytype = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    complete = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reminders")
+
+    recurring = models.BooleanField(default=False)
+    frequency = models.CharField(max_length=20,
+        choices=[("daily","Daily"), ("weekly","Weekly"), ("monthly","Monthly")],
+        null=True,
+        blank=True
+    )
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
 
 
 
@@ -240,3 +371,7 @@ class Goal(models.Model):
     complete = models.BooleanField(default=False)
     transactions = models.ManyToManyField("Transaction", related_name="goals", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="goals")
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    retired_at = models.DateTimeField(null=True, blank=True)

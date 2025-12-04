@@ -62,7 +62,7 @@
                 </a>
                 <div class="navbar-nav w-100">
                     <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-chart-column me-2"></i>Overview</a>
-                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-th me-2"></i>Breakdown</a>
+                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-scale-balanced me-2"></i>Breakdown</a>
                     <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
                     <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
                     <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
@@ -122,19 +122,19 @@
 
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
-                    <div class="test-divider my-4">
+                    <div class="accounts-divider my-4">
                         <span class="test-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
-                        {% for account in accounttype.account_set.all %}
+                        {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
                         data-account-type="{{ account.type.name|lower }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                <span class="account-name fw-medium text-primesec">{{ account.institution.name }} {{ account.name }}</span>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>

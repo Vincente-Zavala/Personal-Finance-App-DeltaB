@@ -12,9 +12,12 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -96,12 +99,24 @@ TEMPLATES = [
 WSGI_APPLICATION = "DeltaB.wsgi.application"
 
 
+DEFAULT_FILE_STORAGE = "DeltaBApp.supabaseupload.SupabaseStorage"
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+SUPABASE_PUBLIC_KEY = os.getenv("SUPABASE_PUBLIC_KEY")
+
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "statements")
+SUPABASE_USE_SECURE_URLS = True
+
+
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+
 DATABASES = {
     "default": dj_database_url.parse(
-        "REDACTED_DB_URL/postgres",
+        os.getenv("DATABASE_URL"),
         conn_max_age=300,
         ssl_require=True
     )

@@ -5,8 +5,9 @@ function updateGoalProgress(goalEl, savedAmount) {
         savedAmountEl.textContent = `$${parseFloat(savedAmount).toFixed(2)}`;
     }
 
-    const goalAmount = parseFloat(goalEl.dataset.goalAmount);
+    const goalAmount = parseFloat(goalEl.dataset.goalAmount.replace(/[^0-9.-]/g, ""));
     const progressBar = goalEl.querySelector(".progress-bar");
+    
     if (progressBar && goalAmount > 0) {
         const percent = Math.min((savedAmount / goalAmount) * 100, 100);
         progressBar.style.width = `${percent}%`;
@@ -15,13 +16,34 @@ function updateGoalProgress(goalEl, savedAmount) {
 }
 
 // ---- Initialize all progress bars on page load ----
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".goal-item").forEach(goalEl => {
-        const savedAmountEl = goalEl.querySelector(".goal-saved-amount");
-        const savedAmount = parseFloat(savedAmountEl.textContent.replace(/\$|,/g, "")) || 0;
-        updateGoalProgress(goalEl, savedAmount);
-    });
+document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        document.querySelectorAll(".goal-item").forEach(goalEl => {
+
+            // ---- Get saved amount ----
+            const savedAmountEl = goalEl.querySelector(".goal-saved-amount");
+            if (!savedAmountEl) return;
+
+            const rawSaved = savedAmountEl.textContent.replace(/[^0-9.-]/g, "");
+            const savedAmount = parseFloat(rawSaved) || 0;
+
+            // ---- Fix dataset goal amount & validate ----
+            let rawGoalAmount = goalEl.dataset.goalAmount;
+            if (!rawGoalAmount) {
+                console.warn("Missing goal amount for goal:", goalEl);
+                return;  // Prevent crashing
+            }
+
+            rawGoalAmount = rawGoalAmount.replace(/,/g, ""); 
+            goalEl.dataset.goalAmount = rawGoalAmount;
+
+            // ---- Update progress bar ----
+            updateGoalProgress(goalEl, savedAmount);
+        });
+    }, 10);
 });
+
+
 
 // ---- Checkbox listener for updating linked transactions ----
 document.querySelectorAll('input[name="selectedtransactions"]').forEach(checkbox => {
