@@ -1,0 +1,26 @@
+<h2 class="fw-semibold text-primesec mb-0">
+    <i class="fa 
+        {% if request.resolver_match.url_name == 'overview' %}fa-chart-column
+        {% elif request.resolver_match.url_name == 'breakdown' %}fa-scale-balanced
+        {% elif request.resolver_match.url_name == 'budget' %}fa-calculator
+        {% elif request.resolver_match.url_name == 'alltransactions' %}fa-globe
+        {% elif request.resolver_match.url_name == 'goals' %}fa-sitemap
+        {% elif request.resolver_match.url_name == 'tasks' %}fa-calendar-alt
+        {% elif request.resolver_match.url_name == 'newtransactions' %}fa-stream
+        {% elif request.resolver_match.url_name == 'setup' %}fa-cog
+        {% elif request.resolver_match.url_name == 'historicalbalance' %}fa-history
+        {% else %}fa-circle
+        {% endif %} me-2"></i>
+
+    {% if request.resolver_match.url_name == 'overview' %}Overview
+    {% elif request.resolver_match.url_name == 'breakdown' %}Breakdown
+    {% elif request.resolver_match.url_name == 'budget' %}Budget
+    {% elif request.resolver_match.url_name == 'alltransactions' %}All Transactions
+    {% elif request.resolver_match.url_name == 'goals' %}Goals
+    {% elif request.resolver_match.url_name == 'tasks' %}Reminders
+    {% elif request.resolver_match.url_name == 'newtransactions' %}Add Transaction
+    {% elif request.resolver_match.url_name == 'setup' %}Setup
+    {% elif request.resolver_match.url_name == 'historicalbalance' %}Historical Balances
+    {% else %}Page
+    {% endif %}
+</h2>

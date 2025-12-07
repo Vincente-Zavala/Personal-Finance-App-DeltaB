@@ -469,19 +469,21 @@
                                             <label for="" class="col-sm-6 col-form-label">Upload Preview</label>
                                             <div class="row align-items-center">
                                                 <div class="col-sm-12">
-                                                    <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
-                                                        <thead class="bg-light text-white sticky-top">
-                                                            <tr>
-                                                                <th scope="col"  class="editcol" hidden></th>
-                                                                <th>Date</th>
-                                                                <th>Note</th>
-                                                                <th>Accounts</th>
-                                                                <th class="text-end">Amount</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="previewTableBody">
-                                                        </tbody>
-                                                    </table>
+                                                    <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                                                        <table class="table table-bordered table-hover table-sm align-middle mb-0 text-dark" style="border-color: var(--light);">
+                                                            <thead class="bg-light text-white sticky-top">
+                                                                <tr>
+                                                                    <th scope="col"  class="editcol" hidden></th>
+                                                                    <th>Date</th>
+                                                                    <th>Note</th>
+                                                                    <th>Accounts</th>
+                                                                    <th class="text-end">Amount</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="previewTableBody">
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

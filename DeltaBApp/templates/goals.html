@@ -1,448 +1,272 @@
+{% extends "base.html" %}
+
 {% load static %}
 {% load budgetextra %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="utf-8">
-    <title>DeltaB</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="" name="keywords">
-    <meta content="" name="description">
+{% block content %}
 
-    <!-- Favicon -->
-    <link href="{% static 'img/favicon.ico' %}" rel="icon">
+<!-- Content Start -->
+<div class="content">
 
-    <!-- Google Web Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Roboto:wght@500;700&display=swap" rel="stylesheet"> 
-    
-    <!-- Icon Font Stylesheet -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Widget Start -->
+    <div class="container-fluid pt-4 px-4">
+        <div class="row g-4">
+            <div class="card bg-bs-dark border border-light shadow-sm p-3">
+                <div class="d-flex align-items-center">
 
-    <!-- Flatpickr CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="{% static 'css/flatpickr.css' %}" rel="stylesheet">
+                    {% include "partials/page_titles.html" %}
 
-    <!-- (Optional) Theme -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-
-    <!-- Libraries Stylesheet -->
-    <link href="{% static 'lib/owlcarousel/assets/owl.carousel.min.css' %}" rel="stylesheet">
-    <link href="{% static 'lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css' %}" rel="stylesheet" />
-
-    <!-- Customized Bootstrap Stylesheet -->
-    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
-
-    <!-- Template Stylesheet -->
-    <link href="{% static 'css/style.css' %}" rel="stylesheet">
-</head>
-
-<body>
-    <div class="container-fluid position-relative d-flex p-0">
-        <!-- Spinner Start -->
-        <div id="spinner" class="show bg-dark position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                <span class="sr-only">Loading...</span>
-            </div>
-        </div>
-        <!-- Spinner End -->
-
-
-        <!-- Sidebar Start -->
-        <div class="sidebar-left sidebar pe-4 pb-3">
-            <div class="navbar navbar-dark">
-                <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-3">
-                    <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
-                </a>
-                <div class="navbar-nav w-100">
-                    <a href="{% url 'overview' %}" class="nav-item nav-link"><i class="fa fa-chart-column me-2"></i>Overview</a>
-                    <a href="{% url 'breakdown' %}" class="nav-item nav-link"><i class="fa fa-scale-balanced me-2"></i>Breakdown</a>
-                    <!-- <a href="{% url 'dashboard' %}" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Dashboard</a> -->
-                    <a href="{% url 'budget' %}" class="nav-item nav-link"><i class="fa fa-calculator me-2"></i>Budget</a>
-                    <a href="{% url 'alltransactions' %}" class="nav-item nav-link"><i class="fa fa-globe me-2"></i>All Transactions</a>
-                    <a href="{% url 'goals' %}" class="nav-item nav-link active"><i class="fa fa-sitemap me-2"></i>Goals</a>
-                    <a href="{% url 'tasks' %}" class="nav-item nav-link"><i class="fa fa-calendar-alt me-2"></i>Reminders</a>
-                    <a href="{% url 'newtransactions' %}" class="nav-item nav-link"><i class="fa fa-stream me-2"></i>Add Transaction</a>
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-cogs me-2"></i>Configuration</a>
-                        <div class="dropdown-menu bg-transparent border-0">
-                            <a href="{% url 'setup' %}" class="dropdown-item">Setup</a>
-                            <a href="{% url 'historicalbalance' %}" class="dropdown-item">Historical Balances</a>
-                            <!--<a href="{% url 'color' %}" class="dropdown-item">Chart Colors</a>-->
-                            <!--<a href="{% url 'element' %}" class="dropdown-item">Accounts</a>-->
-                        </div>
-                    </div>
-                    <!-- <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="far fa-file-alt me-2"></i>Pages NU</a>
-                        <div class="dropdown-menu bg-transparent border-0">
-                            <a href="{% url 'signin' %}" class="dropdown-item">Sign In NU</a>
-                            <a href="{% url 'signup' %}" class="dropdown-item">Sign Up NU</a>
-                            <a href="404.html" class="dropdown-item">404 Error NU</a>
-                            <a href="blank.html" class="dropdown-item">Blank Page NU</a>
-                        </div> -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Left Sidebar End -->
-
-        <!-- Right Sidebar Start -->
-        <div class="sidebar-right sidebar pb-3 bg-dark text-light">
-            <nav class="navbar navbar-dark flex-column align-items-stretch">
-                
-                <!-- Profile Section -->
-                <div class="nav-item dropdown text-center mb-4">
-                    <a href="#" class="d-flex align-items-center justify-content-center profile-dropdown" data-bs-toggle="dropdown">
-                        <div class="position-relative me-2">
-                            <img class="rounded-circle shadow-sm" src="{% static 'img/user.jpg' %}" alt="Profile" style="width: 50px; height: 50px;">
-                            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
-                        </div>
-                        <div class="d-none d-lg-block text-start">
-                            <h6 class="mb-0 fw-semibold text-primesec">{{ name }}</h6>
-                            <small class="text-light">Admin NU</small>
-                        </div>
-                        <i class="fa fa-chevron-down ms-2 small text-primesec"></i>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 shadow rounded-3 mt-2">
-                        <form id="logoutform" method="post" action="{% url 'logoutuser' %}">
-                            {% csrf_token %}
-                            <a class="dropdown-item text-primesec py-2" href="#" onclick="document.getElementById('logoutform').submit(); return false;">
-                                <i class="fa fa-sign-out-alt me-2 text-primesec"></i>Logout
-                            </a>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Accounts List -->
-                <div class="account-list-container px-2">
-                    <div class="accounts-divider my-4">
-                        <span class="accounts-label">Accounts</span>
-                    </div>  
-                    <div class="account-list">
-                        {% for accounttype in accounttypes %}
-                        {% for account in accounttype.accounts.all %}
-                        <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                            data-account-type="{{ account.type.name|lower }}"
-                            data-account-id="{{ account.id }}">
-                            <div class="d-flex align-items-center">
-                                <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
-                                    <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
-                                </div>
-                                <div class="d-flex flex-column">
-                                    <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
-                                    <span class="text-muted small">{{ account.institution.name }}</span>
+                    <!-- Small summary cards aligned to the right -->
+                    <div class="d-flex align-items-center ms-auto gap-2">
+                        <!-- Active Goals -->
+                        <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-book-open fa-lg text-primary"></i>
+                                <div class="text-start">
+                                    <p class="mb-0 text-muted small">Active Goals</p>
+                                    <h6 class="m-0 fw-bold">{{ goalcount }}</h6>
                                 </div>
                             </div>
-                            <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
-                        {% endfor %}
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <!-- Footer -->
-                <div class="sidebar-footer mt-auto text-center pt-3">
-                    <small class="text-muted">© 2025 FinanceApp</small>
-                </div>
-            </nav>
-        </div>
-        <!-- Right Sidebar End -->
-
-
-        <!-- Content Start -->
-        <div class="content">
-
-            <!-- Widget Start -->
-            <div class="container-fluid pt-4 px-4">
-                <div class="row g-4">
-                    <div class="card bg-bs-dark border border-light shadow-sm p-3">
+        
+                        <!-- Unlinked Transactions -->
+                        <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
+                            <div class="d-flex align-items-center gap-2">
+                                {% if unlinkedcount > 0 %}
+                                <i class="fa fa-exclamation-circle fa-lg text-expense"></i>
+                                {% else %}
+                                <i class="fa fa-exclamation-circle fa-lg text-primary"></i>
+                                {% endif %}
+                                <div class="text-start">
+                                    <p class="mb-0 text-muted small">Unlinked</p>
+                                    <h6 class="m-0 fw-bold">{{ unlinkedcount }}</h6>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Completed Goals -->
+                        <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-check fa-lg text-primary"></i>
+                                <div class="text-start">
+                                    <p class="mb-0 text-muted small">Completed</p>
+                                    <h6 class="m-0 fw-bold">#</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="separator">||</span>
                         <div class="d-flex align-items-center">
-                            <!-- Goals Title -->
-                            <h2 class="fw-semibold text-primesec mb-0 me-3">
-                                <i class="fa fa-sitemap me-2"></i>Goals
-                            </h2>
-                
-                            <!-- Small summary cards aligned to the right -->
-                            <div class="d-flex align-items-center ms-auto gap-2">
-                                <!-- Active Goals -->
-                                <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fa fa-book-open fa-lg text-primary"></i>
-                                        <div class="text-start">
-                                            <p class="mb-0 text-muted small">Active Goals</p>
-                                            <h6 class="m-0 fw-bold">{{ goalcount }}</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                                <!-- Unlinked Transactions -->
-                                <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
-                                    <div class="d-flex align-items-center gap-2">
-                                        {% if unlinkedcount > 0 %}
-                                        <i class="fa fa-exclamation-circle fa-lg text-expense"></i>
-                                        {% else %}
-                                        <i class="fa fa-exclamation-circle fa-lg text-primary"></i>
-                                        {% endif %}
-                                        <div class="text-start">
-                                            <p class="mb-0 text-muted small">Unlinked</p>
-                                            <h6 class="m-0 fw-bold">{{ unlinkedcount }}</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                                <!-- Completed Goals -->
-                                <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fa fa-check fa-lg text-primary"></i>
-                                        <div class="text-start">
-                                            <p class="mb-0 text-muted small">Completed</p>
-                                            <h6 class="m-0 fw-bold">#</h6>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span class="separator">||</span>
-                                <div class="d-flex align-items-center">
-                                    <span id="togglePeriodBtn" class="badge bg-primary fs-5 fw-normal">
-                                        {% if mode != 'custom' %}
-                                            {{ monthname }} {{ yearname }}
-                                        {% else %}
-                                            {{ fromname }} - {{ toname }}
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </div>
+                            <span id="togglePeriodBtn" class="badge bg-primary fs-5 fw-normal">
+                                {% if mode != 'custom' %}
+                                    {{ monthname }} {{ yearname }}
+                                {% else %}
+                                    {{ fromname }} - {{ toname }}
+                                {% endif %}
+                            </span>
                         </div>
                     </div>
-                </div>                
-                <div class="row mt-4">
-                    <div class="section-divider top-only"></div>
-                    <div class="row">
-                        <div class="col-12 col-md-6">
-                            <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
-                                <!-- Header -->
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="fa fa-money-bill-trend-up fa-2x text-primary me-3"></i>
-                                    <div>
-                                        <p class="mb-0 fw-medium">Monthly Summary</p>
-                                    </div>
-                                </div>
-                        
-                                <!-- Content Row -->
-                                <div class="row text-center g-2">
-                                    <!-- Percent & Income Saved -->
-                                    <div class="col border-end">
-                                        <p class="mb-1 text-muted">Income Saved</p>
-                                        <h6 class="m-0">{{ savingincomepercent }}% (${{ savingamount }})</h6>
-                                    </div>
-                        
-                                    <!-- Amount Saved of Budget -->
-                                    <div class="col border-end">
-                                        <p class="mb-1 text-muted">Budget Saved</p>
-                                        <h6 class="m-0">${{ savingamount }} / ${{ savingbudget }}</h6>
-                                    </div>
-                        
-                                    <!-- Transactions Added -->
-                                    <div class="col border-end">
-                                        <p class="mb-1 text-muted">Transactions</p>
-                                        <h6 class="m-0">{{ savingstransactionscount }}</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% if upcominggoal %}
-                        <div class="ccol-6 col-md-3 col-lg-6">
-                            <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
-                                <div class="d-flex align-items-center mb-3">
-                                    <i class="fa fa-flag-checkered fa-2x text-primary me-3"></i>
-                                        <p class="mb-0 fw-medium flex-grow-1">Upcoming Goal</p>
-                                        <h5 class="m-0 ms-auto">{{ upcominggoal.name }}</h5>
-                                </div>
-                                
-                                <div class="row text-center g-2">
-                                    <div class="col border-end">
-                                        <p class="mb-1 text-muted">Date</p>
-                                        <h6 class="m-0">{{ upcominggoal.date|date:"M d, Y" }}</h6>
-                                    </div>
-                                    <div class="col">
-                                        <p class="mb-1 text-muted">Days Remaining</p>
-                                        <h6 class="m-0">{{ upcominggoal.daysremaining }}</h6>
-                                    </div>
-                                    <div class="col border-end">
-                                        <p class="mb-1 text-muted">Saved</p>
-                                        <h6 class="m-0">{{ upcominggoalpercent }}% (${{ upcominggoal.saved }})</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="col-6 col-md-3 col-lg-5">
-                            <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="fa fa-folder fa-2x"></i>
-                                    <div>
-                                        <p class="mb-1">No Upcoming Goals</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="section-divider bottom-only"></div>
-                    <!-- Goals Tracker Start -->
-                    <!-- Goals Display -->
-                    <div>
-                        <!-- Goal Item -->
-                        {% for goal in goals %}
-                        <div class="goal-item bg-secondary border border-light p-3 rounded-4 mb-3 shadow-sm" data-goal-id="{{ goal.id }}" data-goal-amount="{{ goal.amount }}">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="text-white mb-0"><i class="fa fa-hashtag fa-1x text-primary me-3"></i>{{ goal.name }}</h6>
-                                <span class="badge fw-semibold border border-{{ goal.statuscolor }} text-{{ goal.statuscolor }}">{{ goal.status }}</span>
-                            </div>
-                            <div class="progress rounded-pill" style="height: 10px;">
-                                <div class="progress-bar goal-progress-bar bg-primary" role="progressbar" 
-                                style="width: 0%;" 
-                                aria-valuenow="0" 
-                                aria-valuemin="0" 
-                                aria-valuemax="{{ goal.amount }}">
-                                </div>                           
-                            </div>
-                            <div class="d-flex justify-content-between mt-2 text-muted small">
-                                <span>
-                                    <span class="goal-saved-amount">${{ goal.saved }}</span> / ${{ goal.amount }} Saved
-                                </span>                                  
-                                <span>Goal Date: {{ goal.date }}</span>
-                            </div>
-                            <hr>
-                            <button class="btn btn-sm btn-outline-light toggle-transactions" 
-                                type="button" 
-                                data-bs-toggle="collapse" 
-                                data-bs-target="#goal-transactions-{{ goal.id }}">
-                                <i class="bi bi-chevron-down me-1"></i>
-                                <h5 class="fw-semibold mb-0">
-                                    <i class="bi bi-plus-circle me-2 text-primary"></i>Linked Transactions
-                                </h5>
-                            </button>
-                            <div class="collapse mt-3" id="goal-transactions-{{ goal.id }}">
-                                <div class="card bg-dark border-0 shadow-sm">
-                                    <div class="card-body p-0">
-                                        <table class="table table-dark table-hover table-borderless align-middle mb-0">
-                                            <thead class="border-bottom border-secondary text-uppercase small text-muted">
-                                                <tr>
-                                                    <th style="width: 40px;" class="editcol"></th>
-                                                    <th>Date</th>
-                                                    <th>Type</th>
-                                                    <th>Category</th>
-                                                    <th>Note</th>
-                                                    <th>Source Account</th>
-                                                    <th>Destination Account</th>
-                                                    <th class="text-end">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for transaction in savingstransactions %}
-                                                <tr class="transaction-row">
-                                                    <td class="text-center">
-                                                        {% if transactionothergoalmap|getitem:goal.id|getitem:transaction.id %}
-                                                            <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}" disabled title="Already linked to another goal">
-                                                        {% else %}
-                                                            <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}" {% if transaction in goal.transactions.all %}checked{% endif %}>
-                                                        {% endif %}
-                                                    </td>                                                                                                                                                            
-                                                    <td>{{ transaction.date }}</td>
-                                                    <td>{{ transaction.category.type }}</td>
-                                                    <td>{{ transaction.category }}</td>
-                                                    <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
-                                                    <td>{{ transaction.sourceaccount }}</td>
-                                                    <td>{{ transaction.destinationaccount|default:'--' }}</td>
-                                                    <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
-                                                </tr>
-                                                {% empty %}                                    
-                                                <tr>
-                                                    <td colspan="8" class="text-center text-muted">No transactions found.</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="goal-add-card p-4 rounded-4 shadow-lg">
+                </div>
+            </div>
+        </div>                
+        <div class="row mt-4">
+            <div class="section-divider top-only"></div>
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
                         <!-- Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="text-white fw-bold mb-0">
-                                <i class="fa fa-bullseye me-2 text-primary"></i>New Goal
-                            </h5>
-                        </div>
-                    
-                        <!-- Goal Input Form -->
-                        <form method="POST" action="{% url 'addgoal' %}">
-                            {% csrf_token %}
-                            <div class="d-flex flex-column gap-3">
-                                <input type="text" id="goalname" name="goalname" 
-                                       class="form-control sleek-input rounded-pill px-3" 
-                                       placeholder="Goal Name">
-                    
-                                <div class="d-flex gap-2">
-                                    <input type="text" class="form-control sleek-input rounded-pill px-3" 
-                                           name="inputdate" id="inputdate" 
-                                           placeholder="MM-DD-YYYY" autocomplete="off" required>
-                                    <input type="number" id="goalamount" name="goalamount" 
-                                           class="form-control sleek-input rounded-pill px-3" 
-                                           placeholder="$ Amount">        
-                                </div>
-                    
-                                <button id="addgoal" class="btn btn-primary sleek-btn rounded-pill px-4 mt-2">
-                                    <i class="fa fa-target-bullseye me-1"></i>Add Goal
-                                </button>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa fa-money-bill-trend-up fa-2x text-primary me-3"></i>
+                            <div>
+                                <p class="mb-0 fw-medium">Monthly Summary</p>
                             </div>
-                        </form>
-                    </div>                    
-                    <!-- Goals Tracker End -->
-                </div>
-            </div>
-            <!-- Widget End -->
-
-
-            <!-- Footer Start -->
-            <div class="container-fluid pt-4 px-4">
-                <div class="bg-secondary rounded-top p-4">
-                    <div class="row">
-                        <div class="col-12 col-sm-6 text-center text-sm-start">
-                            &copy; <a href="#">DeltaB</a>, All Right Reserved. 
                         </div>
-                        <div class="col-12 col-sm-6 text-center text-sm-end">
-                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
-                            Designed By <a href="https://htmlcodex.com">HTML Codex</a>
-                            <br>Distributed By: <a href="https://themewagon.com" target="_blank">ThemeWagon</a>
+                
+                        <!-- Content Row -->
+                        <div class="row text-center g-2">
+                            <!-- Percent & Income Saved -->
+                            <div class="col border-end">
+                                <p class="mb-1 text-muted">Income Saved</p>
+                                <h6 class="m-0">{{ savingincomepercent }}% (${{ savingamount }})</h6>
+                            </div>
+                
+                            <!-- Amount Saved of Budget -->
+                            <div class="col border-end">
+                                <p class="mb-1 text-muted">Budget Saved</p>
+                                <h6 class="m-0">${{ savingamount }} / ${{ savingbudget }}</h6>
+                            </div>
+                
+                            <!-- Transactions Added -->
+                            <div class="col border-end">
+                                <p class="mb-1 text-muted">Transactions</p>
+                                <h6 class="m-0">{{ savingstransactionscount }}</h6>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% if upcominggoal %}
+                <div class="ccol-6 col-md-3 col-lg-6">
+                    <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa fa-flag-checkered fa-2x text-primary me-3"></i>
+                                <p class="mb-0 fw-medium flex-grow-1">Upcoming Goal</p>
+                                <h5 class="m-0 ms-auto">{{ upcominggoal.name }}</h5>
+                        </div>
+                        
+                        <div class="row text-center g-2">
+                            <div class="col border-end">
+                                <p class="mb-1 text-muted">Date</p>
+                                <h6 class="m-0">{{ upcominggoal.date|date:"M d, Y" }}</h6>
+                            </div>
+                            <div class="col">
+                                <p class="mb-1 text-muted">Days Remaining</p>
+                                <h6 class="m-0">{{ upcominggoal.daysremaining }}</h6>
+                            </div>
+                            <div class="col border-end">
+                                <p class="mb-1 text-muted">Saved</p>
+                                <h6 class="m-0">{{ upcominggoalpercent }}% (${{ upcominggoal.saved }})</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-6 col-md-3 col-lg-5">
+                    <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fa fa-folder fa-2x"></i>
+                            <div>
+                                <p class="mb-1">No Upcoming Goals</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            <!-- Footer End -->
+            <div class="section-divider bottom-only"></div>
+            <!-- Goals Tracker Start -->
+            <!-- Goals Display -->
+            <div>
+                <!-- Goal Item -->
+                {% for goal in goals %}
+                <div class="goal-item bg-secondary border border-light p-3 rounded-4 mb-3 shadow-sm" data-goal-id="{{ goal.id }}" data-goal-amount="{{ goal.amount }}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-white mb-0"><i class="fa fa-hashtag fa-1x text-primary me-3"></i>{{ goal.name }}</h6>
+                        <span class="badge fw-semibold border border-{{ goal.statuscolor }} text-{{ goal.statuscolor }}">{{ goal.status }}</span>
+                    </div>
+                    <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress-bar goal-progress-bar bg-primary" role="progressbar" 
+                        style="width: 0%;" 
+                        aria-valuenow="0" 
+                        aria-valuemin="0" 
+                        aria-valuemax="{{ goal.amount }}">
+                        </div>                           
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 text-muted small">
+                        <span>
+                            <span class="goal-saved-amount">${{ goal.saved }}</span> / ${{ goal.amount }} Saved
+                        </span>                                  
+                        <span>Goal Date: {{ goal.date }}</span>
+                    </div>
+                    <hr>
+                    <button class="btn btn-sm btn-outline-light toggle-transactions" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#goal-transactions-{{ goal.id }}">
+                        <i class="bi bi-chevron-down me-1"></i>
+                        <h5 class="fw-semibold mb-0">
+                            <i class="bi bi-plus-circle me-2 text-primary"></i>Linked Transactions
+                        </h5>
+                    </button>
+                    <div class="collapse mt-3" id="goal-transactions-{{ goal.id }}">
+                        <div class="card bg-dark border-0 shadow-sm">
+                            <div class="card-body p-0">
+                                <table class="table table-dark table-hover table-borderless align-middle mb-0">
+                                    <thead class="border-bottom border-secondary text-uppercase small text-muted">
+                                        <tr>
+                                            <th style="width: 40px;" class="editcol"></th>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Category</th>
+                                            <th>Note</th>
+                                            <th>Source Account</th>
+                                            <th>Destination Account</th>
+                                            <th class="text-end">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in savingstransactions %}
+                                        <tr class="transaction-row">
+                                            <td class="text-center">
+                                                {% if transactionothergoalmap|getitem:goal.id|getitem:transaction.id %}
+                                                    <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}" disabled title="Already linked to another goal">
+                                                {% else %}
+                                                    <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}" {% if transaction in goal.transactions.all %}checked{% endif %}>
+                                                {% endif %}
+                                            </td>                                                                                                                                                            
+                                            <td>{{ transaction.date }}</td>
+                                            <td>{{ transaction.category.type }}</td>
+                                            <td>{{ transaction.category }}</td>
+                                            <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
+                                            <td>{{ transaction.sourceaccount }}</td>
+                                            <td>{{ transaction.destinationaccount|default:'--' }}</td>
+                                            <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
+                                        </tr>
+                                        {% empty %}                                    
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted">No transactions found.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="goal-add-card p-4 rounded-4 shadow-lg">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="text-white fw-bold mb-0">
+                        <i class="fa fa-bullseye me-2 text-primary"></i>New Goal
+                    </h5>
+                </div>
+            
+                <!-- Goal Input Form -->
+                <form method="POST" action="{% url 'addgoal' %}">
+                    {% csrf_token %}
+                    <div class="d-flex flex-column gap-3">
+                        <input type="text" id="goalname" name="goalname" 
+                                class="form-control sleek-input rounded-pill px-3" 
+                                placeholder="Goal Name">
+            
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control sleek-input rounded-pill px-3" 
+                                    name="inputdate" id="inputdate" 
+                                    placeholder="MM-DD-YYYY" autocomplete="off" required>
+                            <input type="number" id="goalamount" name="goalamount" 
+                                    class="form-control sleek-input rounded-pill px-3" 
+                                    placeholder="$ Amount">        
+                        </div>
+            
+                        <button id="addgoal" class="btn btn-primary sleek-btn rounded-pill px-4 mt-2">
+                            <i class="fa fa-target-bullseye me-1"></i>Add Goal
+                        </button>
+                    </div>
+                </form>
+            </div>                    
+            <!-- Goals Tracker End -->
         </div>
-        <!-- Content End -->
-
-
-        <!-- Back to Top -->
-        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
     </div>
+    <!-- Widget End -->
 
-    <!-- JavaScript Libraries -->
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/chart/chart.min.js"></script>
-    <script src="{% static 'lib/easing/easing.min.js' %}"></script>
-    <script src="{% static 'lib/waypoints/waypoints.min.js' %}"></script>
-    <script src="{% static 'lib/owlcarousel/owl.carousel.min.js' %}"></script>
-    <script src="{% static 'lib/tempusdominus/js/moment.min.js' %}"></script>
-    <script src="{% static 'lib/tempusdominus/js/moment-timezone.min.js' %}"></script>
-    <script src="{% static 'lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+    {% include "partials/footer.html" %}
+
+</div>
+<!-- Content End -->
+
+{% endblock %}
+
+{% block scripts %}
 
     <script src="{% static 'js/tasks.js' %}"></script>
 
@@ -456,8 +280,4 @@
     </script>
     <script src="{% static 'js/linkgoaltransaction.js' %}"></script>
 
-    <!-- Template Javascript -->
-    <script src="{% static 'js/main.js' %}"></script>
-</body>
-
-</html>
+{% endblock %}

@@ -1,0 +1,53 @@
+<div class="sidebar-left sidebar pe-4 pb-3">
+   <div class="navbar navbar-dark">
+      <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
+      </a>
+      <div class="navbar-nav w-100">
+         <a href="{% url 'overview' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
+            <i class="fa fa-chart-column me-2"></i>Overview
+         </a>
+
+         <a href="{% url 'breakdown' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'breakdown' %}active{% endif %}">
+            <i class="fa fa-scale-balanced me-2"></i>Breakdown
+         </a>
+
+         <a href="{% url 'budget' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'budget' %}active{% endif %}">
+            <i class="fa fa-calculator me-2"></i>Budget
+         </a>
+
+         <a href="{% url 'alltransactions' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'alltransactions' %}active{% endif %}">
+            <i class="fa fa-globe me-2"></i>All Transactions
+         </a>
+
+         <a href="{% url 'goals' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'goals' %}active{% endif %}">
+            <i class="fa fa-sitemap me-2"></i>Goals
+         </a>
+
+         <a href="{% url 'tasks' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'tasks' %}active{% endif %}">
+            <i class="fa fa-calendar-alt me-2"></i>Reminders
+         </a>
+
+         <a href="{% url 'newtransactions' %}" 
+            class="nav-item nav-link {% if request.resolver_match.url_name == 'newtransactions' %}active{% endif %}">
+            <i class="fa fa-stream me-2"></i>Add Transaction
+         </a>
+
+         <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'setup' or request.resolver_match.url_name == 'historicalbalance' %}active show{% endif %}" data-bs-toggle="dropdown">
+               <i class="fa fa-cogs me-2"></i>Configuration
+            </a>
+            <div class="dropdown-menu bg-transparent border-0 {% if request.resolver_match.url_name == 'setup' or request.resolver_match.url_name == 'historicalbalance' %}show{% endif %}">
+               <a href="{% url 'setup' %}" class="dropdown-item {% if request.resolver_match.url_name == 'setup' %}active{% endif %}">Setup</a>
+               <a href="{% url 'historicalbalance' %}" class="dropdown-item {% if request.resolver_match.url_name == 'historicalbalance' %}active{% endif %}">Historical Balances</a>
+            </div>
+         </div>    
+      </div>
+   </div>
+</div>

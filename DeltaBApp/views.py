@@ -1210,7 +1210,7 @@ def addpendingtransaction(request):
                 new_transactions.append({
                     "id": newtx.id,
                     "date": str(newtx.date),
-                    "category_type": str(newtx.category.type),
+                    "category_type": str(newtx.type),
                     "category": str(newtx.category),
                     "note": newtx.note,
                     "account": str(newtx.account),

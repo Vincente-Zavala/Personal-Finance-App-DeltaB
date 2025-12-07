@@ -67,6 +67,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
                 
+                // --- Update account balances ---
+                fetchAccountBalances();
 
                 console.log("AJAX action successful:", data.deleted_ids);
             } else {

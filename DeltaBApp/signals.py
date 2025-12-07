@@ -42,8 +42,13 @@ def recalculatebalance(account, from_date, user):
             current_date = tx.date
 
         entry = tx.entries.filter(account=account).first()
+
         if entry:
-            running_balance += entry.amount
+
+            if account.type.name in ["Credit Card", "Loan"]:
+                running_balance -= entry.amount
+            else:
+                running_balance += entry.amount
 
     if current_date:
         AccountBalanceHistory.objects.update_or_create(
