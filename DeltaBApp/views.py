@@ -30,9 +30,10 @@ from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
 from django.views.decorators.csrf import csrf_exempt
 import pytz
+import logging
 User = get_user_model()
 
-
+logger = logging.getLogger(__name__)
 
 
 ## --------------------CALCULATION FUNCTIONS-------------------- ##
@@ -1846,8 +1847,13 @@ def uploadfile(request):
     user = request.user
 
     if request.method == "POST" and request.FILES.get("uploadfile"):
+        logger.debug("Debug uploadfile")
         uploadfile = request.FILES["uploadfile"]
         filename = uploadfile.name.lower()
+
+        logger.debug("Debug after filename")
+
+        print("Debug after filename")
 
         try:
             if filename.endswith(".csv"):
@@ -1856,10 +1862,14 @@ def uploadfile(request):
                 try:
                     file = pd.read_excel(uploadfile)
                 except Exception as e:
+                    logger.error(f"Excel file error: {str(e)}")
                     return JsonResponse({"success": False, "error": f"Excel file error: {str(e)}"})
 
             else:
+                logger.error("Unsupported file type")
                 return JsonResponse({"success": False, "error": "Unsupported file type."})
+
+            print("debug after upload file")
 
             # Save to session
             request.session["upload_sample"] = json.loads(file.iloc[[0]].to_json(orient="records"))[0]
