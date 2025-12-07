@@ -1853,7 +1853,11 @@ def uploadfile(request):
             if filename.endswith(".csv"):
                 file = pd.read_csv(uploadfile)
             elif filename.endswith((".xlsx", ".xls")):
-                file = pd.read_excel(uploadfile)
+                try:
+                    file = pd.read_excel(uploadfile)
+                except Exception as e:
+                    return JsonResponse({"success": False, "error": f"Excel file error: {str(e)}"})
+
             else:
                 return JsonResponse({"success": False, "error": "Unsupported file type."})
 
