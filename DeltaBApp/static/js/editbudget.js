@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // show save/cancel buttons
             this.closest(".bg-secondary").querySelector(".save-btn").classList.remove("d-none");
             this.closest(".bg-secondary").querySelector(".cancel-btn").classList.remove("d-none");
+            this.closest(".bg-secondary").querySelector(".previous-btn").classList.remove("d-none");
             this.classList.add("d-none");
         });
     });
@@ -22,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // hide save/cancel, show edit
             this.closest(".bg-secondary").querySelector(".save-btn").classList.add("d-none");
+            this.closest(".bg-secondary").querySelector(".previous-btn").classList.add("d-none");
             this.closest(".bg-secondary").querySelector(".edit-btn").classList.remove("d-none");
             this.classList.add("d-none");
         });

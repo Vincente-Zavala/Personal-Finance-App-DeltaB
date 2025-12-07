@@ -119,18 +119,22 @@
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
                     <div class="accounts-divider my-4">
-                        <span class="test-label">Accounts</span>
+                        <span class="accounts-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
                         {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                        data-account-type="{{ account.type.name|lower }}">
+                            data-account-type="{{ account.type.name|lower }}"
+                            data-account-id="{{ account.id }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.institution.name }} {{ account.name }}</span>
+                                <div class="d-flex flex-column">
+                                    <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                    <span class="text-muted small">{{ account.institution.name }}</span>
+                                </div>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
@@ -162,7 +166,7 @@
                             </h2>
                 
                             <!-- Small summary cards aligned to the right -->
-                            <div class="d-flex ms-auto gap-2">
+                            <div class="d-flex align-items-center ms-auto gap-2">
                                 <!-- Active Goals -->
                                 <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
                                     <div class="d-flex align-items-center gap-2">
@@ -199,6 +203,16 @@
                                         </div>
                                     </div>
                                 </div>
+                                <span class="separator">||</span>
+                                <div class="d-flex align-items-center">
+                                    <span id="togglePeriodBtn" class="badge bg-primary fs-5 fw-normal">
+                                        {% if mode != 'custom' %}
+                                            {{ monthname }} {{ yearname }}
+                                        {% else %}
+                                            {{ fromname }} - {{ toname }}
+                                        {% endif %}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -210,10 +224,9 @@
                             <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
                                 <!-- Header -->
                                 <div class="d-flex align-items-center mb-3">
-                                    <i class="fa fa-chart-line fa-2x text-primary me-3"></i>
+                                    <i class="fa fa-money-bill-trend-up fa-2x text-primary me-3"></i>
                                     <div>
-                                        <p class="mb-0 text-muted fw-medium">Monthly Summary</p>
-                                        <h5 class="m-0">{{ monthname }} {{ yearname }}</h5>
+                                        <p class="mb-0 fw-medium">Monthly Summary</p>
                                     </div>
                                 </div>
                         
@@ -243,11 +256,9 @@
                         <div class="ccol-6 col-md-3 col-lg-6">
                             <div class="category-card category-border border border-light card rounded-3 p-3 h-100">
                                 <div class="d-flex align-items-center mb-3">
-                                    <i class="fa fa-star fa-2x text-primary me-3"></i>
-                                    <div>
-                                        <p class="mb-0 text-muted fw-medium">Upcoming Goal</p>
-                                        <h5 class="m-0">{{ upcominggoal.name }}</h5>
-                                    </div>
+                                    <i class="fa fa-flag-checkered fa-2x text-primary me-3"></i>
+                                        <p class="mb-0 fw-medium flex-grow-1">Upcoming Goal</p>
+                                        <h5 class="m-0 ms-auto">{{ upcominggoal.name }}</h5>
                                 </div>
                                 
                                 <div class="row text-center g-2">
@@ -264,7 +275,6 @@
                                         <h6 class="m-0">{{ upcominggoalpercent }}% (${{ upcominggoal.saved }})</h6>
                                     </div>
                                 </div>
-                                
                             </div>
                         </div>
                         {% else %}
@@ -288,8 +298,8 @@
                         {% for goal in goals %}
                         <div class="goal-item bg-secondary border border-light p-3 rounded-4 mb-3 shadow-sm" data-goal-id="{{ goal.id }}" data-goal-amount="{{ goal.amount }}">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="text-white mb-0">{{ goal.name }}</h6>
-                                <span class="badge fw-semibold border border-{{ goal.statuscolor }} text-expense">{{ goal.status }}</span>
+                                <h6 class="text-white mb-0"><i class="fa fa-hashtag fa-1x text-primary me-3"></i>{{ goal.name }}</h6>
+                                <span class="badge fw-semibold border border-{{ goal.statuscolor }} text-{{ goal.statuscolor }}">{{ goal.status }}</span>
                             </div>
                             <div class="progress rounded-pill" style="height: 10px;">
                                 <div class="progress-bar goal-progress-bar bg-primary" role="progressbar" 

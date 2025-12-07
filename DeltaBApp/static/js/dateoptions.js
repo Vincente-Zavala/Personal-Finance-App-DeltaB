@@ -3,10 +3,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const custombutton = document.getElementById("custombutton");
     const monthyearsection = document.getElementById("monthyearsection");
     const customsection = document.getElementById("customsection");
-  
-    // Show month/year by default
-    // monthyearsection.style.display = "block";
-    // customsection.style.display = "none";
+    const togglePeriodBtn = document.getElementById("togglePeriodBtn");
+    const datebtngrp = document.getElementById("datebtngrp");
+    const datemonthyeargrp = document.getElementById("datemonthyeargrp");
+    const dateapplygrp = document.getElementById("dateapplygrp");
+
+
+    togglePeriodBtn.addEventListener("click", function () {
+      datebtngrp.classList.toggle("d-none");
+      datemonthyeargrp.classList.toggle("d-none");
+      dateapplygrp.classList.toggle("d-none");
+      togglePeriodBtn.classList.toggle("fs-6");
+      togglePeriodBtn.classList.toggle("fs-5");
+  });
   
     monthbutton.addEventListener("click", function () {
       monthbutton.classList.add("active");

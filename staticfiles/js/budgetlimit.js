@@ -35,6 +35,28 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (card) card.textContent = `$${total}`;
                     }
 
+                    // --- UPDATE TOP SUMMARY VALUES ---
+                    // Update Budgeted total
+                    const budgetedElem = document.querySelector("#budgeted-total");
+                    if (budgetedElem) {
+                        budgetedElem.textContent = `$${data.updated_budgetmap_total}`;
+                    }
+
+                    // Update Remaining Budget
+                    const remainingElem = document.querySelector("#remaining-budget");
+                    if (remainingElem) {
+                        remainingElem.textContent = `$${data.updated_remaining_budget}`;
+
+                        // Remove old color classes (red/green/yellow)
+                        remainingElem.classList.remove("text-danger", "text-success", "text-warning");
+
+                        // Add updated color class
+                        if (data.updated_remaining_color) {
+                            remainingElem.classList.add(data.updated_remaining_color);
+                        }
+                    }
+
+
                     // --- TOGGLE BUTTONS AND INPUTS BACK ---
                     const tableId = btn.dataset.target;
                     const table = document.getElementById(tableId);
@@ -45,7 +67,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     // toggle buttons
                     btn.classList.add("d-none"); // hide Save
-                    form.querySelector(".cancel-btn").classList.add("d-none"); // hide Cancel
+                    form.querySelector(".cancel-btn").classList.add("d-none");
+                    form.querySelector(".previous-btn").classList.add("d-none");
                     form.querySelector(".edit-btn").classList.remove("d-none"); // show Edit
 
                     console.log("Budget limits updated successfully!");

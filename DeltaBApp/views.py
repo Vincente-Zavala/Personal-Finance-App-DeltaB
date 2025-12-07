@@ -199,6 +199,9 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
     return charts_data, incomeexpensedata, budgetexpensedata, savingsdata
 
 
+
+
+
 # GET SELECTED MONTH/YEAR #
 def getselecteddate(request):
 
@@ -213,7 +216,8 @@ def getselecteddate(request):
     request.session["mode"] = mode
 
     # Initialize all selections
-    selected_month = selected_year = selected_fromdate = selected_todate = None
+    selected_month = selected_year = selected_fromdate = selected_todate = previous_month = previous_year = None
+    monthname = yearname = fromname = toname = None
 
     if mode == "monthyear":
         # Get from POST first, fallback to session, then to today
@@ -227,6 +231,11 @@ def getselecteddate(request):
         # Clear custom range
         request.session.pop("fromdate", None)
         request.session.pop("todate", None)
+
+        previous_month, previous_year = previousdate(selected_month, selected_year)
+
+        monthname = calendar.month_name[selected_month]
+        yearname = selected_year
 
     elif mode == "custom":
         # Get from POST first, fallback to session
@@ -243,83 +252,32 @@ def getselecteddate(request):
         request.session.pop("month", None)
         request.session.pop("year", None)
 
+
+        from_date_obj = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y")
+        fromname = from_date_obj.strftime("%m/%d/%y")
+
+        to_date_obj = datetime.datetime.strptime(selected_todate, "%m-%d-%Y")
+        toname = to_date_obj.strftime("%m/%d/%y")
+
+
     print("Debug, selected month/year:", selected_month, selected_year)
 
-    return mode, selected_month, selected_year, selected_fromdate, selected_todate
-
-    # user = request.user
-
-    # # Initialize defaults to None
-    # selected_month = None
-    # selected_year = None
-    # selected_fromdate = None
-    # selected_todate = None
-
-    # user_tz = pytz.timezone(request.user.timezone)
-    # user_now = timezone.localtime(timezone.now(), user_tz)
-    # today = user_now.date()
-
-    # request.session["mode"] = request.POST.get("mode")
-    # mode = request.session.get("mode")
-
-
-    # if mode == "monthyear":
-    #     # --- Handle Month/Year selection ---
-    #     if "month" in request.POST and "year" in request.POST:
-    #         request.session["month"] = int(request.POST["month"]) or today.month
-    #         request.session["year"] = int(request.POST["year"]) or today.year
-
-    #         # Clear custom range if switching to month/year
-    #         request.session.pop("fromdate", None)
-    #         request.session.pop("todate", None)
-
-    #         # --- Pull from session ---
-    #         selected_month = request.session.get("month")
-    #         selected_year = request.session.get("year")
-
-    #         selected_fromdate = None
-    #         selected_todate = None
-    #         print("Debug, selected month", selected_month)
-
-    # elif mode == "custom":
-    #     # --- Handle From/To range selection ---
-    #     if "fromdate" in request.POST and "todate" in request.POST:
-
-    #         request.session["fromdate"] = request.POST["fromdate"]
-    #         request.session["todate"] = request.POST["todate"]
-
-    #         # Clear month/year if switching to custom range
-    #         request.session.pop("month", None)
-    #         request.session.pop("year", None)
-
-    #         # --- Pull from session ---
-    #         selected_fromdate = request.session.get("fromdate")
-    #         selected_todate = request.session.get("todate")
-            
-    #         selected_month = None
-    #         selected_year = None
-
-
-
-    # return mode, selected_month, selected_year, selected_fromdate, selected_todate
+    return mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname
 
 
 
 
 
-# GET SELECTED MONTH/YEAR #
-# def selecteddateoption(request):
+# PREVIOUS MONTH/YEAR #
+def previousdate(selected_month, selected_year):
+    if selected_month == 1:
+        previous_month = 12
+        previous_year = selected_year - 1
+    else:
+        previous_month = selected_month - 1
+        previous_year = selected_year
 
-#     if "month" in request.GET and "year" in request.GET:
-#         dateoption = "monthyear"
-
-#     # --- Handle From/To range selection ---
-#     elif "fromdate" in request.GET and "todate" in request.GET:
-#         dateoption = "custom"
-
-    
-
-#     return dateoption
+    return previous_month, previous_year
 
 
 
@@ -330,6 +288,7 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
     total = 0
     txs = []
     refundtxs = []
+    reimbursementtxs = []
 
     if mode == "monthyear":
         txs = Transaction.objects.filter(
@@ -337,18 +296,28 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
             date__year=selected_year,
             user=user,
         )
+        print("Debug txs", txs)
         
         refundtxs = Transaction.objects.filter(
-            category__type__name="Refund",
+            type__name="Refund",
             date__year=selected_year,
             user=user,
         )
+        print("Debug refundtxs", refundtxs)
 
-        print("DEBUG: Month: ", selected_month)
+        reimbursementtxs = Transaction.objects.filter(
+            type__name="Reimbursement",
+            date__year=selected_year,
+            user=user,
+        )
+        print("Debug reimbursementtxs", reimbursementtxs)
 
         if selected_month != 13:
             txs = txs.filter(date__month=selected_month, user=user)
             refundtxs = refundtxs.filter(date__month=selected_month, user=user)
+            print("Debug refundtxs", refundtxs)
+            reimbursementtxs = reimbursementtxs.filter(date__month=selected_month, user=user)
+            print("Debug reimbursementtxs", reimbursementtxs)
 
 
     elif mode == "custom":
@@ -358,21 +327,28 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
         txs = Transaction.objects.filter(category=category, date__gte=fromdate, date__lte=todate, user=user)
-        refundtxs = Transaction.objects.filter(category__type__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
+        refundtxs = Transaction.objects.filter(type__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
+        print("Debug refundtxs", refundtxs)
+        reimbursementtxs = Transaction.objects.filter(type__name="Reimbursement", date__gte=fromdate, date__lte=todate, user=user)
+        print("Debug reimbursementtxs", reimbursementtxs)
 
 
     refund_by_category = {}
+    reimbursement_by_category = {}
     
     for refundtx in refundtxs:
         categoryid = refundtx.category_id
-        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + abs(refundtx.amount)
+        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + refundtx.amount
 
-    print("Debug refund Transactions", refundtxs)
+    for reimbursementtx in reimbursementtxs:
+        categoryid = reimbursementtx.category_id
+        reimbursement_by_category[categoryid] = reimbursement_by_category.get(categoryid, 0) + reimbursementtx.amount
+
     for tx in txs:
-        print("DEBUG: tx.categorytype, type", tx.category.type, type(tx.category.type))
-        print("Debug tx", tx)
 
-        if tx.category.type and tx.category.type.name == "Refund":
+        print("Debug category tx", category, tx.amount)
+
+        if tx.type.name in ["Refund", "Reimbursement"]:
             print(f"Skipping refund transaction {tx.id}")
             continue
 
@@ -383,12 +359,23 @@ def categorytransactionsum(category, mode, selected_month, selected_year, select
         
         
     refundtotal = sum(
-        abs(refundtx.amount)
+        refundtx.amount
         for refundtx in refundtxs
         if refundtx.category_id == category.id
     )
 
+    reimbursementtotal = sum(
+        reimbursementtx.amount
+        for reimbursementtx in reimbursementtxs
+        if reimbursementtx.category_id == category.id
+    )
+
+    print("Debug refundtotal", refundtotal, "reimbursementtotal", reimbursementtotal)
+
     total -= refundtotal
+    total -= reimbursementtotal
+
+    print("Debug CATEGORY total", category, total)
 
     return total
 
@@ -461,7 +448,9 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
     for category in Category.objects.filter(user=user):
 
         transactiontotal = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+        print("Debug category transaction total", category, transactiontotal)
         summarytotal = categorysummarytotal(user, mode, category, selected_month, selected_year, selected_fromdate, selected_todate)
+        print("Debug category summarytotal", category, summarytotal)
 
         total = transactiontotal + summarytotal
 
@@ -508,6 +497,7 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
             adjbudget = adjbudgetmap_category.get(category.id, 0)
 
             spent = category_totals.get(category.id, 0)
+            print("Debug category spent", category, spent)
             remaining = category_remaining.get(category.id, 0)
 
             type_budget += budget
@@ -539,14 +529,17 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
 
 
 # GET BUDGET MAP #
-def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user):
+def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user):
 
     budgets = []
+    prev_budgets = []
     adjbudgets = []
 
     budgetmap_category = defaultdict(Decimal)
+    prev_budgetmap_category = defaultdict(Decimal)
     adjbudgetmap_category = defaultdict(Decimal)
     budgetmap_type = defaultdict(Decimal)
+    prev_budgetmap_type = defaultdict(Decimal)
 
 
 
@@ -554,9 +547,11 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
         if selected_month == 13:
             budgets = Budget.objects.filter(year=selected_year, user=user)
+            prev_budgets = Budget.objects.filter(year=previous_year, user=user)
             
         else:
             budgets = Budget.objects.filter(month=selected_month, year=selected_year, user=user)
+            prev_budgets = Budget.objects.filter(month=previous_month, year=previous_year, user=user)
         
         print("Debug, budgets in getbudgetmap", budgets)
 
@@ -570,6 +565,16 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
                 budgetmap_category[b.category_id] = b.limit
 
             budgetmap_type[b.category.type.id] += b.limit
+
+        for prevb in prev_budgets:
+            if prevb.category_id in prev_budgetmap_category:
+                print("DEBUG: b in Budgets: ", prevb)
+                prev_budgetmap_category[prevb.category_id] += prevb.limit
+                print("Debug, budgetmap, b.month, b.limit: ", prev_budgetmap_category, prevb.month, prevb.limit)
+            else:
+                prev_budgetmap_category[prevb.category_id] = prevb.limit
+
+            prev_budgetmap_type[prevb.category.type.id] += prevb.limit
         print("DEBUG, budgetmap HERE", budgetmap_category, budgetmap_type)
 
     elif mode == "custom":
@@ -653,12 +658,24 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
             print("DEBUG, dayrange, adjmonthlimit, budgetmap", dayrange, adjmonthlimit, budgetmap_category)
 
     
-    print("DEBUG, last budgetmap", budgetmap_category)
+    print("DEBUG, last budgetmap", budgetmap_type)
 
-        
+    incometype_id = CategoryType.objects.get(name="Income").id
+    budgetmap_total = sum(amount for t_id, amount in budgetmap_type.items() if t_id != incometype_id)
+    incomebudget_total = budgetmap_type.get(incometype_id, 0)
+    remaining_budget = incomebudget_total - budgetmap_total
+
+    if remaining_budget == 0:
+        remaining_color = "text-success"     # green
+    elif remaining_budget < 0:
+        remaining_color = "text-danger"      # red
+    else:
+        remaining_color = "text-warning"     # yellow
+
+    
     
 
-    return budgetmap_category, adjbudgetmap_category, budgetmap_type
+    return budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type
 
 
 
@@ -841,11 +858,14 @@ def checkduplicate(user, basekey, manualkey, importkey):
 # CREATE TRANSACTION #
 def createtransaction(user, inputtype, amount, note, date, category, categorytype, source_account, final_account, basekey, manualkey, importkey):
 
+    print("Debug within createtxs type", categorytype)
+
     if importkey is None:
         transaction = Transaction.objects.create(
             note=note,
             date=date,
             category=category,
+            type=categorytype,
             user=user,
             base_key = basekey,
             manual_key = manualkey,
@@ -856,6 +876,7 @@ def createtransaction(user, inputtype, amount, note, date, category, categorytyp
             note=note,
             date=date,
             category=category,
+            type=categorytype,
             user=user,
             base_key = basekey,
             import_key = importkey,
@@ -878,7 +899,7 @@ def createtransaction(user, inputtype, amount, note, date, category, categorytyp
         return transaction
 
     # ----- TRANSFERS, SAVINGS, DEBT, INVESTING, RETIREMENT -----
-    if inputtype in ["savings", "investment", "debt", "retirement", "transfer"]:
+    elif inputtype in ["savings", "investment", "debt", "retirement", "transfer"]:
         # source (outgoing)
         Entry.objects.create(
             transaction=transaction,
@@ -897,13 +918,24 @@ def createtransaction(user, inputtype, amount, note, date, category, categorytyp
         return transaction
 
     # ----- REFUNDS -----
-    if inputtype == "refund":
+    elif inputtype == "refund":
         Entry.objects.create(
             transaction=transaction,
             account=source_account,
             amount=abs(amount),
             user=user
         )
+
+        return transaction
+
+    elif inputtype == "reimbursement":
+        Entry.objects.create(
+            transaction=transaction,
+            account=source_account,
+            amount=abs(amount),
+            user=user
+        )
+        
         return transaction
 
 
@@ -1084,7 +1116,7 @@ def addtransaction(request):
         add_transactions.append({
             "id": newtx.id,
             "date": str(formatted_date),
-            "category_type": str(newtx.category.type),
+            "type": str(newtx.type),
             "category": str(newtx.category),
             "note": newtx.note,
             "account": newtx.account,
@@ -1482,10 +1514,10 @@ def linkgoaltransaction(request):
 
 # CREATE BUDGET LIMITS #
 def budgetlimit(request):
-    selected_month, selected_year = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
     categorytypes = CategoryType.objects.prefetch_related("category_set")
 
-    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(selected_month, selected_year)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     context = {
         "categorytypes": categorytypes,
@@ -1504,10 +1536,10 @@ def budgetlimit(request):
 # SUM TRANSACTIONS #
 def transactionsum(request, user):
     # GET MONTH/YEAR
-    selected_month, selected_year = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     # budgets lookup
-    budgetmap_category, adjbudgetmap_cateogory, budgetmap_type = getbudgetmap(selected_month, selected_year)
+    budgetmap_category, adjbudgetmap_cateogory, budgetmap_type, budgetmap_total, remaining_budget = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     date_tree = builddatetree()
 
@@ -1546,7 +1578,7 @@ def edit_categorytype_limits(request, pk):
 
         updated_limits = savebudgetlimit(request.POST, month, year, user)
 
-        print("Debug updated limits", updated_limits)
+        print("Debug updated limits month year", updated_limits, month, year)
 
         # recalculate type totals
         budgets = Budget.objects.filter(month=month, year=year, user=user)
@@ -1557,12 +1589,63 @@ def edit_categorytype_limits(request, pk):
             updated_type_totals[b.category.type.id] = updated_type_totals.get(b.category.type.id, 0) + b.limit
 
 
+        incometype_id = CategoryType.objects.get(name="Income").id
+
+        income_total = updated_type_totals.get(incometype_id, 0)
+
+        updated_budgetmap_total = sum(
+            total for type_id, total in updated_type_totals.items()if type_id != incometype_id)
+
+        updated_remaining_budget = income_total - updated_budgetmap_total
+
+
+
+        if updated_remaining_budget == 0:
+            updated_remaining_color = "text-success"     # green
+        elif updated_remaining_budget < 0:
+            updated_remaining_color = "text-danger"      # red
+        else:
+            updated_remaining_color = "text-warning"     # yellow
+
+
+
 
         return JsonResponse({
                 "status": "ok",
                 "updated_limits": updated_limits,
                 "updated_type_totals": updated_type_totals,
+                "updated_budgetmap_total": updated_budgetmap_total,
+                "updated_remaining_color": updated_remaining_color,
+                "updated_remaining_budget": updated_remaining_budget,
             })
+
+
+
+
+
+# LOAD PREVIOUS MONTH LIMIT #
+@login_required
+def previousmonthlimit(request):
+
+    # calculate previous month
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
+
+    # get all budgets for previous month
+    budgets = Budget.objects.filter(
+        user=request.user,
+        month=previous_month,
+        year=previous_year
+    )
+
+    previous_limits = {
+        b.category.id: b.limit
+        for b in budgets
+    }
+
+    return JsonResponse({
+        "status": "ok",
+        "previous_limits": previous_limits
+    })
 
 
 
@@ -1596,7 +1679,7 @@ def filtertransactions(request):
     print("Debug within filter transactions")
 
     # Date range
-    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     print("Debug, selected month", selected_month)
 
@@ -1682,10 +1765,14 @@ def filtertransactions(request):
 
 
         refundtype = CategoryType.objects.get(name="Refund")
+        reimbursementtype = CategoryType.objects.get(name="Reimbursement")
 
         print("Debug refundtype", refundtype)
 
         if str(refundtype.id) in selectedcategorytypes:
+            transactions = transactions.filter(categorytype__id__in=selectedcategorytypes, user=user)
+
+        elif str(reimbursementtype.id) in selectedcategorytypes:
             transactions = transactions.filter(categorytype__id__in=selectedcategorytypes, user=user)
 
         else:
@@ -1706,8 +1793,10 @@ def filtertransactions(request):
                 CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True)
             )
             if "Expense" in selected_type_names and "Refund" not in selected_type_names:
-                transactions = transactions.exclude(category__type__name__iexact="Refund")
+                transactions = transactions.exclude(type__name__iexact="Refund")
 
+            if "Expense" in selected_type_names and "Reimbursement" not in selected_type_names:
+                transactions = transactions.exclude(type__name__iexact="Reimbursement")
 
             if selectedaccounts:
                 transactions = transactions.filter(entries__account__id__in=selectedaccounts, user=user).distinct()
@@ -2155,13 +2244,12 @@ def overview(request):
 
     # dateoption = getselecteddate(request)
 
-    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    print(selected_fromdate, selected_todate)
-
+    print("DEBUG DATE Month: ",selected_month, "Year", selected_year, "fromdate: ", selected_fromdate, "todate: ", selected_todate)
 
     # Budgets for selected month/year
-    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
@@ -2191,6 +2279,10 @@ def overview(request):
         "selected_year": selected_year,
         "selected_fromdate": selected_fromdate,
         "selected_todate": selected_todate,
+        "monthname": monthname,
+        "yearname": yearname,
+        "fromname": fromname,
+        "toname": toname,
         "charts_data": json.dumps(charts_data),
         "incomeexpensedata": json.dumps(incomeexpensedata),
         "budgetexpensedata": json.dumps(budgetexpensedata),
@@ -2208,15 +2300,13 @@ def breakdown(request):
 
     name = request.user.get_full_name()
 
-    # dateoption = getselecteddate(request)
-
-    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     print(selected_fromdate, selected_todate)
 
 
     # Budgets for selected month/year
-    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
@@ -2244,6 +2334,10 @@ def breakdown(request):
         "selected_year": selected_year,
         "selected_fromdate": selected_fromdate,
         "selected_todate": selected_todate,
+        "monthname": monthname,
+        "yearname": yearname,
+        "fromname": fromname,
+        "toname": toname,
     }
 
     return render(request, 'breakdown.html', context)
@@ -2261,12 +2355,12 @@ def dashboard(request):
     categories = categorylist(user)
 
     # GET MONTH/YEAR
-    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     accounts = accountlist(user)
 
     # Budgets for selected month/year
-    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
@@ -2367,7 +2461,7 @@ def alltransactions(request):
         
         # Attach displaycategories to the Refund object in the list
         for ct in categorytypes:
-            if ct.name == "Refund":
+            if ct.name in ["Refund", "Reimbursement"]:
                 ct.displaycategories = expensecategories
     except CategoryType.DoesNotExist:
         pass
@@ -2402,16 +2496,17 @@ def budget(request):
     name = request.user.get_full_name()
 
     # GET MONTH/YEAR
-    mode, selected_month, selected_year, selected_fromdate, selected_todate = getselecteddate(request)
+    mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     # Budgets for selected month/year
-    budgetmap_category, adjbudgetmap_category, budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
     print("Debug, budgets after calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
+
     # All lists you had in table
     categories = categorylist(user)
     categorytypes = categorytypelist(user)
@@ -2434,7 +2529,14 @@ def budget(request):
         "selected_year": selected_year,
         "selected_fromdate": selected_fromdate,
         "selected_todate": selected_todate,
+        "monthname": monthname,
+        "yearname": yearname,
         "categorytype_totals": categorytype_totals,
+        "budgetmap_total": budgetmap_total,
+        "remaining_budget": remaining_budget,
+        "remaining_color": remaining_color,
+        "prev_budgetmap_category": prev_budgetmap_category,
+        "prev_budgetmap_type": prev_budgetmap_type,
     }
 
     return render(request, "budget.html", context)
@@ -2460,7 +2562,7 @@ def setup(request):
         
         # Attach displaycategories to the Refund object in the list
         for ct in categorytypes:
-            if ct.name == "Refund":
+            if ct.name in ["Refund", "Reimburesement"]:
                 ct.displaycategories = expensecategories
     except CategoryType.DoesNotExist:
         pass
@@ -2609,10 +2711,16 @@ def goals(request):
     goalcount = goals.count()
 
     unlinkedcount = savingstransactions.filter(goals__isnull=True).count()
+
     upcominggoal = goals.filter(date__gte=timezone.now()).first()
-    upcominggoal.daysremaining = (upcominggoal.date - today).days
-    upcominggoal.saved = (Entry.objects.filter(transaction__goals=upcominggoal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
-    upcominggoalpercent = round(upcominggoal.saved / upcominggoal.amount * 100, 2)
+
+    if upcominggoal:
+        upcominggoal.daysremaining = (upcominggoal.date - today).days
+        upcominggoal.saved = (Entry.objects.filter(transaction__goals=upcominggoal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+        upcominggoalpercent = round(upcominggoal.saved / upcominggoal.amount * 100, 2)
+    
+    else:
+        upcominggoalpercent = 0
 
     for goal in goals:
 
@@ -2760,7 +2868,7 @@ def categorylist(user):
     return Category.objects.filter(user=user)
 
 def categorytypelist(user):
-    TYPE_ORDER = ['Income', 'Expense', 'Savings', 'Debt', 'Investment', 'Retirement', 'Transfer', 'Refund']
+    TYPE_ORDER = ['Income', 'Expense', 'Savings', 'Debt', 'Investment', 'Retirement', 'Transfer', "Reimbursement", 'Refund']
 
     categorytypes = sorted(
         CategoryType.objects.prefetch_related(

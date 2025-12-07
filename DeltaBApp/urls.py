@@ -36,6 +36,7 @@ urlpatterns = [
     path('add-transactions/', views.addtransaction, name='add_transactions'),
     path('duplicateaddtransaction/', views.duplicateaddtransaction, name='duplicateaddtransaction'),
     path("delete-transactions/", views.deletetransactions, name="delete_transactions"),
+    path("previousmonthlimit/", views.previousmonthlimit, name="previousmonthlimit"),
     path("updateaccounts/", views.updateaccounts, name="updateaccounts"),
     path("signup/", views.signup, name="signup"),
     path("signin/", views.signin, name="signin"),

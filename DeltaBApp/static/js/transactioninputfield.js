@@ -9,7 +9,8 @@ document.addEventListener("DOMContentLoaded", function () {
       retirement: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       debt: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       transfer: ["datefields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
-      refund: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"]
+      refund: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
+      reimbursement: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
   };
 
   // TRANSACTION TYPE TO ACCOUNTS
@@ -21,7 +22,8 @@ document.addEventListener("DOMContentLoaded", function () {
       retirement: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet"],
       debt: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Digital Wallet"],
       transfer: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Loan", "Retirement", "Digital Wallet"],
-      refund: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Digital Wallet"]
+      refund: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Digital Wallet"],
+      reimbursement: ["Cash", "Checking Account", "Savings Account", "Credit Card", "Investment", "Digital Wallet"],
   };
 
   // INPUTS WITH FINAL ACCOUNTS
@@ -34,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
       debt: ["Loan", "Credit Card"],
       transfer: ["Cash", "Checking Account", "Digital Wallet"],
       refund: [],
+      reimbursement: [],
   };
 
   const allFieldIds = [
@@ -63,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const categories = container.querySelectorAll(".radio-card");
 
     // For refunds, show expense categories
-    const effectiveType = (type === "refund") ? "expense" : type;
+    const effectiveType = (type === "refund" || type === "reimbursement") ? "expense" : type;
 
     categories.forEach(cat => {
         const catType = cat.getAttribute("data-type")?.toLowerCase();
@@ -75,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
             cat.style.display = "none";
         }
     });
-}
+    }
 
 
     // DISPLAY FIELDS FOR TYPE

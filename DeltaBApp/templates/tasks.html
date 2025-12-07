@@ -123,18 +123,22 @@
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
                     <div class="accounts-divider my-4">
-                        <span class="test-label">Accounts</span>
+                        <span class="accounts-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
                         {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                        data-account-type="{{ account.type.name|lower }}">
+                            data-account-type="{{ account.type.name|lower }}"
+                            data-account-id="{{ account.id }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.institution.name }} {{ account.name }}</span>
+                                <div class="d-flex flex-column">
+                                    <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                    <span class="text-muted small">{{ account.institution.name }}</span>
+                                </div>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
@@ -161,7 +165,28 @@
                 <div class="row g-4">
                     <div class="card bg-bs-dark border border-light shadow-sm p-3">
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                          <h2 class="fw-semibold text-primesec mb-0"><i class="fa fa-calendar-alt me-2"></i>Reminders</h2>
+                            <h2 class="fw-semibold text-primesec mb-0"><i class="fa fa-calendar-alt me-2"></i>Reminders</h2>
+                            <div class="d-flex align-items-center ms-auto gap-2">
+                                <!-- Active Goals -->
+                                <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fa fa-hourglass-half fa-lg text-primary"></i>
+                                        <div class="text-start">
+                                            <p class="mb-0 text-muted small">Reminders</p>
+                                            <h6 class="m-0 fw-bold">##</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fa fa-clipboard-list fa-lg text-primary"></i>
+                                        <div class="text-start">
+                                            <p class="mb-0 text-muted small">Tasks</p>
+                                            <h6 class="m-0 fw-bold">##</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -169,7 +194,7 @@
 
                     <!-- Bill Tracker Start -->
                     <div class="col-sm-12 col-md-8 col-xl-8">
-                        <div class="bill-board h-100 p-4 rounded-4 shadow-lg bg-secondary">
+                        <div class="h-100 p-4 rounded-4 shadow-lg bg-secondary">
                             
                             <!-- Header -->
                             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -187,7 +212,7 @@
                                     <select id="inputcategory" name="inputcategory" class="form-select text-light bg-dark">
                                         <option value="" selected>Select Category...</option>
                                         {% for categorytype in categorytypes %}
-                                        {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
+                                        {% if categorytype.name != "Transfer" and categorytype.name != "Refund" and categorytype.name != "Reimbursement" %}
                                         <optgroup label="{{ categorytype.name }}">
                                             {% for category in categorytype.category_set.all %}
                                                 <option value="{{ category.id }}">{{ category.name }}</option>
@@ -248,7 +273,7 @@
                     <!-- Bill Tracker End -->
                     <!-- Tasks List Start -->
                     <div class="col-sm-12 col-md-6 col-xl-4">
-                        <div class="todo-board h-100 p-4 rounded-4 shadow-lg bg-secondary">
+                        <div class="h-100 p-4 rounded-4 shadow-lg bg-secondary">
                         <!-- Header -->
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5 class="text-white fw-bold mb-0">Tasks</h5>

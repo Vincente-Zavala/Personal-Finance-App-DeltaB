@@ -72,13 +72,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     data.add_transactions.forEach(tx => {
                         const tr = document.createElement("tr");
                         tr.classList.add("transaction-row");
-                        tr.setAttribute("data-type", tx.category_type.toLowerCase());
+                        tr.setAttribute("data-type", tx.type.toLowerCase());
                         tr.innerHTML = `
                             <td class="editcol" hidden>
                                 <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
                             </td>
                             <td>${tx.date}</td>
-                            <td class="category-cell">${tx.category_type}</td>
+                            <td class="category-cell">${tx.type}</td>
                             <td>${tx.category}</td>
                             <td class="text-truncate" style="max-width:150px;" title="${tx.note}">${tx.note}</td>
                             <td>${tx.account}</td>

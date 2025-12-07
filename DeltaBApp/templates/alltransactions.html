@@ -118,26 +118,30 @@
 
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
-                    <div class="accounts-divider my-4">
-                        <span class="test-label">Accounts</span>
-                    </div>  
-                    <div class="account-list">
-                        {% for accounttype in accounttypes %}
-                        {% for account in accounttype.accounts.all %}
-                        <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                        data-account-type="{{ account.type.name|lower }}">
-                            <div class="d-flex align-items-center">
-                                <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
-                                    <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
-                                </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.institution.name }} {{ account.name }}</span>
-                            </div>
-                            <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
-                        </div>
-                        {% endfor %}
-                        {% endfor %}
-                    </div>
-                </div>
+                  <div class="accounts-divider my-4">
+                      <span class="accounts-label">Accounts</span>
+                  </div>  
+                  <div class="account-list">
+                      {% for accounttype in accounttypes %}
+                      {% for account in accounttype.accounts.all %}
+                      <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
+                          data-account-type="{{ account.type.name|lower }}"
+                          data-account-id="{{ account.id }}">
+                          <div class="d-flex align-items-center">
+                              <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                  <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
+                              </div>
+                              <div class="d-flex flex-column">
+                                  <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                  <span class="text-muted small">{{ account.institution.name }}</span>
+                              </div>
+                          </div>
+                          <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
+                      </div>
+                      {% endfor %}
+                      {% endfor %}
+                  </div>
+              </div>
 
                 <!-- Footer -->
                 <div class="sidebar-footer mt-auto text-center pt-3">
@@ -243,7 +247,7 @@
                                             data-transaction-id="{{ transaction.id }}">
                                             <option value="" selected>Select Category...</option>
                                             {% for categorytype in categorytypes %}
-                                            {% if categorytype.name == "Refund" %}
+                                            {% if categorytype.name == "Refund" or categorytype.name == "Reimbursement" %}
                                             <optgroup label="{{ categorytype.name }}">
                                               {% for category in categorytype.displaycategories %}
                                                   <option value="{{ category.id }}" data-categorytype="{{ category.type|lower }}">{{ category.name }}</option>
@@ -305,7 +309,7 @@
                                           <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}">
                                         </td>
                                         <td>{{ transaction.date }}</td>
-                                        <td class="category-cell">{{ transaction.category.type }}</td>
+                                        <td class="category-cell">{{ transaction.type }}</td>
                                         <td>{{ transaction.category }}</td>
                                         <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
                                         <td>{{ transaction.account }}</td>
@@ -565,6 +569,7 @@
     <script src="{% static 'js/dateoptions.js' %}"></script>
     <script src="{% static 'js/pendingaccount.js' %}"></script>
     <script src="{% static 'js/pendingdeletetransactions.js' %}"></script>
+    <script src="{% static 'js/updateaccounts.js' %}"></script>
 
     <script src="{% static 'js/iconcolorstyling.js' %}"></script>
     <script src="{% static 'js/highlightrows.js' %}"></script>

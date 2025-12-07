@@ -1074,7 +1074,7 @@ padding: 1rem;
   .test-divider:not(:empty)::after {
     margin-left: 0.75em;
   }
-  .test-label {
+  .accounts-label {
     color: var(--light);
     opacity: 0.7;
   }

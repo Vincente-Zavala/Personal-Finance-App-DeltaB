@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
                             </td>
                             <td>${tx.date}</td>
-                            <td class="category-cell">${tx.category_type}</td>
+                            <td class="category-cell">${tx.type}</td>
                             <td>${tx.category}</td>
                             <td class="text-truncate" style="max-width:150px;" title="${tx.note}">${tx.note}</td>
                             <td>${tx.account}</td>

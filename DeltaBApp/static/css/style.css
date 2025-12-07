@@ -697,7 +697,7 @@ background: transparent;
 }
 
 .transaction-card {
-    background: rgba(30, 30, 30, 0.95);
+    background: linear-gradient(180deg, #1a1a1a 0%, #161616 100%);;
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
     transition: 0.3s ease;
@@ -1187,4 +1187,29 @@ padding: 1rem;
 
 .selected-row .amount-cell {
   color: white !important; /* amount text when selected */
+}
+
+.btn-outline-primesec{
+  color:#E6EFED;
+  border-color: var(--primesec);
+}
+
+.btn-check:focus+.btn, .btn:focus {
+  box-shadow: var(--primesec);
+}
+
+.btn:hover {
+  color: var(--primesec)
+}
+
+#togglePeriodBtn {
+  transition: none !important;
+}
+
+.separator {
+  font-size: 1.2rem;  /* Adjust size as needed */
+  padding: 0 10px;    /* Space out the separator */
+  color: var(--primesec);     /* Match color with buttons or make it lighter */
+  font-weight: bold;
+  padding-left: 0px;
 }

@@ -113,18 +113,22 @@
                 <!-- Accounts List -->
                 <div class="account-list-container px-2">
                     <div class="accounts-divider my-4">
-                        <span class="test-label">Accounts</span>
+                        <span class="accounts-label">Accounts</span>
                     </div>  
                     <div class="account-list">
                         {% for accounttype in accounttypes %}
                         {% for account in accounttype.accounts.all %}
                         <div class="account-border account-item d-flex align-items-center justify-content-between rounded-3 p-2 mb-2 shadow-sm hover-glow"
-                        data-account-type="{{ account.type.name|lower }}">
+                            data-account-type="{{ account.type.name|lower }}"
+                            data-account-id="{{ account.id }}">
                             <div class="d-flex align-items-center">
                                 <div class="account-icon-wrapper bg-dark rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                                     <i class="fa {{ accounticonmap|getitem:account.type.name|default:'fa-folder' }} "></i>
                                 </div>
-                                <span class="account-name fw-medium text-primesec">{{ account.institution.name}} {{ account.name }}</span>
+                                <div class="d-flex flex-column">
+                                    <span class="account-name fw-medium text-primesec">{{ account.name }}</span>
+                                    <span class="text-muted small">{{ account.institution.name }}</span>
+                                </div>
                             </div>
                             <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
                         </div>
@@ -184,7 +188,7 @@
                                         <legend class="col-form-label col-sm-2 pt-0">Category Type</legend>
                                         <div class="col-sm-10">
                                             {% for categorytype in categorytypes %}
-                                            {% if categorytype.name != "Transfer" and categorytype.name != "Refund" %}
+                                            {% if categorytype.name not in "Transfer Refund Reimbursement" %}
                                             <label class="radio-card">
                                                 <input type="radio" name="categorytypechoice" value="{{ categorytype.id }}"
                                                     id="categorytype{{categorytype.id}}">
@@ -275,7 +279,7 @@
                                                 <h5 class="mb-0 text-primary">{{ categorytype.name }}</h5>
                                             </div>
                                             <ul class="text-white pt-3 ms-4">
-                                                {% if categorytype.name == "Refund" %}
+                                                {% if categorytype.name == "Refund" or categorytype.name == "Reimbursement" %}
                                                     {% for category in categorytype.displaycategories %}
                                                     <li>{{ category.name }}</li>
                                                     {% endfor %}
