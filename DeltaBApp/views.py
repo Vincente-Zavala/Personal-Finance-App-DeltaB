@@ -29,6 +29,7 @@ from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models.functions import Abs
 import pytz
 import logging
 User = get_user_model()
@@ -260,9 +261,6 @@ def getselecteddate(request):
         to_date_obj = datetime.datetime.strptime(selected_todate, "%m-%d-%Y")
         toname = to_date_obj.strftime("%m/%d/%y")
 
-
-    print("Debug, selected month/year:", selected_month, selected_year)
-
     return mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname
 
 
@@ -285,156 +283,103 @@ def previousdate(selected_month, selected_year):
 
 
 # CALCULATE SUM OF CATEGORIES FROM TRANSACTIONS #
-def categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user):
+def categorytransactionsum(mode, selected_month, selected_year, selected_fromdate, selected_todate, user):
+
     total = 0
-    txs = []
-    refundtxs = []
-    reimbursementtxs = []
 
     if mode == "monthyear":
-        txs = Transaction.objects.filter(
-            category=category,
-            date__year=selected_year,
-            user=user,
-        )
-        print("Debug txs", txs)
-        
-        refundtxs = Transaction.objects.filter(
-            type__name="Refund",
-            date__year=selected_year,
-            user=user,
-        )
-        print("Debug refundtxs", refundtxs)
 
-        reimbursementtxs = Transaction.objects.filter(
-            type__name="Reimbursement",
-            date__year=selected_year,
-            user=user,
-        )
-        print("Debug reimbursementtxs", reimbursementtxs)
+        if selected_month == 13:
+            allcategory_txs = Transaction.objects.filter(date__year=selected_year, user=user)
 
         if selected_month != 13:
-            txs = txs.filter(date__month=selected_month, user=user)
-            refundtxs = refundtxs.filter(date__month=selected_month, user=user)
-            print("Debug refundtxs", refundtxs)
-            reimbursementtxs = reimbursementtxs.filter(date__month=selected_month, user=user)
-            print("Debug reimbursementtxs", reimbursementtxs)
+            allcategory_txs = Transaction.objects.filter(date__month=selected_month, date__year=selected_year, user=user)
+
+            print("Debug allcategory_txs", allcategory_txs)
 
 
     elif mode == "custom":
-
-        # Convert Date
         fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
-        txs = Transaction.objects.filter(category=category, date__gte=fromdate, date__lte=todate, user=user)
-        refundtxs = Transaction.objects.filter(type__name="Refund", date__gte=fromdate, date__lte=todate, user=user)
-        print("Debug refundtxs", refundtxs)
-        reimbursementtxs = Transaction.objects.filter(type__name="Reimbursement", date__gte=fromdate, date__lte=todate, user=user)
-        print("Debug reimbursementtxs", reimbursementtxs)
+        allcategory_txs = Transaction.objects.filter(date__gte=fromdate, date__lte=todate, user=user)
 
-
-    refund_by_category = {}
-    reimbursement_by_category = {}
     
-    for refundtx in refundtxs:
-        categoryid = refundtx.category_id
-        refund_by_category[categoryid] = refund_by_category.get(categoryid, 0) + refundtx.amount
-
-    for reimbursementtx in reimbursementtxs:
-        categoryid = reimbursementtx.category_id
-        reimbursement_by_category[categoryid] = reimbursement_by_category.get(categoryid, 0) + reimbursementtx.amount
-
-    for tx in txs:
-
-        print("Debug category tx", category, tx.amount)
-
-        if tx.type.name in ["Refund", "Reimbursement"]:
-            print(f"Skipping refund transaction {tx.id}")
-            continue
-
-        total += abs(tx.amount)
-        print("Debug total", total)
-
-        print("")
-        
-        
-    refundtotal = sum(
-        refundtx.amount
-        for refundtx in refundtxs
-        if refundtx.category_id == category.id
+    category_sums = (
+        allcategory_txs.values('category_id')
+        .annotate(
+            normal_sum=Sum(Abs('entries__amount'), filter=~Q(type__name__in=["Refund", "Reimbursement"])),
+            refund_sum=Sum(Abs('entries__amount'), filter=Q(type__name="Refund")),
+            reimbursement_sum=Sum(Abs('entries__amount'), filter=Q(type__name="Reimbursement"))
+        )
     )
 
-    reimbursementtotal = sum(
-        reimbursementtx.amount
-        for reimbursementtx in reimbursementtxs
-        if reimbursementtx.category_id == category.id
-    )
+    print("Debug category_sums", category_sums)
 
-    print("Debug refundtotal", refundtotal, "reimbursementtotal", reimbursementtotal)
+    # Convert to dict: category_id -> net total
+    category_map = {}
+    for row in category_sums:
+        print("Debug row", row)
+        net_total = (row['normal_sum'] or 0) - (row['refund_sum'] or 0) - (row['reimbursement_sum'] or 0)
+        print("Debug net total", net_total)
+        category_map[row['category_id']] = net_total
 
-    total -= refundtotal
-    total -= reimbursementtotal
+    print("Debug category_map", category_map)
 
-    print("Debug CATEGORY total", category, total)
 
-    return total
+    return category_map
 
 
 
 
 
 # SUMMARY TRANSACTION TOTAL #
-def categorysummarytotal(user, mode, category, selected_month, selected_year, selected_fromdate, selected_todate):
+def categorysummarytotal(user, mode, categories, selected_month, selected_year, selected_fromdate, selected_todate):
+
 
     # Get summaries for that category
     summaries = MonthlySummary.objects.filter(
         user=user,
-        category=category,
         year=selected_year,
         month=selected_month
     )
 
-    if not summaries.exists():
-        return 0
-
-    summary = summaries.first()
-    summary_amount = summary.amount or 0
-
-    # If using full-month mode, return full summary
-    if mode == "monthyear":
-        return summary_amount
+    summary_map = {s.category_id: s.amount or 0 for s in summaries}
 
     # If using a custom range, prorate the summary based on days
-    elif mode == "custom" and selected_fromdate and selected_todate:
-        days_in_month = calendar.monthrange(selected_year, selected_month)[1]
-        overlap_start = max(selected_fromdate, datetime.date(selected_year, selected_month, 1))
-        overlap_end = min(selected_todate, datetime.date(selected_year, selected_month, days_in_month))
+    if mode == "custom" and selected_fromdate and selected_todate:
 
-        # No overlap (custom range doesn’t intersect this month)
-        if overlap_start > overlap_end:
-            return 0
+        fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
+        todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
-        overlap_days = (overlap_end - overlap_start).days + 1
-        prorated_amount = summary_amount * (overlap_days / days_in_month)
+        for category in categories:
 
-        return prorated_amount
+            if category.id in summary_map:
 
-    return 0
+                days_in_month = calendar.monthrange(selected_year, selected_month)[1]
+                month_start = datetime.date(selected_year, selected_month, 1)
+                month_end = datetime.date(selected_year, selected_month, days_in_month)
 
-    return 
+                overlap_start = max(fromdate, month_start)
+                overlap_end = min(todate, month_end)
 
+                if overlap_start > overlap_end:
+                    summary_map[category.id] = 0
+                else:
+                    overlap_days = (overlap_end - overlap_start).days + 1
+                    summary_map[category.id] = summary_map[category.id] * (overlap_days / days_in_month)
+
+
+    return summary_map
 
 
 
 
 # CALCULATE CATEGORY TOTALS #
 def calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user):
-
-    print("Debug, calculate categorytotals: budgetmap", budgetmap_category," adjbudgetmap: ", adjbudgetmap_category)
     
     categorytypes = categorytypelist(user)
-
+    categories = categorylist(user)
 
     # Build category totals for selected month/year
     category_totals = {}
@@ -442,79 +387,47 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
     category_percentages = {}
     categorytype_totals = {}
 
+    category_map = categorytransactionsum(mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
+    summary_map = categorysummarytotal(user, mode, categories, selected_month, selected_year, selected_fromdate, selected_todate)
+
+    categorytype_map = {}
+    for cat in categorytypes:
+        categorytype_map[cat.id] = [c.id for c in categories if c.type_id == cat.id]
 
 
-
-
-    for category in Category.objects.filter(user=user):
-
-        transactiontotal = categorytransactionsum(category, mode, selected_month, selected_year, selected_fromdate, selected_todate, user)
-        print("Debug category transaction total", category, transactiontotal)
-        summarytotal = categorysummarytotal(user, mode, category, selected_month, selected_year, selected_fromdate, selected_todate)
-        print("Debug category summarytotal", category, summarytotal)
-
-        total = transactiontotal + summarytotal
-
+    for category in categories:
+        total = category_map.get(category.id, 0) + summary_map.get(category.id, 0)
         category_totals[category.id] = total
 
-        print("Debug category_totals", category_totals)
-
-        print("Debug, budgetmap", budgetmap_category," adjbudgetmap: ", adjbudgetmap_category)
-
-        budget_limit = budgetmap_category.get(category.id, 0)
-        adjbudget_limit = adjbudgetmap_category.get(category.id, 0)
-
+        # Compute remaining & percent
         if mode == "monthyear":
-            category_remaining[category.id] = budget_limit - total
-
-            #percentage calculation
-            if budget_limit > 0:
-                percent = (total / budget_limit) * 100
-            else:
-                percent = 0
-            category_percentages[category.id] = percent
-
+            budget_limit = budgetmap_category.get(category.id, 0)
+            remaining = budget_limit - total
+            percent = (total / budget_limit * 100) if budget_limit > 0 else 0
         elif mode == "custom":
-            category_remaining[category.id] = adjbudget_limit - total
+            adjbudget_limit = adjbudgetmap_category.get(category.id, 0)
+            remaining = adjbudget_limit - total
+            percent = (total / adjbudget_limit * 100) if adjbudget_limit > 0 else 0
 
-            #percentage calculation
-            if adjbudget_limit > 0:
-                percent = (total / adjbudget_limit) * 100
-            else:
-                percent = 0
-            category_percentages[category.id] = percent
+        category_remaining[category.id] = remaining
+        category_percentages[category.id] = percent
 
-    
-    for categorytype in categorytypes:
-        type_budget = 0
-        adjtype_budget = 0
-        type_spent = 0
-        type_remaining = 0
-        typetotalpercent = 0
+    # --- Compute totals per category type ---
+    for cattype in categorytypes:
+        ct_category_ids = categorytype_map[cattype.id]
 
-        for category in categorytype.category_set.filter(user=user):
-
-            budget = budgetmap_category.get(category.id, 0)
-            adjbudget = adjbudgetmap_category.get(category.id, 0)
-
-            spent = category_totals.get(category.id, 0)
-            print("Debug category spent", category, spent)
-            remaining = category_remaining.get(category.id, 0)
-
-            type_budget += budget
-            adjtype_budget += adjbudget
-            type_spent += spent
-            type_remaining += remaining
-            print(category, "Debug typespent", type_spent)
+        type_budget = sum(budgetmap_category.get(cid, 0) for cid in ct_category_ids)
+        adjtype_budget = sum(adjbudgetmap_category.get(cid, 0) for cid in ct_category_ids)
+        type_spent = sum(category_totals.get(cid, 0) for cid in ct_category_ids)
+        type_remaining = sum(category_remaining.get(cid, 0) for cid in ct_category_ids)
 
         if mode == "monthyear":
             typetotalpercent = (type_spent / type_budget * 100) if type_budget > 0 else 0
-
-        elif mode == "custom":
+        else:
             typetotalpercent = (type_spent / adjtype_budget * 100) if adjtype_budget > 0 else 0
 
         
-        categorytype_totals[categorytype.id] = {
+        categorytype_totals[cattype.id] = {
             "budget": type_budget,
             "adjbudget": adjtype_budget,
             "spent": type_spent,
@@ -522,6 +435,7 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
             "percent": typetotalpercent,
         }
 
+    print("Debug categorytypes", categorytypes, "category_totals", category_totals, "category_remaining", category_remaining, "category_percentages", category_percentages, "categorytype_totals", categorytype_totals)
 
     return categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals
 
@@ -553,15 +467,13 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
         else:
             budgets = Budget.objects.filter(month=selected_month, year=selected_year, user=user)
             prev_budgets = Budget.objects.filter(month=previous_month, year=previous_year, user=user)
-        
-        print("Debug, budgets in getbudgetmap", budgets)
 
         # Budget Map for month or multiple months added together
         for b in budgets:
             if b.category_id in budgetmap_category:
-                print("DEBUG: b in Budgets: ", b)
+
                 budgetmap_category[b.category_id] += b.limit
-                print("Debug, budgetmap, b.month, b.limit: ", budgetmap_category, b.month, b.limit)
+
             else:
                 budgetmap_category[b.category_id] = b.limit
 
@@ -569,14 +481,14 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
         for prevb in prev_budgets:
             if prevb.category_id in prev_budgetmap_category:
-                print("DEBUG: b in Budgets: ", prevb)
+
                 prev_budgetmap_category[prevb.category_id] += prevb.limit
-                print("Debug, budgetmap, b.month, b.limit: ", prev_budgetmap_category, prevb.month, prevb.limit)
+
             else:
                 prev_budgetmap_category[prevb.category_id] = prevb.limit
 
             prev_budgetmap_type[prevb.category.type.id] += prevb.limit
-        print("DEBUG, budgetmap HERE", budgetmap_category, budgetmap_type)
+
 
     elif mode == "custom":
 
@@ -591,28 +503,9 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
         todatemonth = selected_todate.month
         todateyear = selected_todate.year
 
-        #budgets = Budget.objects.filter(month=selected_month, year=selected_year)
         adjbudgets = Budget.objects.filter(month__range=(fromdatemonth, todatemonth), year=fromdateyear, user=user)
 
-        print("DEBUG: Budgets in getbudgetmap: ", budgets)
-
-        # for b in budgets:
-        #     if b.month in budgetmap:
-        #         print("DEBUG: b in Budgets: ", b)
-        #         budgetmap[b.month] += b.limit
-        #         print("Debug, budgetmap, b.month, b.limit: ", budgetmap, b.month, b.limit)
-        #     else:
-        #         budgetmap[b.month] = b.limit
-
-
-        # Budget Map for month or multiple months added together
         for b in adjbudgets:
-            print("DEBUG within for b in budgets")
-            print("DEbug, b", b)
-
-            #if b.category_id in budgetmap:
-
-            print("DEBUG: category: ", b.category)
             
             daysinbudgetlimit = calendar.monthrange(b.year, b.month)[1]
             dailylimit = b.limit / daysinbudgetlimit
@@ -620,46 +513,31 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
             if fromdatemonth == todatemonth and b.month == fromdatemonth:
                 startdate = datetime.date(b.year, b.month, fromdateday)
                 enddate = datetime.date(b.year, b.month, todateday)
-                print("DEBUG, same month range:", startdate, enddate)
 
             elif b.month == fromdatemonth:
 
                 startdate = datetime.date(b.year, b.month, fromdateday)
                 enddate = datetime.date(b.year, b.month, daysinbudgetlimit)
 
-                print("DEBUG, startend from: ", startdate, enddate)
-
             elif b.month == todatemonth:
 
                 startdate = datetime.date(b.year, b.month, 1)
                 enddate = datetime.date(b.year, b.month, todateday)
 
-                print("DEBUG, startend to: ", startdate, enddate)
-
             else:
                 startdate = datetime.date(b.year, b.month, 1)
                 enddate = datetime.date(b.year, b.month, daysinbudgetlimit)
-
-                print("DEBUG, startend else: ", startdate, enddate)
 
             dayrange = (enddate - startdate).days + 1
             adjmonthlimit = round(dayrange * dailylimit, 2)
             adjbudgetmap_category[b.category_id] += adjmonthlimit
 
-            print("Debug: dayrange, adjmonthlimit, adjbudgetmap", dayrange, adjmonthlimit, adjbudgetmap_category)
-
 
             if b.category_id in budgetmap_category:
-                print("DEBUG: b in Budgets: ", b)
                 budgetmap_category[b.category_id] += b.limit
-                print("Debug, budgetmap, b.month, b.limit: ", budgetmap_category, b.month, b.limit)
+
             else:
                 budgetmap_category[b.category_id] = b.limit
-
-            print("DEBUG, dayrange, adjmonthlimit, budgetmap", dayrange, adjmonthlimit, budgetmap_category)
-
-    
-    print("DEBUG, last budgetmap", budgetmap_type)
 
     incometype_id = CategoryType.objects.get(name="Income").id
     budgetmap_total = sum(amount for t_id, amount in budgetmap_type.items() if t_id != incometype_id)
@@ -2256,16 +2134,12 @@ def overview(request):
 
     name = request.user.get_full_name()
 
-    # dateoption = getselecteddate(request)
+
 
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    print("DEBUG DATE Month: ",selected_month, "Year", selected_year, "fromdate: ", selected_fromdate, "todate: ", selected_todate)
-
     # Budgets for selected month/year
     budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
-
-    print("Debug, budgets before calculatecategorytotals: ", budgetmap_category," adjbudgetmap", adjbudgetmap_category)
 
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user)
@@ -2919,4 +2793,4 @@ def accounttypelist(user):
     return accounttypes
 
 def transactionlist(user):
-    return Transaction.objects.filter(user=user )
+    return Transaction.objects.filter(user=user)
