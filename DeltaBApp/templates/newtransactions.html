@@ -244,7 +244,7 @@
                                             <input type="radio" name="sourceaccountchoice" value="{{ account.id }}"
                                                 id="account{{account.id}}" data-type="{{ account.type.name }}" required>
                                             <div class="radio-card-body">
-                                                {{ account.name }}
+                                                {{ account.institution.name }}-{{ account.name }}
                                             </div>
                                         </label>
                                         {% endfor %}
@@ -258,7 +258,7 @@
                                             <input type="radio" name="finalaccountchoice" value="{{ account.id }}"
                                                 id="account{{account.id}}" data-type="{{ account.type.name }}">
                                             <div class="radio-card-body">
-                                                {{ account.name }}
+                                                {{ account.institution.name }}-{{ account.name }}
                                             </div>
                                         </label>
                                         {% endfor %}
@@ -433,7 +433,7 @@
                                                     <select id="accountselection" name="accountselection" class="form-select">
                                                         <option value="" selected disabled>**Select Account**</option>
                                                         {% for account in accounts %}
-                                                            <option value="{{ account.id }}">{{ account.name }}</option>
+                                                            <option value="{{ account.id }}">{{ account.institution.name }}-{{ account.name }}</option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>

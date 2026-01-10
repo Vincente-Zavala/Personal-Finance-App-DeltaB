@@ -1,6 +1,6 @@
 from django.urls import path
 from django.views.generic.base import RedirectView
-
+from .views import alltransactions_api, pendingtransactions_api, categories_api, accounts_api
 from . import views
 
 urlpatterns = [
@@ -36,6 +36,7 @@ urlpatterns = [
     path('add-transactions/', views.addtransaction, name='add_transactions'),
     path('duplicateaddtransaction/', views.duplicateaddtransaction, name='duplicateaddtransaction'),
     path("delete-transactions/", views.deletetransactions, name="delete_transactions"),
+    path("updatetransactions/", views.updatetransactions, name="updatetransactions"),
     path("previousmonthlimit/", views.previousmonthlimit, name="previousmonthlimit"),
     path("updateaccounts/", views.updateaccounts, name="updateaccounts"),
     path("signup/", views.signup, name="signup"),
@@ -48,4 +49,8 @@ urlpatterns = [
     path("getpreview/", views.getpreview, name="getpreview"),
     path("submitupload/", views.submitupload, name="submitupload"),
     path('logoutuser/', views.logoutuser, name='logoutuser'),
+    path("api/all-transactions/", alltransactions_api, name="alltransactions_api"),
+    path("api/pending-transactions/", pendingtransactions_api, name="pendingtransactions_api"),
+    path("api/categories/", categories_api, name="categories_api"),
+    path("api/accounts/", accounts_api, name="accounts_api"),
 ]

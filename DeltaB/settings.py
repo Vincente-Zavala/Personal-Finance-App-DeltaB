@@ -40,6 +40,13 @@ CSRF_TRUSTED_ORIGINS = [
     "https://deltab.onrender.com",
 ]
 
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,  # adjust this as needed
+}
+
+
 # settings.py
 
 STATIC_URL = '/static/'
@@ -57,6 +64,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
     "DeltaBApp",
 ]
 
@@ -74,6 +82,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "middleware.memory_usage.MemoryUsageMiddleware",
+    "middleware.performance.PerformanceMiddleware"
 ]
 
 ROOT_URLCONF = "DeltaB.urls"
@@ -114,13 +124,29 @@ SUPABASE_USE_SECURE_URLS = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 
+# DATABASES = {
+#     "default": dj_database_url.parse(
+#         os.getenv("DATABASE_URL"),
+#         conn_max_age=300,
+#         ssl_require=True
+#     )
+# }
+
+
 DATABASES = {
     "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL"),
+        os.environ["DATABASE_URL"],
         conn_max_age=300,
-        ssl_require=True
+        ssl_require=True,
     )
 }
+
+
+APP_ENV = os.environ.get("APP_ENV")
+
+if APP_ENV not in ("staging", "production"):
+    raise RuntimeError("Error connecting to DB")
+
 
 
 

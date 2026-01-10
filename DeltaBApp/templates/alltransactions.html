@@ -14,7 +14,7 @@
           {% include "partials/page_titles.html" %}
 
           <!-- Left: Applied Filters -->
-          <div class="d-flex flex-wrap gap-2">
+          <!-- <div class="d-flex flex-wrap gap-2">
               {% if appliedfilters %}
                   {% for filter in appliedfilters %}
                       <span class="badge bg-primary text-white">{{ filter }}</span>
@@ -22,19 +22,23 @@
               {% else %}
                   <span class="text-muted">No filters applied</span>
               {% endif %}
-          </div>
+          </div> -->
 
+          <div class="d-flex flex-wrap gap-2" id="appliedFiltersContainer">
+            <span class="text-muted">No filters applied</span>
+          </div>
+        
           <!-- Right: Action Buttons -->
           <div class="d-flex flex-wrap gap-2">
             <button id="submittransactions" type="button" form="alltransactionsForm" 
                     formaction="{% url 'addpendingtransaction' %}" 
                     class="btn btn-sm btn-primary" style="display: none;">
-                <i class="bi bi-check-lg"></i> Submit Transactions
+                <i class="bi bi-check-lg"></i> Submit Pending
             </button>
 
             <button id="deletetransactions" form="alltransactionsForm" type="button"
                     formaction="{% url 'delete_transactions' %}" 
-                    class="btn btn-sm btn-light editcol" hidden>
+                    class="btn btn-sm btn-light" style="display: none;">
                 <i class="bi bi-trash"></i> Delete
             </button>
 
@@ -61,81 +65,35 @@
           <form id="alltransactionsForm" method="POST">
             {% csrf_token %}
             <!-- Pending Transactions Start -->
-            {% if pendingtransactions %}
-            <div id="pendingTransactionsContainer" class="col-12 mb-5">
+            <div id="pendingTransactionsContainer" class="col-12 mb-5" style="display:none;">
               <!-- Header -->
               <h6 class="text-primary fw-semibold mb-2">Pending Transactions</h6>
               <!-- Table -->
               <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 400px;">
                 <input type="hidden" name="redirect" value="{{ request.path }}">
-                <table class="table table-bordered table-hover table-sm align-middle mb-0"
-                  style="border-color: var(--light)">
+                <table class="table table-bordered table-hover table-sm align-middle mb-0" style="border-color: var(--light)" id="pendingTransactionsTable">
                   <thead class="table-light sticky-top">
                     <tr>
                       <th scope="col"  class="editcol" hidden></th>
                       <th>Date</th>
                       <th>Note</th>
-                      <th>Accounts</th>
+                      <th>Account</th>
                       <th class="text-end">Amount</th>
+                      <th>Type</th>
                       <th>Category</th>
                       <th id="destinationHeader" style="display:none;">Destination Account</th>
                     </tr>
                   </thead>
                   <tbody id="pendingTransactionsBody">
-                    {% for transaction in pendingtransactions %}
-                    <tr class="transaction-row">
-                      <td class="editcol" hidden>
-                        <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}">
+                    <tr id="pendingloadingRow">
+                      <td colspan="7" class="text-center text-muted py-4">
+                        Loading Pending Transactions...
                       </td>
-                      <td>{{ transaction.date }}</td>
-                      <td class="text-truncate" style="max-width: 200px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
-                      <td>{{ transaction.account }}</td>
-                      <td class="text-end amount-cell">${{ transaction.amount }}</td>
-                  
-                      <!-- Category -->
-                      <td>
-                        <select 
-                          class="form-select form-select-sm rounded-pill category-select" 
-                          name="categorychoice_{{ transaction.id }}"
-                          data-transaction-id="{{ transaction.id }}">
-                          <option value="" selected>Select Category...</option>
-                          {% for categorytype in categorytypes %}
-                          {% if categorytype.name == "Refund" or categorytype.name == "Reimbursement" %}
-                          <optgroup label="{{ categorytype.name }}">
-                            {% for category in categorytype.displaycategories %}
-                                <option value="{{ category.id }}" data-categorytype="{{ category.type|lower }}">{{ category.name }}</option>
-                            {% endfor %}
-                          </optgroup>
-                          {% else %}
-                          <optgroup label="{{ categorytype.name }}">
-                            {% for category in categorytype.category_set.all %}
-                                <option value="{{ category.id }}" data-categorytype="{{ category.type|lower }}">{{ category.name }}</option>
-                            {% endfor %}
-                          </optgroup>
-                          {% endif %}
-                          {% endfor %}
-                        </select>
-                      </td>
-                              
-                      <!-- Destination Account (hidden by default) -->
-                      <td class="destination-cell" style="display:none;">
-                        <select 
-                          class="form-select form-select-sm rounded-pill account-select" 
-                          name="accountchoice_{{ transaction.id }}"
-                          id="accountchoice_{{ transaction.id }}">
-                          <option value="" selected>**Select Destination Account**</option>
-                          {% for account in accounts %}
-                            <option value="{{ account.id }}">{{ account.institution.name }} - {{ account.name }}</option>
-                          {% endfor %}
-                        </select>
-                      </td>                                                                                                        
                     </tr>
-                    {% endfor %}
-                  </tbody>                                                                                                
+                  </tbody>
                 </table>
               </div>
             </div>
-            {% endif %}
             <!-- Pending Transactions End -->
 
             <!-- All Transactions Start -->
@@ -143,36 +101,25 @@
               <h6 class="text-primary fw-semibold mb-2">All Transactions</h6>
               <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 700px;">
                 <input type="hidden" name="redirect" value="{{ request.path }}">
-                <table class="table table-bordered table-hover table-sm align-middle mb-0" style="border-color: var(--light);">
+                <table class="table table-bordered table-hover table-sm align-middle mb-0" style="border-color: var(--light);" id="allTransactionsTable">
                   <thead class="bg-light text-white sticky-top">
-                    <tr>
+                    <tr id="allTransactionsHeader">
                       <th scope="col"  class="editcol" hidden></th>
                       <th>Date</th>
                       <th>Type</th>
                       <th>Category</th>
+                      <th id="allDestinationHeader" style="display:none;">Destination Account</th>
                       <th>Note</th>
-                      <th>Accounts</th>
+                      <th>Account</th>
                       <th class="text-end">Amount</th>
                     </tr>
                   </thead>
                   <tbody id="allTransactionsBody">
-                    {% for transaction in transactions %}
-                    <tr class="transaction-row" data-type="{{ transaction.category.type|lower}}">
-                      <td class="editcol" hidden>
-                        <input class="form-check-input" type="checkbox" name="selectedtransactions" value="{{ transaction.id }}">
+                    <tr id="allloadingRow">
+                      <td colspan="7" class="text-center text-muted py-4">
+                        Loading All Transactions...
                       </td>
-                      <td>{{ transaction.date }}</td>
-                      <td class="category-cell">{{ transaction.type }}</td>
-                      <td>{{ transaction.category }}</td>
-                      <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
-                      <td>{{ transaction.account }}</td>
-                      <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
                     </tr>
-                    {% empty %}
-                    <tr>
-                      <td colspan="8" class="text-center text-muted">No transactions found.</td>
-                    </tr>
-                    {% endfor %}
                   </tbody>
                 </table>
               </div>
@@ -188,7 +135,7 @@
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>     
                 <div class="modal-body">
-                  <form method="post" action="{% url 'filtertransactions' %}">
+                  <form id="filterTransactionsForm">
                     {% csrf_token %}
                     <div class="row g-4">
                     <!-- Time Period -->
@@ -199,8 +146,18 @@
                           </h6>                       
                           <div class="d-flex justify-content-center gap-3 mb-3">
                             <input type="hidden" name="mode" id="mode" value="monthyear">
-                            <button type="button" onclick="setMode('monthyear')" class="btn btn-outline-primary active" id="monthbutton">Month</button>
-                            <button type="button" onclick="setMode('custom')" class="btn btn-outline-primary" id="custombutton">Custom</button>
+                            <!-- <button type="button" onclick="setMode('monthyear')" class="btn btn-outline-primary active" id="monthbutton">Month</button>
+                            <button type="button" onclick="setMode('custom')" class="btn btn-outline-primary" id="custombutton">Custom</button> -->
+                            <button type="button" id="monthbutton" 
+                              class="btn btn-outline-primary {% if mode != 'custom' %}active{% endif %}" 
+                              onclick="document.getElementById('mode').value='monthyear'; togglePeriodSections('monthyear')">
+                              <i class="bi bi-calendar-month"></i> Month
+                            </button>
+                            <button type="button" id="custombutton" 
+                              class="btn btn-outline-primary {% if mode == 'custom' %}active{% endif %}" 
+                              onclick="document.getElementById('mode').value='custom'; togglePeriodSections('custom')">
+                              <i class="bi bi-calendar-range"></i> Custom
+                            </button>
                           </div>
                           <!-- Month-Year Section -->
                           <div id="monthyearsection">
@@ -335,7 +292,7 @@
                                 {% for account in accounttype.accounts.all %}
                                 <li class="mb-1">
                                   <input class="form-check-input child-checkbox me-2" type="checkbox" name="filteraccountchoice" value="{{ account.id }}">
-                                  {{ account.name }}
+                                  {{ account.institution.name }}-{{ account.name }}
                                 </li>
                                 {% endfor %}
                               </ul>
@@ -379,10 +336,33 @@
   <script src="{% static 'js/submittransactions.js' %}"></script>
   <script src="{% static 'js/dateoptions.js' %}"></script>
   <script src="{% static 'js/pendingaccount.js' %}"></script>
-  <script src="{% static 'js/pendingdeletetransactions.js' %}"></script>
 
   <script src="{% static 'js/iconcolorstyling.js' %}"></script>
   <script src="{% static 'js/highlightrows.js' %}"></script>
+
+  <script>
+    const ALL_TRANSACTIONS_API_URL = "{% url 'alltransactions_api' %}";
+  </script>
+
+  <script type="module" src="{% static 'js/loadpendingtransactionstable.js' %}"></script>
+  <script type="module" src="{% static 'js/loadalltransactionstable.js' %}"></script>
+
+
+
+  <script>
+    const PENDING_TRANSACTIONS_API_URL = "{% url 'pendingtransactions_api' %}";
+  </script>
+  <script>
+    const CATEGORIES_API_URL = "{% url 'categories_api' %}";
+  </script>
+  <script>
+    const ACCOUNTS_API_URL = "{% url 'accounts_api' %}";
+  </script>
+  <script>
+    const UPDATE_TRANSACTIONS_URL = "{% url 'updatetransactions' %}";
+  </script>
+  <script src="{% static 'js/pendingdeletetransactions.js' %}"></script>
+  <script type="module" src="{% static 'js/categories_accounts.js' %}"></script>
 
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 

@@ -5,6 +5,7 @@ from . supabaseupload import SupabaseStorage
 from django.db.models import Sum
 from django.utils.safestring import mark_safe
 import pytz
+import uuid
 
 
 
@@ -25,23 +26,6 @@ class CustomUser(AbstractUser):
 # CATEGORY TYPE #
 class CategoryType(models.Model):
     name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return f"{self.name}"
-
-
-
-
-
-# CATEGORY #
-class Category(models.Model):
-    name = models.CharField(max_length=255)
-    type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-    retired_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -98,6 +82,23 @@ class Account(models.Model):
 
 
 
+# CATEGORY #
+class Category(models.Model):
+    name = models.CharField(max_length=255)
+    type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    retired_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+
+
+
 # STATEMENT UPLOAD #
 class StatementUpload(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="statementuploads")
@@ -128,6 +129,9 @@ class Transaction(models.Model):
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL, null=True, blank=True)
+
+    transfer_id = models.UUIDField(null=True, blank=True, db_index=True, default=None)
+    paired = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -170,7 +174,7 @@ class Transaction(models.Model):
 
         # Build with Font Awesome icon
         if source and dest:
-            html = f"{source.account.name} <i class='fa-solid fa-arrow-right mx-1'></i> {dest.account.name}"
+            html = f"{source.account.name} > {dest.account.name}"
             return mark_safe(html)
 
         # Fallback
@@ -178,6 +182,39 @@ class Transaction(models.Model):
             e.account.name for e in entries
         )
         return mark_safe(html)
+
+
+    @property
+    def account_display(self):
+
+        entries = list(self.entries.all())
+
+        # No entries fallback
+        if not entries:
+            return ""
+
+        # Normal transaction (single entry)
+        if len(entries) == 1:
+            e = entries[0]
+            return f"{e.account.institution.name} - {e.account.name}"
+
+        # Transfer (two entries)
+        source = next((e for e in entries if e.amount < 0), None)
+        dest = next((e for e in entries if e.amount > 0), None)
+
+        # Build with Font Awesome icon
+        if source and dest:
+            return (
+                f"{source.account.institution.name} - {source.account.name} "
+                f"> "
+                f"{dest.account.institution.name} - {dest.account.name}"
+            )
+
+        # Fallback for more than 2 entries
+        return "> ".join(
+            f"{e.account.institution.name} - {e.account.name}" for e in entries
+        )
+
 
 
     def __str__(self):
@@ -193,6 +230,8 @@ class Entry(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="entries")
+    
+    destination_account = models.ForeignKey(Account, blank=True, null=True, on_delete=models.CASCADE, related_name="entries")
 
     def __str__(self):
         return f"{self.account.name} {self.amount}"
@@ -272,6 +311,33 @@ class PendingTransaction(models.Model):
         )
         return mark_safe(html)
 
+    
+    @property
+    def account_display(self):
+
+        entries = list(self.pendingentries.all())
+
+        if not entries:
+            return ""
+
+        if len(entries) == 1:
+            e = entries[0]
+            return f"{e.account.institution.name} - {e.account.name}"
+
+        source = next((e for e in entries if e.amount < 0), None)
+        dest = next((e for e in entries if e.amount > 0), None)
+
+        if source and dest:
+            return (
+                f"{source.account.institution.name} - {source.account.name} "
+                f"<i class='fa-solid fa-arrow-right mx-1'></i> "
+                f"{dest.account.institution.name} - {dest.account.name}"
+            )
+
+        return " <i class='fa-solid fa-arrow-right mx-1'></i> ".join(
+            f"{e.account.institution.name} - {e.account.name}" for e in entries
+        )
+
 
     def __str__(self):
         return f"{self.note}"
@@ -281,8 +347,8 @@ class PendingTransaction(models.Model):
 
 # PENDING ENTRIES #
 class PendingEntry(models.Model):
-    transaction = models.ForeignKey(PendingTransaction,on_delete=models.CASCADE,related_name='pendingentries')
-    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    transaction = models.ForeignKey(PendingTransaction,on_delete=models.CASCADE, related_name='pendingentries')
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='pendingentries')
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingentries")
 

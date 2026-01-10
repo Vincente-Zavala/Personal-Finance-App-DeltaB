@@ -1,0 +1,159 @@
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof ALL_TRANSACTIONS_API_URL === "undefined") {
+        console.error("ALL_TRANSACTIONS_API_URL is not defined!");
+        return;
+    }
+
+
+    const filterForm = document.getElementById("filterTransactionsForm");
+    filterForm.addEventListener("submit", e => {
+        e.preventDefault();  // stop default form submit
+
+        const formData = new FormData(filterForm);
+
+        fetch(ALL_TRANSACTIONS_API_URL, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRFToken": formData.get("csrfmiddlewaretoken") },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            renderAllTransactions(data.transactions || [])
+
+            // Close the modal after rendering
+            const filterModalEl = document.getElementById("filterModalTransactions"); // your modal id
+            const filterModal = bootstrap.Modal.getInstance(filterModalEl); // get modal instance
+            if (filterModal) {
+                filterModal.hide();
+            }
+        })
+        .catch(err => console.error("Transaction load failed:", err));
+    });
+
+
+    const tbody = document.getElementById("allTransactionsBody");
+    const allloadingRow = document.getElementById("allloadingRow");
+
+    fetch(ALL_TRANSACTIONS_API_URL, { credentials: "same-origin" })
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if (!tbody) {
+                console.error("Table body not found!");
+                return;
+            }
+
+            tbody.innerHTML = ""; // clear loading row
+
+            if (!data.transactions || !data.transactions.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No transactions found.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            data.transactions.forEach(tx => {
+                const tr = document.createElement("tr");
+                tr.classList.add("transaction-row");
+                tr.dataset.type = tx.type_name;
+
+                tr.innerHTML = `
+                    <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}"></td>
+                    <td>${tx.formatted_date}</td>
+                    <td class="category-cell">${tx.type_name}</td>
+                    <td>${tx.category_name}</td>
+                    <td class="text-truncate" style="max-width:400px;" title="${tx.note}">${tx.note}</td>
+                    <td>${tx.account_display}</td>
+                    <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
+                `;
+                fragment.appendChild(tr);
+            });
+
+            tbody.appendChild(fragment);
+        })
+        .catch(err => {
+            console.error("Transaction load failed:", err);
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger py-4">
+                            Failed to load transactions.
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+
+    // -------------------------
+    // RENDER FILTERED TRANSACTIONS
+    // -------------------------
+    function renderAllTransactions(transactions) {
+        const tbody = document.getElementById("allTransactionsBody");
+        if (!tbody) return;
+    
+        tbody.innerHTML = ""; // clear existing rows
+    
+        if (!transactions.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No transactions found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+    
+        const fragment = document.createDocumentFragment();
+    
+        transactions.forEach(tx => {  // ✅ use transactions, not data.transactions
+            const tr = document.createElement("tr");
+            tr.classList.add("transaction-row");
+            tr.dataset.type = tx.type_name;
+    
+            tr.innerHTML = `
+                <td class="editcol" hidden><input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}"></td>
+                <td>${tx.formatted_date}</td>
+                <td class="category-cell">${tx.type_name}</td>
+                <td>${tx.category_name || ""}</td>
+                <td class="text-truncate" style="max-width:400px;" title="${tx.note || ""}">${tx.note || ""}</td>
+                <td>${tx.account_display}</td>
+                <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
+            `;
+            fragment.appendChild(tr);
+        });
+    
+        tbody.appendChild(fragment);
+    }
+
+
+    // -------------------------
+    // Render Applied Filters
+    // -------------------------
+    const filtersContainer = document.getElementById("appliedFiltersContainer");
+    if (filtersContainer) {
+        filtersContainer.innerHTML = ""; // clear old filters
+        if (appliedFilters.length) {
+            appliedFilters.forEach(filter => {
+                const span = document.createElement("span");
+                span.className = "badge bg-primary text-white me-1";
+                span.textContent = filter;
+                filtersContainer.appendChild(span);
+            });
+        } else {
+            const span = document.createElement("span");
+            span.className = "text-muted";
+            span.textContent = "No filters applied";
+            filtersContainer.appendChild(span);
+        }
+    }
+    
+});

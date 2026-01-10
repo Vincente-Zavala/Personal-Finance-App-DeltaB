@@ -1213,3 +1213,47 @@ padding: 1rem;
   font-weight: bold;
   padding-left: 0px;
 }
+
+/* FULL WIDTH ROW */
+.notification-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;   /* <-- center relative to sidebar */
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Circular icons */
+.notify-icon {
+  width: 42px;
+  height: 42px;
+  background-color: var(--dark);
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1.1rem;
+  text-decoration: none;
+  position: relative;
+  transition: 0.2s ease;
+}
+
+/* Hover */
+.notify-icon:hover {
+  background-color: var(--dark);
+  color: #fff;
+}
+
+/* Badge */
+.notify-icon .badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: var(--primesec);
+  font-size: 0.6rem;
+  padding: 3px 6px;
+  border-radius: 50%;
+}

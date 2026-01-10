@@ -1,3 +1,4 @@
+//removing from all transactions
 document.addEventListener("DOMContentLoaded", function() {
     const categoriesRequiringDestination = ["savings", "investment", "debt", "transfer", "retirement"];
     const destinationHeader = document.getElementById("destinationHeader");

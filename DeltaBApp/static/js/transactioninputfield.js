@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
       investment: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       retirement: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       debt: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
-      transfer: ["datefields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
+      transfer: ["datefields", "categoryfields", "initialaccountfields", "finalaccountfields", "amountfields", "notefields"],
       refund: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
       reimbursement: ["datefields", "categoryfields", "initialaccountfields", "amountfields", "notefields"],
   };

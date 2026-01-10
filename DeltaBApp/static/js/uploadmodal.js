@@ -178,8 +178,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateAccountDropdown(accounts) {
         const accountSelect = document.getElementById("accountselection");
         accountSelect.innerHTML = `<option disabled selected>Select Account</option>`;
-        accounts.forEach(acc => accountSelect.innerHTML += `<option value="${acc.id}">${acc.name}</option>`);
+    
+        accounts.forEach(acc => {
+            accountSelect.innerHTML += `
+                <option value="${acc.id}">
+                    ${acc.institution} - ${acc.name}
+                </option>
+            `;
+        });
     }
+    
 
 
     function populateDuplicatesModal(groups) {
