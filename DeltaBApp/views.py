@@ -31,6 +31,7 @@ from django.db.models.functions import TruncDate
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models.functions import Abs
 import pytz
+from django.db.models import Exists, OuterRef
 import logging
 import time
 from django.db import connection
@@ -43,9 +44,12 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import F, Value
 from django.db.models.functions import Concat
+from django.db.models import Sum, Max, Case, When, F, Value, DecimalField
 from .models import Transaction
 from .serializers import TransactionSerializer, PendingTransactionSerializer
 from django.views.decorators.http import require_POST
+from datetime import timedelta
+import traceback
 
 
 User = get_user_model()
@@ -80,6 +84,8 @@ def netcalculations(categorytype_totals, budgetmap_category):
     return netincome, netbudget, savingstotal
 
 
+
+
 # SAVE BUDGET LIMITS #
 def savebudgetlimit(post_data, month, year, user):
 
@@ -101,6 +107,9 @@ def savebudgetlimit(post_data, month, year, user):
             updated_limits[category_id] = str(budget_obj.limit)
 
     return updated_limits
+
+
+
 
 
 def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user):
@@ -579,7 +588,7 @@ def builddatetree(user):
 ## --------------------ADDITIONAL VIEWS-------------------- ##
 
 
-
+## ATOMICITY ##
 # NEW USER #
 def newuser(request):
     if request.method == 'POST':
@@ -591,25 +600,56 @@ def newuser(request):
         timezone = request.POST['timezone']
         staff = False
 
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            first_name = firstname,
-            last_name = lastname,
-            is_staff = staff,
-            timezone = timezone,
-        )
-        user.save()
+        try:
+            # Start an atomic block to ensure all changes are done together
+            with db_transaction.atomic():
+                # Create user
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name=firstname,
+                    last_name=lastname,
+                    is_staff=staff,
+                    timezone=timezone,
+                )
 
-        # CREATE CATEGORIES
-        transfertype = CategoryType.objects.get(name="Transfer")
-        Category.objects.create(name="Transfer", type=transfertype, user=user)
+                # Create categories (related to the new user)
+                transfertype = CategoryType.objects.get(name="Transfer")
+                Category.objects.create(name="Transfer", type=transfertype, user=user)
 
-        debttype = CategoryType.objects.get(name="Debt")
-        Category.objects.create(name="CC Payment", type=debttype, user=user)
+                debttype = CategoryType.objects.get(name="Debt")
+                Category.objects.create(name="CC Payment", type=debttype, user=user)
 
-    return redirect("signin")
+            # After the transaction block, everything is saved and committed
+            return redirect("signin")
+
+        except Exception as e:
+            print(f"Error creating user: {e}")
+
+            return redirect("error_page")
+
+
+
+    #     user = User.objects.create_user(
+    #         username=username,
+    #         email=email,
+    #         password=password,
+    #         first_name = firstname,
+    #         last_name = lastname,
+    #         is_staff = staff,
+    #         timezone = timezone,
+    #     )
+    #     user.save()
+
+    #     # CREATE CATEGORIES
+    #     transfertype = CategoryType.objects.get(name="Transfer")
+    #     Category.objects.create(name="Transfer", type=transfertype, user=user)
+
+    #     debttype = CategoryType.objects.get(name="Debt")
+    #     Category.objects.create(name="CC Payment", type=debttype, user=user)
+
+    # return redirect("signin")
 
 
 
@@ -728,8 +768,6 @@ def checkduplicate(user, basekey, manualkey, importkey):
 
 
 
-
-
 POSITIVE_TYPES = {"income", "refund", "reimbursement"}
 NEGATIVE_TYPES = {"expense"}
 TRANSFER_TYPES = {"transfer", "savings", "investment", "debt", "retirement"}
@@ -773,55 +811,30 @@ def import_split_transfer_amount(amount, source_account, final_account) -> Decim
         return -amount
 
 
+def build_transfer_note(inputtype, source_account, final_account):
+        return f"{source_account.name} transfer to {final_account.name}"
 
 
+
+
+
+# ATOMICITY #
 # CREATE BULK TRANSACTIONS
 def create_bulk_transactions(*, user, inputtype, amount, note, date, category, categorytype, source_account, final_account, basekey, manualkey, importkey):
 
     created_transactions = []
 
-    with db_transaction.atomic():
+    try:
+        with db_transaction.atomic():
 
-        # --------------------
-        # NORMAL TRANSACTIONS
-        # --------------------
-        if inputtype in POSITIVE_TYPES | NEGATIVE_TYPES:
-            signed_amount = signed_amount_for_type(amount, inputtype)
+            # --------------------
+            # NORMAL TRANSACTIONS
+            # --------------------
+            if inputtype in POSITIVE_TYPES | NEGATIVE_TYPES:
+                signed_amount = signed_amount_for_type(amount, inputtype)
 
-            tx = Transaction.objects.create(
-                note=note,
-                date=date,
-                category=category,
-                type=categorytype,
-                user=user,
-                base_key=basekey,
-                manual_key=manualkey,
-                import_key=importkey,
-            )
-
-            Entry.objects.create(
-                transaction=tx,
-                account=source_account,
-                amount=signed_amount,
-                user=user,
-            )
-
-            created_transactions.append(tx)
-
-        # --------------------
-        # TRANSFER-LIKE TYPES
-        # --------------------
-        if inputtype in TRANSFER_TYPES:
-
-            # Manual
-            if importkey == None:
-
-                neg_signed_amount, pos_signed_amount = manual_split_transfer_amount(amount)
-                transfer_id = uuid4()
-
-                # SOURCE (outgoing)
                 tx = Transaction.objects.create(
-                    note=note,
+                    user_note=note,
                     date=date,
                     category=category,
                     type=categorytype,
@@ -829,69 +842,112 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
                     base_key=basekey,
                     manual_key=manualkey,
                     import_key=importkey,
-                    transfer_id=transfer_id,
                 )
 
                 Entry.objects.create(
                     transaction=tx,
                     account=source_account,
-                    destination_account=final_account,
-                    amount=neg_signed_amount,
-                    user=user,
-                )
-
-                created_transactions.append(tx)
-
-
-                # DESTINATION (incoming)
-                tx = Transaction.objects.create(
-                    note=note,
-                    date=date,
-                    category=category,
-                    type=categorytype,
-                    user=user,
-                    base_key=basekey,
-                    manual_key=manualkey,
-                    import_key=importkey,
-                    transfer_id=transfer_id,
-                )
-
-                Entry.objects.create(
-                    transaction=tx,
-                    account=final_account,
-                    destination_account=final_account,
-                    amount=pos_signed_amount,
-                    user=user,
-                )
-
-                created_transactions.append(tx)
-
-            # Import
-            elif manualkey == None:
-                
-                tx = Transaction.objects.create(
-                    note=note,
-                    date=date,
-                    category=category,
-                    type=categorytype,
-                    user=user,
-                    base_key=basekey,
-                    import_key=importkey,
-                )
-
-                signed_amount = import_split_transfer_amount(amount, source_account, final_account)
-
-                new_entry = Entry.objects.create(
-                    transaction=tx,
-                    account=source_account,
-                    destination_account=final_account,
                     amount=signed_amount,
-                    user=user
+                    user=user,
                 )
 
                 created_transactions.append(tx)
 
-                matchtransaction(tx, user, amount, categorytype, source_account)
+            # --------------------
+            # TRANSFER-LIKE TYPES
+            # --------------------
+            if inputtype in TRANSFER_TYPES:
+
+                # Manual
+                if importkey == None:
+
+                    neg_signed_amount, pos_signed_amount = manual_split_transfer_amount(amount)
+                    transfer_note = build_transfer_note(inputtype, source_account, final_account)
+
+                    # SOURCE (outgoing)
+                    tx = Transaction.objects.create(
+                        user_note=transfer_note,
+                        date=date,
+                        category=category,
+                        type=categorytype,
+                        user=user,
+                        base_key=basekey,
+                        manual_key=manualkey,
+                        import_key=importkey,
+                    )
+
+                    Entry.objects.create(
+                        transaction=tx,
+                        bank_note=note,
+                        account=source_account,
+                        destination_account=final_account,
+                        amount=neg_signed_amount,
+                        user=user,
+                    )
+                    
+                    Entry.objects.create(
+                        transaction=tx,
+                        bank_note=note,
+                        account=final_account,
+                        destination_account=final_account,
+                        amount=pos_signed_amount,
+                        user=user,
+                    )
+
+
+                    created_transactions.append(tx)
+
+
+
+                # Import
+                elif manualkey == None:
+
+                    signed_amount = import_split_transfer_amount(amount, source_account, final_account)
+                    transfer_note = build_transfer_note(inputtype, source_account, final_account)
+                    matched, match_entry = matchtransaction(date, user, amount, categorytype, final_account)
+
+                    if matched == False:
+                    
+                        tx = Transaction.objects.create(
+                            user_note=transfer_note,
+                            date=date,
+                            category=category,
+                            type=categorytype,
+                            user=user,
+                            base_key=basekey,
+                            import_key=importkey,
+                        )
+
+                        time.sleep(15)
+
+                        new_entry = Entry.objects.create(
+                            transaction=tx,
+                            bank_note=note,
+                            account=source_account,
+                            destination_account=final_account,
+                            amount=signed_amount,
+                            paired=False,
+                            user=user
+                        )
+
+                        created_transactions.append(tx)
+
+                    else:
+
+                        new_entry = Entry.objects.create(
+                            transaction=match_entry.transaction,
+                            bank_note=note,
+                            account=source_account,
+                            destination_account=final_account,
+                            amount=signed_amount,
+                            paired=True,
+                            user=user,
+                        )
+
+
+    except Exception as e:
+        print("Failure:", e)
+        traceback.print_exc()
 
 
     return created_transactions
@@ -899,39 +955,32 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
 
 
 
-
 # MATCH TRANSACTIONS
-def matchtransaction(tx, user, amount, categorytype, source_account):
+def matchtransaction(date, user, amount, categorytype, final_account):
 
     norm_amount = normalize_amount(amount)
+    start_date = date - timedelta(days=2)
+    end_date = date + timedelta(days=2)
 
-    match_tx = Transaction.objects.filter(
+    match_entry = Entry.objects.filter( 
         user=user,
         paired=False,
-        type__name__in=[categorytype.name],
-        entries__destination_account=source_account,
-        entries__amount__in=[norm_amount, -norm_amount],
+        transaction__type__name__in=[categorytype.name],
+        transaction__date__range=(start_date, end_date),
+        destination_account=final_account,
+        amount__in=[norm_amount, -norm_amount],
     ).first()
 
-    if not match_tx:
-        transfer_id = uuid4()
-        tx.transfer_id = transfer_id
-        tx.paired = False
-        tx.save(update_fields=["paired", "transfer_id"])
+    if not match_entry:
+        # new_entry.paired = False
+        # new_entry.save(update_fields="paired")
 
-        return [tx]
+        return False, None
 
-    # Pair both entries
-    transfer_id = match_tx.transfer_id
-    tx.transfer_id = transfer_id
-    tx.paired = True
-    match_tx.paired = True
+    match_entry.paired = True
+    match_entry.save(update_fields=["paired"])
 
-    tx.save(update_fields=["paired", "transfer_id"])
-    match_tx.save(update_fields=["paired", "transfer_id"])
-
-    return [tx, match_tx]
-
+    return True, match_entry
 
 
 
@@ -999,7 +1048,7 @@ def duplicateaddtransaction(request):
                 "existing": [
                     {
                         "date": d.date.strftime("%b. %d, %Y"),
-                        "note": d.note,
+                        "note": d.user_note,
                         "account": d.account,
                         "amount": str(d.amount),
                     }
@@ -1039,7 +1088,7 @@ def addtransaction(request):
     if request.method == "POST":
         inputtype = request.POST.get("inputtransaction")
         amount = request.POST.get("inputamount")
-        note = request.POST.get("inputnote")
+        user_note = request.POST.get("inputnote")
         date = request.POST.get("inputdate")
 
 
@@ -1071,26 +1120,11 @@ def addtransaction(request):
         importkey = None        
 
 
-        # newtx = createtransaction(
-        #     user,
-        #     inputtype.lower(),
-        #     amount,
-        #     note,
-        #     date,
-        #     category,
-        #     categorytype,
-        #     source_account,
-        #     final_account,
-        #     basekey,
-        #     manualkey,
-        #     importkey,
-        # )
-
         created = create_bulk_transactions(
             user=user,
             inputtype=inputtype.lower(),
             amount=amount,
-            note=note,
+            note=user_note,
             date=date,
             category=category,
             categorytype=categorytype,
@@ -1108,21 +1142,11 @@ def addtransaction(request):
                 "date": tx.date.strftime("%b. %-d, %Y"),
                 "type": str(tx.type),
                 "category": str(tx.category),
-                "note": tx.note,
+                "note": tx.user_note,
                 "account": tx.account_display,
                 "amount": str(tx.amount),
             })
 
-        # formatted_date = newtx.date.strftime("%b. %-d, %Y")
-        # add_transactions.append({
-        #     "id": newtx.id,
-        #     "date": str(formatted_date),
-        #     "type": str(newtx.type),
-        #     "category": str(newtx.category),
-        #     "note": newtx.note,
-        #     "account": newtx.account,
-        #     "amount": str(newtx.amount),
-        # })
 
     return JsonResponse({
         "status": "ok",
@@ -1132,14 +1156,15 @@ def addtransaction(request):
 
 
 
-
 # ADD TRANSACTION #
 def addpendingtransaction(request):
     user = request.user
 
-    print("Debug within addpendingtransaction")
+    print("Debug in addpending")
+
 
     if request.method == "POST":
+        print("debug in POST")
         deleted_ids = []
         new_transactions = []
 
@@ -1168,7 +1193,6 @@ def addpendingtransaction(request):
 
             # Fetch related POST data
             inputtype = request.POST.get(f"transactiontype_{transaction_id}")
-            print("Debug inputtype", inputtype)
             final_account_id = request.POST.get(f"accountchoice_{transaction_id}")
 
             # Fetch the PendingTransaction object
@@ -1178,7 +1202,7 @@ def addpendingtransaction(request):
 
             # Convert amount to Decimal
             amount = Decimal(t.amount) if t.amount else None
-            note = t.note
+            bank_note = t.note
             date = t.date
             basekey = t.base_key
             importkey = t.import_key
@@ -1209,37 +1233,47 @@ def addpendingtransaction(request):
             else:
                 source_account = pendingentries.first().account if pendingentries.exists() else None
 
-            created = create_bulk_transactions(
-                user=user,
-                inputtype=inputtype.lower(),
-                amount=amount,
-                note=note,
-                date=date,
-                category=category,
-                categorytype=categorytype,
-                source_account=source_account,
-                final_account=final_account,
-                basekey=basekey,
-                manualkey=manualkey,
-                importkey=importkey,
-            )
+            print("Debug about to create")
 
-            for tx in created:
-                print("Debug tx", tx)
-                new_transactions.append({
-                    "id": tx.id,
-                    "date": tx.date.strftime("%b. %-d, %Y"),
-                    "type": str(tx.type),
-                    "category": str(tx.category),
-                    "note": tx.note,
-                    "account": tx.account_display,
-                    "amount": str(tx.amount),
-                })
+            try:
+                with db_transaction.atomic():
+
+                    created = create_bulk_transactions(
+                        user=user,
+                        inputtype=inputtype.lower(),
+                        amount=amount,
+                        note=bank_note,
+                        date=date,
+                        category=category,
+                        categorytype=categorytype,
+                        source_account=source_account,
+                        final_account=final_account,
+                        basekey=basekey,
+                        manualkey=manualkey,
+                        importkey=importkey,
+                    )
+
+                    for tx in created:
+                        print("debug tx", tx)
+                        new_transactions.append({
+                            "id": tx.id,
+                            "date": tx.date.strftime("%b. %-d, %Y"),
+                            "type": str(tx.type),
+                            "category": str(tx.category),
+                            "note": tx.user_note,
+                            "account": tx.account_display,
+                            "amount": str(tx.amount),
+                        })
 
 
-            # Delete old pending transaction
-            deleted_ids.append(t.id)
-            t.delete()
+                    # Delete old pending transaction
+                    deleted_ids.append(t.id)
+                    t.delete()
+
+
+            except Exception as e:
+                print("Transaction creation failed, rollback:", e)
+                traceback.print_exc()
 
     return JsonResponse({
         "status": "ok",
@@ -1252,7 +1286,7 @@ def addpendingtransaction(request):
 
 
 
-
+# ATOMICITY #
 # DELETE TRANSACTIONS #
 def deletetransactions(request):
 
@@ -1263,13 +1297,21 @@ def deletetransactions(request):
 
         deleted_ids = []
 
-        for tx in Transaction.objects.filter(id__in=selectedtransactionids, user=user):
-            deleted_ids.append(str(tx.id))
-            tx.delete()
+        try:
+            with db_transaction.atomic():
 
-        for ptx in PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user):
-            deleted_ids.append(str(ptx.id))
-            ptx.delete()
+                for tx in Transaction.objects.filter(id__in=selectedtransactionids, user=user):
+                    deleted_ids.append(str(tx.id))
+                    tx.delete()
+
+                for ptx in PendingTransaction.objects.filter(id__in=selectedtransactionids, user=user):
+                    deleted_ids.append(str(ptx.id))
+                    ptx.delete()
+
+        
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({"status": "error", "message": "An error occurred while deleting transactions."})
 
     return JsonResponse({
         "status": "ok",
@@ -1279,7 +1321,9 @@ def deletetransactions(request):
 
 
 
+# UPDATE ENTRY #
 def update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_destination, source_account):
+    
 
     if inputtype in POSITIVE_TYPES | NEGATIVE_TYPES:
         
@@ -1294,8 +1338,6 @@ def update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_desti
         adj_amount = import_split_transfer_amount(new_amount, source_account, final_account)
 
         matchtransaction(tx, user, new_amount, categorytype, source_account)
-    
-    print("Debug adj_amount", adj_amount)
 
 
     entry.amount = adj_amount
@@ -1305,8 +1347,8 @@ def update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_desti
 
 
 
-
-
+# ATOMICITY #
+# UPDATE TRANSACTIONS #
 @require_POST
 def updatetransactions(request):
 
@@ -1339,78 +1381,87 @@ def updatetransactions(request):
     # -------------------------
     # TRANSACTION FIELDS
     # -------------------------
-    if "date" in request.POST:
-        tx.date = request.POST["date"]
-        updated_tx_fields.append("date")
-
-    if "note" in request.POST:
-        tx.note = request.POST["note"]
-        updated_tx_fields.append("note")
-
-    if "type" in request.POST:
-        new_type_slug = request.POST["type"]
-
-        # if new_destination:
-        #     updated_destination = True
 
 
-        categorytype = CategoryType.objects.get(name=new_type_slug)
-        tx.type = categorytype
+    try:
+        with db_transaction.atomic():
 
-        update_tx_entry = True
+            if "date" in request.POST:
+                tx.date = request.POST["date"]
+                updated_tx_fields.append("date")
 
-        updated_tx_fields.append("type")
+            if "note" in request.POST:
+                tx.note = request.POST["note"]
+                updated_tx_fields.append("note")
 
-        if "destination_account" in request.POST:
-            new_destination = request.POST.get("destination_account")
+            if "type" in request.POST:
+                new_type_slug = request.POST["type"]
 
-        else:
-            entry = tx.entries.first()
-            new_destination = entry.destination_account
-
-    
-    else:
-        categorytype = tx.type
-        entry = tx.entries.first()
-        new_destination = entry.destination_account
-
-    print("Debug new_type", categorytype, type(categorytype))
-    inputtype = str(categorytype).lower()
-
-    if "category" in request.POST:
-        print("Debug within category")
-        tx.category_id = request.POST["category"]
-        updated_tx_fields.append("category")
+                # if new_destination:
+                #     updated_destination = True
 
 
-    if "amount" in request.POST:
-        new_amount = Decimal(request.POST["amount"])
-        update_tx_entry = True
-        updated_amount = True
-    
-    else:
-        entry = tx.entries.first()
-        new_amount = entry.amount
+                categorytype = CategoryType.objects.get(name=new_type_slug)
+                tx.type = categorytype
+
+                update_tx_entry = True
+
+                updated_tx_fields.append("type")
+
+                if "destination_account" in request.POST:
+                    new_destination = request.POST.get("destination_account")
+
+                else:
+                    entry = tx.entries.first()
+                    new_destination = entry.destination_account
+
+            
+            else:
+                categorytype = tx.type
+                entry = tx.entries.first()
+                new_destination = entry.destination_account
+
+            print("Debug new_type", categorytype, type(categorytype))
+            inputtype = str(categorytype).lower()
+
+            if "category" in request.POST:
+                print("Debug within category")
+                tx.category_id = request.POST["category"]
+                updated_tx_fields.append("category")
 
 
-    # -------------------------
-    # SAVE TRANSACTION
-    # -------------------------
-    if updated_tx_fields:
-        tx.save(update_fields=updated_tx_fields)
-
-    if update_tx_entry == True:
-        entry = tx.entries.first()
-        source_account = entry.account
-
-        update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_destination, source_account)
+            if "amount" in request.POST:
+                new_amount = Decimal(request.POST["amount"])
+                update_tx_entry = True
+                updated_amount = True
+            
+            else:
+                entry = tx.entries.first()
+                new_amount = entry.amount
 
 
-    return JsonResponse({
-        "status": "ok",
-        "transaction_id": tx.id,
-        "updated_transaction_fields": updated_tx_fields,
-    })
+            # -------------------------
+            # SAVE TRANSACTION
+            # -------------------------
+            if updated_tx_fields:
+                tx.save(update_fields=updated_tx_fields)
+
+            if update_tx_entry == True:
+                entry = tx.entries.first()
+                source_account = entry.account
+
+                update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_destination, source_account)
+
+
+            return JsonResponse({
+                "status": "ok",
+                "transaction_id": tx.id,
+                "updated_transaction_fields": updated_tx_fields,
+            })
+
+    except Exception as e:
+        print(f"Error updating transaction: {e}")
+        return JsonResponse({"error": "Failed to update transaction. Please try again."}, status=500)
 
 
 
@@ -1606,7 +1657,7 @@ def addgoal(request):
 
 
 
-
+# ATOMICITY #
 # LINK GOAL TRANSACTIONS #
 @csrf_exempt
 def linkgoaltransaction(request):
@@ -1626,38 +1677,38 @@ def linkgoaltransaction(request):
         goal = Goal.objects.get(id=goalid)
         transaction = Transaction.objects.get(id=transactionid)
 
-        # Link or unlink transaction
-        if checked:
-            goal.transactions.add(transaction)
-        else:
-            goal.transactions.remove(transaction)
+        with db_transaction.atomic():
 
-        # Recalculate total saved for this goal
-        total_saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+            # Link or unlink transaction
+            if checked:
+                goal.transactions.add(transaction)
+            else:
+                goal.transactions.remove(transaction)
 
-        goal.saved = total_saved
-        goal.save()
+            # Recalculate total saved for this goal
+            total_saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
 
-        # Build a map of transactions linked to other goals per goal
-        transaction_goal_map = {}
-        all_goals = Goal.objects.filter(user=goal.user).prefetch_related("transactions")
-        for g in all_goals:
-            transaction_goal_map[g.id] = {}
-            for t in Transaction.objects.filter(user=goal.user):
-                # True if transaction is linked to this goal but NOT the current goal being updated
-                transaction_goal_map[g.id][t.id] = t.goals.exclude(id=g.id).exists()
+            goal.saved = total_saved
+            goal.save()
 
-        return JsonResponse({
-            "status": "success",
-            "saved": total_saved,
-            "goal_id": goal.id,
-            "transaction_goal_map": transaction_goal_map
-        })
+            # Build a map of transactions linked to other goals per goal
+            transaction_goal_map = {}
+            all_goals = Goal.objects.filter(user=goal.user).prefetch_related("transactions")
+            for g in all_goals:
+                transaction_goal_map[g.id] = {}
+                for t in Transaction.objects.filter(user=goal.user):
+                    # True if transaction is linked to this goal but NOT the current goal being updated
+                    transaction_goal_map[g.id][t.id] = t.goals.exclude(id=g.id).exists()
+
+            return JsonResponse({
+                "status": "success",
+                "saved": total_saved,
+                "goal_id": goal.id,
+                "transaction_goal_map": transaction_goal_map
+            })
 
     except (Goal.DoesNotExist, Transaction.DoesNotExist):
         return JsonResponse({"status": "error", "message": "Invalid ID"}, status=400)
-
-
 
 
 
@@ -1816,150 +1867,6 @@ def updateaccounts(request):
 
 
 
-
-# # TRANSACTIONS FILTER #
-# def filtertransactions(qs, user, request):
-
-#     appliedfilters = []
-
-#     # Date range
-#     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
-
-#     if mode == "monthyear":
-#         if selected_month and selected_year:
-#             qs = qs.filter(date__year=selected_year, date__month=selected_month, user=user)
-
-#     elif mode == "custom":
-#         selected_fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
-#         selected_todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
-#         qs = qs.filter(date__gte=selected_fromdate, date__lte=selected_todate, user=user)
-
-
-
-#     # Amount - allow single number or range 'min-max'
-#     amountoption = request.POST.get("amountoption")
-
-#     if amountoption == "exact":
-#         exactamount = request.POST.get('filterexactamount')
-
-#         if exactamount:
-
-#             exactamount = Decimal(exactamount)
-
-#             qs = qs.filter(entries__amount__in=[exactamount, -exactamount], user=user).distinct()
-
-#             appliedfilters.append(f"Amount = ${exactamount}")
-
-
-#     elif amountoption == "minmax":
-#         minamount = request.POST.get('filterminamount')
-#         maxamount = request.POST.get('filtermaxamount')
-
-#         if minamount and maxamount:
-#             minamount = Decimal(minamount)
-#             maxamount = Decimal(maxamount)
-
-#             # MIN
-#             if minamount is not None:
-#                 qs = qs.filter(entries__amount__gte=minamount).distinct()
-#                 appliedfilters.append(f"Min Amount: ${minamount}")
-
-#             # MAX
-#             if maxamount is not None:
-#                 qs = qs.filter(entries__amount__lte=maxamount).distinct()
-#                 appliedfilters.append(f"Max Amount: ${maxamount}")
-
-
-
-
-#     # Note text
-#     note = request.POST.get('filternote')
-#     if note:
-#         qs = qs.filter(note__icontains=note, user=user)
-#         appliedfilters.append(f"Note: '{note}'")
-
-
-#     selectedcategories = []
-#     selectedaccounts = []
-
-#     if request.method == "POST":
-#         selectedcategorytypes = request.POST.getlist("filtercategorytypechoice")
-#         selectedaccounttypes = request.POST.getlist("filteraccounttypechoice")
-#         selectedcategories = request.POST.getlist("filtercategorychoice")
-#         selectedaccounts = request.POST.getlist("filteraccountchoice")
-
-
-#         refundtype = CategoryType.objects.get(name="Refund")
-#         reimbursementtype = CategoryType.objects.get(name="Reimbursement")
-
-#         if str(refundtype.id) in selectedcategorytypes:
-#             qs = qs.filter(categorytype__id__in=selectedcategorytypes, user=user)
-
-#         elif str(reimbursementtype.id) in selectedcategorytypes:
-#             qs = qs.filter(categorytype__id__in=selectedcategorytypes, user=user)
-
-#         else:
-
-#             # Apply category and type filters
-#             if selectedcategories:
-#                 qs = qs.filter(category__id__in=selectedcategories, user=user)
-#                 names = list(Category.objects.filter(id__in=selectedcategories, user=user).values_list("name", flat=True))
-#                 appliedfilters.append("Category: " + ", ".join(names))
-
-#             if selectedcategorytypes:
-#                 qs = qs.filter(category__type__id__in=selectedcategorytypes, user=user)
-#                 names = list(CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True))
-#                 appliedfilters.append("Type: " + ", ".join(names))
-
-#             # --- Exclude refunds from Expense filter ---
-#             selected_type_names = list(
-#                 CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True)
-#             )
-
-#             if "Expense" in selected_type_names and "Refund" not in selected_type_names:
-#                 qs = qs.exclude(type__name__iexact="Refund")
-
-#             if "Expense" in selected_type_names and "Reimbursement" not in selected_type_names:
-#                 qs = qs.exclude(type__name__iexact="Reimbursement")
-
-#             if selectedaccounts:
-#                 qs = qs.filter(entries__account__id__in=selectedaccounts, user=user).distinct()
-
-#                 names = list(Account.objects.filter(id__in=selectedaccounts, user=user).values_list("name", flat=True))
-#                 appliedfilters.append("Account: " + ", ".join(names))
-
-#     # Order and render same context as alltransactions
-#     qs = qs.order_by('-date')
-
-#     # categories = categorylist(user)
-#     # accounts = accountlist(user)
-#     # categorytypes = categorytypelist(user)
-#     # accounttypes = accounttypelist(user)
-#     # date_tree = builddatetree(user)
-#     # month_names = {i: calendar.month_name[i] for i in range(1, 13)}
-
-#     # context = {
-#     #     "categories": categories,
-#     #     "accounts": accounts,
-#     #     "transactions": transactions,
-#     #     "categorytypes": categorytypes,
-#     #     "accounttypes": accounttypes,
-#     #     "appliedfilters": appliedfilters,
-#     #     #"source_accounts": accounts,
-#     #     #"final_accounts": accounts,
-#     #     "selectedcategorytypes": selectedcategorytypes,
-#     #     "selectedcategories": selectedcategories,
-#     #     "selectedaccounts": selectedaccounts,
-#     #     "date_tree": {year: dict(months) for year, months in date_tree.items()},
-#     #     "month_names": month_names,
-#     # }
-
-#     # return render(request, 'alltransactions.html', context)
-#     return qs, appliedfilters
-
-
-
-
 # TRANSACTIONS FILTER #
 def filtertransactions(qs, user, request):
 
@@ -2062,9 +1969,7 @@ def filtertransactions(qs, user, request):
 
 
 
-
-
-
+# ATOMICITY #
 # FILE UPLOAD
 from django.http import JsonResponse
 def uploadfile(request):
@@ -2076,45 +1981,48 @@ def uploadfile(request):
         filename = uploadfile.name.lower()
 
         try:
-            if filename.endswith(".csv"):
-                file = pd.read_csv(uploadfile)
-            elif filename.endswith((".xlsx", ".xls")):
-                try:
-                    file = pd.read_excel(uploadfile)
-                except Exception as e:
-                    logger.error(f"Excel file error: {str(e)}")
-                    return JsonResponse({"success": False, "error": f"Excel file error: {str(e)}"})
 
-            else:
-                logger.error("Unsupported file type")
-                return JsonResponse({"success": False, "error": "Unsupported file type."})
+            with db_transaction.atomic():
 
-            # Save to session
-            request.session["upload_sample"] = json.loads(file.iloc[[0]].to_json(orient="records"))[0]
-            request.session["upload_data"] = file.to_json(orient="records")
-            request.session["upload_columns"] = file.columns.tolist()
+                if filename.endswith(".csv"):
+                    file = pd.read_csv(uploadfile)
+                elif filename.endswith((".xlsx", ".xls")):
+                    try:
+                        file = pd.read_excel(uploadfile)
+                    except Exception as e:
+                        logger.error(f"Excel file error: {str(e)}")
+                        return JsonResponse({"success": False, "error": f"Excel file error: {str(e)}"})
 
-            # Load accounts
-            accounts = accountlist(user)
-            institutions = institutionlist(user)
+                else:
+                    logger.error("Unsupported file type")
+                    return JsonResponse({"success": False, "error": "Unsupported file type."})
 
-            # Create Statement Upload)
-            upload = StatementUpload.objects.create(user=user, filename=filename, file=uploadfile)
+                # Save to session
+                request.session["upload_sample"] = json.loads(file.iloc[[0]].to_json(orient="records"))[0]
+                request.session["upload_data"] = file.to_json(orient="records")
+                request.session["upload_columns"] = file.columns.tolist()
 
-            request.session["upload_id"] = upload.id
+                # Load accounts
+                accounts = accountlist(user)
+                institutions = institutionlist(user)
 
-            return JsonResponse({
-                "success": True,
-                "columns": file.columns.tolist(),
-                "accounts": [
-                    {
-                        "id": a.id,
-                        "name": a.name,
-                        "institution": a.institution.name if a.institution else "Unknown Institution"
-                    }
-                    for a in accounts
-                ],
-            })
+                # Create Statement Upload)
+                upload = StatementUpload.objects.create(user=user, filename=filename, file=uploadfile)
+
+                request.session["upload_id"] = upload.id
+
+                return JsonResponse({
+                    "success": True,
+                    "columns": file.columns.tolist(),
+                    "accounts": [
+                        {
+                            "id": a.id,
+                            "name": a.name,
+                            "institution": a.institution.name if a.institution else "Unknown Institution"
+                        }
+                        for a in accounts
+                    ],
+                })
 
         except Exception as e:
             print("Error updating file", e)
@@ -2148,7 +2056,7 @@ def mapcolumnsview(request):
 
 
 
-
+# ATOMICITY #
 # MAP COLUMNS #
 def processupload(request):
     if request.method != "POST":
@@ -2175,131 +2083,120 @@ def processupload(request):
     upload_id = request.session.get("upload_id")
     upload = StatementUpload.objects.get(id=upload_id, user=user)
 
-    upload.account = account
-    upload.institution = account.institution
-    upload.save()
+    with db_transaction.atomic():
 
-    # Save the selected columns in session (even if polarity missing)
-    request.session["selected_columns"] = {
-        "date": date_col,
-        "note": note_col,
-        "amount": amount_col,
-        "account": account_id,
-    }
-
-    # From other view
-    selected = request.session.get("selected_columns")
-    upload_json = request.session.get("upload_data")
-
-    if not selected or not upload_json:
-        return JsonResponse({"error": "No data"}, status=400)
-
-    df = pd.read_json(upload_json, orient="records")
-
-    account = Account.objects.get(id=selected["account"], user=user)
-    account_id = account.id
-
-    new_tx = []
-    groups = []
-
-    for row in df.itertuples(index=False):
-        row_dict = row._asdict()
-
-        # Parse date field
-        raw_date = row_dict[selected["date"]]
         try:
-            # Automatically parse various date formats
-            parsed_date = pd.to_datetime(raw_date)
-            formatted_date = parsed_date.strftime("%b. %d, %Y")
-            date_key = parsed_date.strftime("%Y-%m-%d")
-        except:
-            formatted_date = str(raw_date)
 
-        # Format amount
-        amount_raw = row_dict[selected["amount"]]
-        try:
-            amount_key = Decimal(str(amount_raw).replace(",", "").strip())
-        except:
-            amount_key = Decimal("0")
+            upload.account = account
+            upload.institution = account.institution
+            upload.save()
 
-        amount_display = f"{amount_key:,.2f}"
+            # Save the selected columns in session (even if polarity missing)
+            request.session["selected_columns"] = {
+                "date": date_col,
+                "note": note_col,
+                "amount": amount_col,
+                "account": account_id,
+            }
 
-        new_tx.append({
-            "date": formatted_date,
-            "note": row_dict[selected["note"]],
-            "account": account.name,
-            "amount": amount_display
-        })
+            # From other view
+            selected = request.session.get("selected_columns")
+            upload_json = request.session.get("upload_data")
 
-        request.session["uploadrows"] = new_tx
-        request.session.modified = True
+            if not selected or not upload_json:
+                return JsonResponse({"error": "No data"}, status=400)
 
-        note_lower = row_dict[selected["note"]].lower()
+            df = pd.read_json(upload_json, orient="records")
 
-        upload_id = request.session.get("upload_id")
+            account = Account.objects.get(id=selected["account"], user=user)
+            account_id = account.id
+
+            new_tx = []
+            groups = []
+
+            for row in df.itertuples(index=False):
+                row_dict = row._asdict()
+
+                # Parse date field
+                raw_date = row_dict[selected["date"]]
+                try:
+                    # Automatically parse various date formats
+                    parsed_date = pd.to_datetime(raw_date)
+                    formatted_date = parsed_date.strftime("%b. %d, %Y")
+                    date_key = parsed_date.strftime("%Y-%m-%d")
+                except:
+                    formatted_date = str(raw_date)
+
+                # Format amount
+                amount_raw = row_dict[selected["amount"]]
+                try:
+                    amount_key = Decimal(str(amount_raw).replace(",", "").strip())
+                except:
+                    amount_key = Decimal("0")
+
+                amount_display = f"{amount_key:,.2f}"
+
+                new_tx.append({
+                    "date": formatted_date,
+                    "note": row_dict[selected["note"]],
+                    "account": account.name,
+                    "amount": amount_display
+                })
+
+                request.session["uploadrows"] = new_tx
+                request.session.modified = True
+
+                note_lower = row_dict[selected["note"]].lower()
+
+                upload_id = request.session.get("upload_id")
 
 
-        basekey = generatebasekey(parsed_date, amount_key, account_id)
-        importkey = generateimportkey(parsed_date, amount_key, account_id, note_lower, upload_id)
-        manualkey = None
+                basekey = generatebasekey(parsed_date, amount_key, account_id)
+                importkey = generateimportkey(parsed_date, amount_key, account_id, note_lower, upload_id)
+                manualkey = None
 
-        new_transactions = {
-            "date": formatted_date,
-            "note": row_dict[selected["note"]],
-            "account": account.name,
-            "amount": amount_display,
-        }
+                new_transactions = {
+                    "date": formatted_date,
+                    "note": row_dict[selected["note"]],
+                    "account": account.name,
+                    "amount": amount_display,
+                }
 
-        duplicates = checkduplicate(user, basekey, manualkey, importkey)
+                duplicates = checkduplicate(user, basekey, manualkey, importkey)
 
-        if duplicates["existing"]:
+                if duplicates["existing"]:
 
-            groups.append({
-                "new": new_transactions,
-                "existing": [
-                    {
-                        "date": d.date.strftime("%b. %d, %Y"),
-                        "note": d.note,
-                        "account": d.account,
-                        "amount": str(d.amount),
-                    }
-                    for d in duplicates["existing"]
-                ]
-            })
+                    groups.append({
+                        "new": new_transactions,
+                        "existing": [
+                            {
+                                "date": d.date.strftime("%b. %d, %Y"),
+                                "note": d.note,
+                                "account": d.account,
+                                "amount": str(d.amount),
+                            }
+                            for d in duplicates["existing"]
+                        ]
+                    })
 
 
 
-    duplicates_exist = any(len(g["existing"]) > 0 for g in groups)
+            duplicates_exist = any(len(g["existing"]) > 0 for g in groups)
 
-    if duplicates_exist:
-        return JsonResponse({
-            "status": "duplicates",
-            "groups": groups
-        })
+            if duplicates_exist:
+                return JsonResponse({
+                    "status": "duplicates",
+                    "groups": groups
+                })
+
+        except Exception as e:
+            print("Error processing upload:", e)
+            return JsonResponse({"error": f"Failed to process upload: {str(e)}"}, status=400)
 
 
     return JsonResponse({
         "status": "preview_ready"
         })
-
-
-
-
-
-# SET POLARITY
-# def setpolarity(request):
-#     if request.method != "POST":
-#         return JsonResponse({"error": "Invalid request"}, status=400)
-
-#     user = request.user
-#     acct_id = request.POST.get("account_id")
-#     polarity = request.POST.get("polarity")
-
-#     account = Account.objects.get(id=acct_id, user=user)
-#     account.polarity = polarity
-#     account.save()
-
-#     return JsonResponse({"status": "ok"})
 
 
 
@@ -2312,8 +2209,6 @@ def getpreview(request):
     user = request.user
 
     transactions = request.session.get("uploadrows")
-
-
 
 
     return JsonResponse({"transactions": transactions})
@@ -2329,7 +2224,7 @@ def addduplicates(request):
 
 
 
-
+# ATOMICITY #
 # SUBMIT UPLOAD
 def submitupload(request):
 
@@ -2351,7 +2246,7 @@ def submitupload(request):
     account = Account.objects.get(id=selected["account"])
 
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
             for row in uploadrows:
                 # ---- DATE ----
                 try:
@@ -2720,12 +2615,43 @@ def alltransactions_api(request):
 
     user = request.user
 
+    # qs = (
+    #     Transaction.objects
+    #     .filter(user=user)
+    #     .select_related("category", "type")
+    #     .annotate(type_name=F("type__name"), category_name=F("category__name"), amount_value=Sum("entries__amount"))
+    #     .prefetch_related("entries__account__institution")
+    #     .order_by("-date")
+    # )
+
     qs = (
         Transaction.objects
         .filter(user=user)
         .select_related("category", "type")
-        .annotate(type_name=F("type__name"), category_name=F("category__name"), amount_value=Sum("entries__amount"))
+        .annotate(type_name=F("type__name"), category_name=F("category__name"))
         .prefetch_related("entries__account__institution")
+        .annotate(
+            positive_amount=Max(
+                Case(
+                    When(entries__amount__gt=0, then=F("entries__amount")),
+                    default=Value(None),
+                    output_field=DecimalField(max_digits=20, decimal_places=2),
+                )
+            ),
+            amount_value=Case(
+                When(positive_amount__isnull=False, then=F("positive_amount")),
+                default=Sum("entries__amount"),
+                output_field=DecimalField(max_digits=20, decimal_places=2),
+            ),
+        )
+        .annotate(
+            has_unpaired_entry=Exists(
+                Entry.objects.filter(
+                    transaction=OuterRef("pk"),
+                    paired=False
+                )
+            )
+        )
         .order_by("-date")
     )
 
@@ -2755,7 +2681,17 @@ def alltransactions_api(request):
         for tx in ordered_tx:
             # Sum entries in Python, no DB hits per transaction
             entry_sum = sum(e.amount for e in getattr(tx, 'account_entries', []))
-            running_balance += entry_sum
+
+            if account.type.name == "Credit Card":
+            
+                # if (tx.category and tx.category.name == "CC Payment"):
+                running_balance -= entry_sum
+                # else:
+                #     running_balance -= entry_sum
+            
+            else: 
+                running_balance += entry_sum
+
             tx.running_balance = running_balance
 
         # Reverse for newest first

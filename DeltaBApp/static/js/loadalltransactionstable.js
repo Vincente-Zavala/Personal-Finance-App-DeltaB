@@ -98,9 +98,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 tr.classList.add("transaction-row");
                 tr.dataset.editing = "false";
 
+                const linkable = isLinkableType(tx.type_name);
+
 
                 // Basic columns
                 tr.innerHTML = `
+
                 <td class="editcol" hidden>
                     <div class="d-flex align-items-center gap-2">
                         <input 
@@ -131,12 +134,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                         </button>
                     </div>
                 </td>
+
+                <td>
+                    ${
+                        linkable
+                        ? `
+                        <div class="d-flex align-items-center gap-2">
+                            <button
+                                class="btn btn-sm p-0 tx-link"
+                                data-tx-id="${tx.id}"
+                                type="button"
+                                title="View linked transaction">
+                                <i class="fa fa-link text-primary"></i>
+                            </button>
+                
+                            <button
+                                class="btn btn-sm p-0 tx-unlink"
+                                data-tx-id="${tx.id}"
+                                type="button"
+                                title="Unlink transaction">
+                                <i class="fa fa-unlink text-primary"></i>
+                            </button>
+                        </div>
+                        `
+                        : ""
+                    }
+                </td>
                 `;
             
                 // DATE
-                // const dateTd = document.createElement("td");
-                // dateTd.textContent = tx.formatted_date;
-
 
                 const dateTd = document.createElement("td");
             
@@ -210,11 +236,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             
                 const noteDisplay = document.createElement("span");
                 noteDisplay.className = "tx-display";
-                noteDisplay.textContent = tx.note || "";
+                noteDisplay.textContent = tx.user_note || "";
             
                 const noteInput = document.createElement("input");
                 noteInput.type = "text";
-                noteInput.value = tx.note || "";
+                noteInput.value = tx.user_note || "";
                 noteInput.className = "form-control form-control-sm all-tx-input d-none";
                 noteInput.name = "note";
             
@@ -753,6 +779,13 @@ document.addEventListener("click", (e) => {
     
         return select;
     }
+
+
+    function isLinkableType(typeName) {
+        return ["Transfer", "Savings", "Investment", "Debt", "Retirement"]
+            .includes(typeName);
+    }
+    
 
     
 });

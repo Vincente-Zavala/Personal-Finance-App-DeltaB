@@ -65,11 +65,11 @@ class Institution(models.Model):
 # ACCOUNT #
 class Account(models.Model):
     name = models.CharField(max_length=255)
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, related_name="accounts")
-    type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name="accounts")
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=False, related_name="accounts")
+    type = models.ForeignKey(AccountType, on_delete=models.CASCADE, null=False, related_name="accounts")
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     startingbalance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=False, related_name="accounts")
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,6 +91,9 @@ class Category(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     retired_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'type', 'name')
 
     def __str__(self):
         return f"{self.name}"
@@ -123,15 +126,12 @@ class StatementUpload(models.Model):
 
 # TRANSACTION #
 class Transaction(models.Model):
-    note = models.CharField(max_length=255)
+    user_note = models.CharField(max_length=255)
     date = models.DateField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     type = models.ForeignKey(CategoryType, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL, null=True, blank=True)
-
-    transfer_id = models.UUIDField(null=True, blank=True, db_index=True, default=None)
-    paired = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -141,19 +141,23 @@ class Transaction(models.Model):
     manual_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
 
     @property
-    def is_accounttransfer(self):
-        return self.entries.count() == 2
+    def paired(self):
+        return not self.entries.filter(paired=False).exists()
 
     @property
     def amount(self):
-        if self.is_accounttransfer:
-            entry = self.entries.filter(amount__gt=0).first()
-            if entry:
-                return entry.amount
-            return abs(self.entries.first().amount)
-        else:
-            total = self.entries.aggregate(total=Sum('amount'))["total"]
-            return total or 0
+        entries = self.entries.all()
+
+        pos = entries.filter(amount__gt=0).first()
+        neg = entries.filter(amount__lt=0).first()
+
+        # Transfer
+        if pos and neg:
+            return pos.amount
+
+        # Normal transaction
+        total = entries.aggregate(total=Sum("amount"))["total"]
+        return total or 0
 
     @property
     def account(self):
@@ -196,7 +200,7 @@ class Transaction(models.Model):
         # Normal transaction (single entry)
         if len(entries) == 1:
             e = entries[0]
-            return f"{e.account.institution.name} - {e.account.name}"
+            return f"{e.account.institution.name} {e.account.name}"
 
         # Transfer (two entries)
         source = next((e for e in entries if e.amount < 0), None)
@@ -205,9 +209,9 @@ class Transaction(models.Model):
         # Build with Font Awesome icon
         if source and dest:
             return (
-                f"{source.account.institution.name} - {source.account.name} "
-                f"> "
-                f"{dest.account.institution.name} - {dest.account.name}"
+                f"{source.account.institution.name} {source.account.name}"
+                f" > "
+                f"{dest.account.institution.name} {dest.account.name}"
             )
 
         # Fallback for more than 2 entries
@@ -218,7 +222,7 @@ class Transaction(models.Model):
 
 
     def __str__(self):
-        return f"{self.note}"
+        return f"{self.user_note}"
 
 
 
@@ -229,9 +233,11 @@ class Entry(models.Model):
     transaction = models.ForeignKey(Transaction,on_delete=models.CASCADE, related_name='entries')
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
+    bank_note = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="entries")
     
     destination_account = models.ForeignKey(Account, blank=True, null=True, on_delete=models.CASCADE, related_name="entries")
+    paired = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.account.name} {self.amount}"
@@ -369,6 +375,9 @@ class Budget(models.Model):
 
     class Meta:
         unique_together = ('month', 'year', 'category')
+        constraints = [
+            models.CheckConstraint(check=models.Q(limit__gte=0), name='limit_greater_than_equal_zero')
+        ]
 
     def __str__(self):
         return f"{self.month}"

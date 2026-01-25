@@ -135,51 +135,72 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                 </td>
 
-                <td>
-                    ${
-                        linkable
-                        ? `
-                        <div class="d-flex align-items-center gap-2">
-                            <button
-                                class="btn btn-sm p-0 tx-link"
-                                data-tx-id="${tx.id}"
-                                type="button"
-                                title="View linked transaction">
-                                <i class="fa fa-link text-primary"></i>
-                            </button>
-                
-                            <button
-                                class="btn btn-sm p-0 tx-unlink"
-                                data-tx-id="${tx.id}"
-                                type="button"
-                                title="Unlink transaction">
-                                <i class="fa fa-unlink text-primary"></i>
-                            </button>
-                        </div>
-                        `
-                        : ""
-                    }
-                </td>
+
                 `;
             
                 // DATE
 
-                const dateTd = document.createElement("td");
+                // const dateTd = document.createElement("td");
             
+                // const dateDisplay = document.createElement("span");
+                // dateDisplay.className = "tx-display tx-date fw-semibold";
+                // dateDisplay.textContent = tx.formatted_date;
+                
+                // const dateInput = document.createElement("input");
+                // dateInput.type = "text"; // ← required for flatpickr
+                // dateInput.value = tx.date_iso;
+                // dateInput.className = "form-control form-control-sm all-tx-input d-none tx-date-input";
+                // dateInput.name = "date";
+                          
+            
+                // dateTd.append(dateDisplay, dateInput);
+
+                // tr.appendChild(dateTd);
+
+                const dateTd = document.createElement("td");
+                dateTd.className = "align-middle";
+
+                const wrapper = document.createElement("div");
+                wrapper.className = "d-flex align-items-center gap-2";
+
+                // --- ICON ---
+                if (tx.linkable) {
+                    const iconBtn = document.createElement("button");
+                    iconBtn.type = "button";
+                    iconBtn.className = `btn btn-sm p-0 ${
+                        tx.paired ? "tx-unlink" : "tx-link"
+                    }`;
+                    iconBtn.dataset.txId = tx.id;
+                    iconBtn.title = tx.paired
+                        ? "Unlink transaction"
+                        : "Link transaction";
+
+                    iconBtn.innerHTML = `
+                        <i class="fa ${
+                            tx.paired ? "fa-link text-primary" : "fa-unlink text-muted"
+                        }"></i>
+                    `;
+
+                    wrapper.appendChild(iconBtn);
+                }
+
+                // --- DATE DISPLAY ---
                 const dateDisplay = document.createElement("span");
                 dateDisplay.className = "tx-display tx-date fw-semibold";
                 dateDisplay.textContent = tx.formatted_date;
-                
-                const dateInput = document.createElement("input");
-                dateInput.type = "text"; // ← required for flatpickr
-                dateInput.value = tx.date_iso;
-                dateInput.className = "form-control form-control-sm all-tx-input d-none tx-date-input";
-                dateInput.name = "date";
-                          
-            
-                dateTd.append(dateDisplay, dateInput);
 
+                // --- DATE INPUT ---
+                const dateInput = document.createElement("input");
+                dateInput.type = "text";
+                dateInput.value = tx.date_iso;
+                dateInput.className =
+                    "form-control form-control-sm all-tx-input d-none tx-date-input";
+                dateInput.name = "date";
+
+                wrapper.append(dateDisplay, dateInput);
+                dateTd.appendChild(wrapper);
                 tr.appendChild(dateTd);
+
             
                 // TYPE
                 const typeTd = document.createElement("td");

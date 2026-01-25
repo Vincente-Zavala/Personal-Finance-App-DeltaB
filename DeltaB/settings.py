@@ -13,21 +13,86 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import dj_database_url
 import os
+import logging
 from dotenv import load_dotenv
+from config import Config
+from pythonjsonlogger import jsonlogger
+from django.db import connections
+from django.db.utils import OperationalError
+# from logtail.handlers import LogtailHandler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+
+# Get the environment variable, default to 'staging' if not set
+ENV = os.environ.get("APP_ENV", "staging")
+
+if ENV != 'production':
+    load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+print("ENV", ENV)
+# Set the logging level: DEBUG for non-production, WARNING for production
+LOGGING_LEVEL = logging.INFO if ENV != "production" else logging.INFO
+
+print("Logging Level: ", LOGGING_LEVEL)
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": jsonlogger.JsonFormatter,  # Use jsonlogger for JSON formatting
+            "fmt": "%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(user)s",  # Custom format
+        },
+    },
+    "handlers": {
+        'logtail': {
+            'class': 'logtail.LogtailHandler',
+            'source_token': 'REDACTED_LOG_TOKEN',
+            'host': 'https://s1671097.eu-nbg-2.betterstackdata.com',
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "level": LOGGING_LEVEL,
+        },
+    },
+    "root": {
+        "handlers": ["console"],  # Logs will go to both console and file
+        "level": LOGGING_LEVEL,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "logtail"],
+            "level": LOGGING_LEVEL,
+            "propagate": True,
+        },
+    },
+}
+
+# Validate configuration
+Config.validate()
+
+# Use the centralized configuration for settings
+SECRET_KEY = Config.SECRET_KEY
+DATABASE_URL = Config.DATABASE_URL
+SUPABASE_URL = Config.SUPABASE_URL
+SUPABASE_PUBLIC_KEY = Config.SUPABASE_PUBLIC_KEY
+SUPABASE_SERVICE_KEY = Config.SUPABASE_SERVICE_KEY
+SUPABASE_BUCKET = Config.SUPABASE_BUCKET
+
+# Other
+DEBUG = Config.DEBUG
+
+
+DEFAULT_FILE_STORAGE = "DeltaBApp.supabaseupload.SupabaseStorage"
+SUPABASE_USE_SECURE_URLS = True
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "REDACTED_SECRET_KEY"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
 
 ALLOWED_HOSTS = [
     "deltab.onrender.com",
@@ -84,7 +149,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "middleware.memory_usage.MemoryUsageMiddleware",
-    "middleware.performance.PerformanceMiddleware"
+    "middleware.performance.PerformanceMiddleware",
+    "middleware.logging.RequestLoggingMiddleware",
 ]
 
 ROOT_URLCONF = "DeltaB.urls"
@@ -110,43 +176,22 @@ TEMPLATES = [
 WSGI_APPLICATION = "DeltaB.wsgi.application"
 
 
-DEFAULT_FILE_STORAGE = "DeltaBApp.supabaseupload.SupabaseStorage"
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-SUPABASE_PUBLIC_KEY = os.getenv("SUPABASE_PUBLIC_KEY")
-
-SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "statements")
-SUPABASE_USE_SECURE_URLS = True
-
-
-
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-
-# DATABASES = {
-#     "default": dj_database_url.parse(
-#         os.getenv("DATABASE_URL"),
-#         conn_max_age=300,
-#         ssl_require=True
-#     )
-# }
-
 
 DATABASES = {
     "default": dj_database_url.parse(
-        os.environ["DATABASE_URL"],
+        Config.DATABASE_URL,
         conn_max_age=300,
         ssl_require=True,
     )
 }
 
+try:
+    connections['default'].cursor()
+except OperationalError as e:
+    raise RuntimeError("Database connection failed at startup") from e
 
-APP_ENV = os.environ.get("APP_ENV")
-
-if APP_ENV not in ("staging", "production"):
-    raise RuntimeError("Error connecting to DB")
+if ENV not in ("staging", "production"):
+    raise RuntimeError("Invalid Environment")
 
 
 
@@ -183,20 +228,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-if not DEBUG:
-    # Log errors to the console
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-            },
-        },
-        "root": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-        },
-    }

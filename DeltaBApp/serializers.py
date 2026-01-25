@@ -17,7 +17,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             "date_iso",
             "type_name",
             "category_name",
-            "note",
+            "user_note",
             "account_display",
             "amount"
         ]

@@ -98,9 +98,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 tr.classList.add("transaction-row");
                 tr.dataset.editing = "false";
 
+                const linkable = isLinkableType(tx.type_name);
+
 
                 // Basic columns
                 tr.innerHTML = `
+
                 <td class="editcol" hidden>
                     <div class="d-flex align-items-center gap-2">
                         <input 
@@ -131,12 +134,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                         </button>
                     </div>
                 </td>
+
+                <td>
+                    ${
+                        linkable
+                        ? `
+                        <div class="d-flex align-items-center gap-2">
+                            <button
+                                class="btn btn-sm p-0 tx-link"
+                                data-tx-id="${tx.id}"
+                                type="button"
+                                title="View linked transaction">
+                                <i class="fa fa-link text-primary"></i>
+                            </button>
+                
+                            <button
+                                class="btn btn-sm p-0 tx-unlink"
+                                data-tx-id="${tx.id}"
+                                type="button"
+                                title="Unlink transaction">
+                                <i class="fa fa-unlink text-primary"></i>
+                            </button>
+                        </div>
+                        `
+                        : ""
+                    }
+                </td>
                 `;
             
                 // DATE
-                // const dateTd = document.createElement("td");
-                // dateTd.textContent = tx.formatted_date;
-
 
                 const dateTd = document.createElement("td");
             
@@ -147,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const dateInput = document.createElement("input");
                 dateInput.type = "text"; // ← required for flatpickr
                 dateInput.value = tx.date_iso;
-                dateInput.className = "form-control form-control-sm tx-input d-none tx-date-input";
+                dateInput.className = "form-control form-control-sm all-tx-input d-none tx-date-input";
                 dateInput.name = "date";
                           
             
@@ -163,7 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 typeDisplay.textContent = tx.type_name;
             
                 const typeSelect = buildTypeSelect(tx);
-                typeSelect.classList.add("tx-input", "d-none");
+                typeSelect.classList.add("all-tx-input", "d-none");
                 typeSelect.name = "type";
             
                 typeTd.append(typeDisplay, typeSelect);
@@ -182,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 categoryTd.dataset.originalCategoryName = tx.category_name;
 
                 const categorySelect = allTxsBuildCategorySelect(tx, tx.type_name);
-                categorySelect.classList.add("tx-input", "d-none");
+                categorySelect.classList.add("all-tx-input", "d-none");
                 categorySelect.name = "category";
 
                 console.log("categorySelect", categorySelect)
@@ -210,12 +236,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             
                 const noteDisplay = document.createElement("span");
                 noteDisplay.className = "tx-display";
-                noteDisplay.textContent = tx.note || "";
+                noteDisplay.textContent = tx.user_note || "";
             
                 const noteInput = document.createElement("input");
                 noteInput.type = "text";
-                noteInput.value = tx.note || "";
-                noteInput.className = "form-control form-control-sm tx-input d-none";
+                noteInput.value = tx.user_note || "";
+                noteInput.className = "form-control form-control-sm all-tx-input d-none";
                 noteInput.name = "note";
             
                 noteTd.append(noteDisplay, noteInput);
@@ -237,7 +263,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const amountInput = document.createElement("input");
                 amountInput.type = "number";
                 amountInput.value = tx.amount;
-                amountInput.className = "form-control form-control-sm text-end tx-input d-none";
+                amountInput.className = "form-control form-control-sm text-end all-tx-input d-none";
                 amountInput.name = "amount";
             
                 amountTd.append(amountDisplay, amountInput);
@@ -272,7 +298,7 @@ document.addEventListener("click", (e) => {
         const row = editBtn.closest(".transaction-row");
         if (!row) return;
 
-        const inputs = row.querySelectorAll(".tx-input");
+        const inputs = row.querySelectorAll(".all-tx-input");
         const displays = row.querySelectorAll(".tx-display");
         const buttons = row.querySelectorAll(".tx-cancel, .tx-check");
         const editButton = row.querySelector(".edit-tx");
@@ -280,7 +306,7 @@ document.addEventListener("click", (e) => {
         // Close any other row in edit mode
         document.querySelectorAll(".transaction-row").forEach(r => {
             if (r !== row && r.dataset.editing === "true") {
-                r.querySelectorAll(".tx-input").forEach(i => i.classList.add("d-none"));
+                r.querySelectorAll(".all-tx-input").forEach(i => i.classList.add("d-none"));
                 r.querySelectorAll(".tx-display").forEach(d => d.classList.remove("d-none"));
                 r.querySelectorAll(".tx-cancel, .tx-check").forEach(b => b.classList.add("d-none"));
                 r.querySelector(".edit-tx")?.classList.remove("d-none");
@@ -315,7 +341,7 @@ document.addEventListener("click", (e) => {
                 { category_name: categoryDisplay.textContent },
                 newType
             );
-            newCategorySelect.classList.add("tx-input");
+            newCategorySelect.classList.add("all-tx-input");
             categoryTd.replaceChild(newCategorySelect, categorySelect);
         
             // ---- DESTINATION ----
@@ -325,7 +351,7 @@ document.addEventListener("click", (e) => {
             destinationTd.style.display = needsDestination ? "" : "none";
             destinationTd.querySelector(".tx-display")
                 .classList.toggle("d-none", needsDestination);
-            destinationTd.querySelector(".tx-input")
+            destinationTd.querySelector(".all-tx-input")
                 .classList.toggle("d-none", !needsDestination);
         
             updateAllDestinationHeaderVisibility();
@@ -370,7 +396,7 @@ document.addEventListener("click", (e) => {
         const row = cancelBtn.closest(".transaction-row");
         if (!row) return;
     
-        const inputs = row.querySelectorAll(".tx-input");
+        const inputs = row.querySelectorAll(".all-tx-input");
         const displays = row.querySelectorAll(".tx-display");
         const buttons = row.querySelectorAll(".tx-cancel, .tx-check");
         const editButton = row.querySelector(".edit-tx");
@@ -398,7 +424,7 @@ document.addEventListener("click", (e) => {
         }, row.dataset.originalType);
     
         restoredCategorySelect.value = row.dataset.originalCategoryId;
-        restoredCategorySelect.classList.add("tx-input", "d-none"); // hide input
+        restoredCategorySelect.classList.add("all-tx-input", "d-none"); // hide input
         categoryTd.appendChild(restoredCategorySelect);
     
         // Restore display span
@@ -466,7 +492,7 @@ document.addEventListener("click", (e) => {
             destinationTd.style.display = "none";
 
             const display = destinationTd.querySelector(".tx-display");
-            const input = destinationTd.querySelector(".tx-input");
+            const input = destinationTd.querySelector(".all-tx-input");
 
             display?.classList.remove("d-none");
             input?.classList.add("d-none");
@@ -486,7 +512,7 @@ document.addEventListener("click", (e) => {
         if (!row) return;
 
         const txId = row.querySelector(".select-tx")?.value;
-        const inputs = row.querySelectorAll(".tx-input");
+        const inputs = row.querySelectorAll(".all-tx-input");
 
         const changes = { transaction_id: txId };
         console.log("changes", changes)
@@ -619,7 +645,7 @@ document.addEventListener("click", (e) => {
 
 
     function finalizeRowUpdate(row) {
-        const inputs = row.querySelectorAll(".tx-input");
+        const inputs = row.querySelectorAll(".all-tx-input");
         const displays = row.querySelectorAll(".tx-display");
     
         inputs.forEach(input => {
@@ -678,6 +704,9 @@ document.addEventListener("click", (e) => {
             .forEach(b => b.classList.add("d-none"));
     
         row.dataset.editing = "false";
+
+        fetchAccountBalances();
+        
     }
     
     
@@ -691,7 +720,7 @@ document.addEventListener("click", (e) => {
         display.textContent = tx.destination_account_display || "";
     
         const select = document.createElement("select");
-        select.className = "form-select form-select-sm tx-input d-none";
+        select.className = "form-select form-select-sm all-tx-input d-none";
         select.name = "destination";
     
         ACCOUNTS.forEach(acc => {
@@ -750,6 +779,13 @@ document.addEventListener("click", (e) => {
     
         return select;
     }
+
+
+    function isLinkableType(typeName) {
+        return ["Transfer", "Savings", "Investment", "Debt", "Retirement"]
+            .includes(typeName);
+    }
+    
 
     
 });
