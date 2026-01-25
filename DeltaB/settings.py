@@ -188,7 +188,7 @@ DATABASES = {
 try:
     connections['default'].cursor()
 except OperationalError as e:
-    raise RuntimeError("Database connection failed at startup") from e
+    print("DB ERROR:", e)
 
 if ENV not in ("staging", "production"):
     raise RuntimeError("Invalid Environment")
