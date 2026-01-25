@@ -21,3 +21,4 @@ psutil==5.9.6
 
 python-json-logger
 logtail-python
+pytz==2024.1
