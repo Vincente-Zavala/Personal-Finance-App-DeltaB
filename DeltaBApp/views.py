@@ -627,30 +627,6 @@ def newuser(request):
         except Exception as e:
             print(f"Error creating user: {e}")
 
-            return redirect("error_page")
-
-
-
-    #     user = User.objects.create_user(
-    #         username=username,
-    #         email=email,
-    #         password=password,
-    #         first_name = firstname,
-    #         last_name = lastname,
-    #         is_staff = staff,
-    #         timezone = timezone,
-    #     )
-    #     user.save()
-
-    #     # CREATE CATEGORIES
-    #     transfertype = CategoryType.objects.get(name="Transfer")
-    #     Category.objects.create(name="Transfer", type=transfertype, user=user)
-
-    #     debttype = CategoryType.objects.get(name="Debt")
-    #     Category.objects.create(name="CC Payment", type=debttype, user=user)
-
-    # return redirect("signin")
-
 
 
 
@@ -918,8 +894,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
                             import_key=importkey,
                         )
 
-                        time.sleep(15)
-
+                        
                         new_entry = Entry.objects.create(
                             transaction=tx,
                             bank_note=note,

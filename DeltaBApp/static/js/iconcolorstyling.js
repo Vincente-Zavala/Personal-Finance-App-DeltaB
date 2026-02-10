@@ -1,25 +1,25 @@
 // Category Type Styles
 const categoryTypeStyles = {
-    income: { color: "#38EB14", icon: "fa-arrow-trend-up" },
-    expense: { color: "#EB1616", icon: "fa-arrow-trend-down" },
+    income: { color: "#38EB14", icon: "fa-dollar-sign" },
+    expense: { color: "#EB1616", icon: "fa-receipt" },
     savings: { color: "#1443EB", icon: "fa-piggy-bank" },
-    transfer: { color: "#9CA3AF", icon: "fa-right-left" },
+    transfer: { color: "#9CA3AF", icon: "fa-retweet" },
     debt: { color: "#EB8314", icon: "fa-file-invoice-dollar" },
     investment: { color: "#EB14A0", icon: "fa-chart-line" },
     refund: { color: "#8B5CF6", icon: "fa-rotate-left" },
-    retirement: { color: "#FFD700", icon: "fa-umbrella-beach" },
+    retirement: { color: "#FFD700", icon: "fa-sun" },
   };
   
   // Account Type Styles
   const accountTypeStyles = {
-    cash: { color: "#16A34A", icon: "fa-money-bill-wave" },
-    checkingaccount: { color: "#2563EB", icon: "fa-building-columns" },
-    savingsaccount: { color: "#1E40AF", icon: "fa-piggy-bank" },
+    cash: { color: "#16A34A", icon: "fa-money-bill" },
+    checkingaccount: { color: "#2563EB", icon: "fa-money-check" },
+    savingsaccount: { color: "#1E40AF", icon: "fa-wallet" },
     creditcard: { color: "#F97316", icon: "fa-credit-card" },
-    loan: { color: "#D97706", icon: "fa-hand-holding-dollar" },
-    investment: { color: "#059669", icon: "fa-chart-line" },
-    retirement: { color: "#4F46E5", icon: "fa-umbrella-beach" },
-    digitalwallet: { color: "#9333EA", icon: "fa-wallet" },
+    loan: { color: "#D97706", icon: "fa-landmark" },
+    investment: { color: "#059669", icon: "fa-coins" },
+    retirement: { color: "#4F46E5", icon: "fa-sack-dollar" },
+    digitalwallet: { color: "#9333EA", icon: "fa-mobile-alt" },
   };
 
 
@@ -52,10 +52,10 @@ function applyCategoryStyles(selector, stylesMap) {
       const icon = card.querySelector("i");
       if (icon) icon.style.color = style.color;
 
-      // Apply color to badge if exists
-      if (badge) {
-        badge.style.backgroundColor = style.color;
-      }
+      // // Apply color to badge if exists
+      // if (badge) {
+      //   badge.style.backgroundColor = style.color;
+      // }
     }
   });
 }
@@ -64,4 +64,5 @@ function applyCategoryStyles(selector, stylesMap) {
 // Run on page load
 document.addEventListener("DOMContentLoaded", () => {
   applyCategoryStyles(".category-border", categoryTypeStyles);
+  console.log("After applycategorystyles")
 });

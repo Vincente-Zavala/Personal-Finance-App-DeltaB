@@ -1103,8 +1103,8 @@ padding: 1rem;
   
 .category-border {
     --accent-color: var(--bs-primary);
-    border: 2px solid var(--primesec);
-    border-radius: 0.75rem;
+    /* border: 2px solid var(--primesec); */
+    /* border-radius: 0.75rem; */
     transform: translateY(-2px);
 }
 
@@ -1256,4 +1256,204 @@ padding: 1rem;
   font-size: 0.6rem;
   padding: 3px 6px;
   border-radius: 50%;
+}
+
+#allTransactionsTable td .tx-date {
+  display: block;
+  text-align: left;
+}
+
+#allTransactionsTable td .tx-note {
+  display: block;
+  text-align: left;
+}
+
+.tx-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+#allTransactionsTable thead th {
+  border-bottom: none;
+}
+
+
+#allTransactionsTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Remove all borders */
+#allTransactionsTable, 
+#allTransactionsTable th, 
+#allTransactionsTable td {
+  border: none !important;
+}
+
+/* Sticky header */
+#allTransactionsTable thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+}
+
+/* Default header alignment */
+#allTransactionsTable thead th {
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Date header – LEFT */
+#allTransactionsTable thead th.date-col {
+  text-align: left;
+}
+
+/* Amount header – RIGHT */
+#allTransactionsTable thead th.amount-col {
+  text-align: right;
+}
+
+/* Chevron header – tiny */
+#allTransactionsTable thead th.chevron-col {
+  width: 28px;
+}
+
+
+/* Card style rows stacked with no gaps */
+#allTransactionsTable tbody tr {
+  border-radius: 12px 12px 0 0; /* Rounded top corners only for the first row */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  display: table-row;
+  cursor: pointer;
+  border-bottom: 1px solid #e2e8f0; /* subtle separator line */
+  transition: box-shadow 0.3s ease;
+}
+
+/* Remove border-bottom on last row and add bottom radius */
+#allTransactionsTable tbody tr:last-child {
+  border-bottom: none;
+  border-radius: 0 0 12px 12px; /* Rounded bottom corners on last row */
+}
+
+/* Hover effect on rows */
+#allTransactionsTable tbody tr:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Padding inside cells */
+#allTransactionsTable tbody td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+}
+
+/* Checkbox column width */
+#allTransactionsTable tbody td:first-child {
+  width: 40px;
+}
+
+/* Responsive horizontal scroll */
+#allTransactionsTable {
+  overflow-x: auto;
+  display: block;
+}
+
+.tx-date {
+  width: 70px;
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+/* Remove padding from the chevron column td */
+#allTransactionsTable tbody td.chevron-col {
+  padding: 0;
+  width: 40px;        /* adjust as needed */
+  min-width: 40px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Remove padding/margin from inner div/button */
+#allTransactionsTable tbody td.chevron-col .tx-chevron {
+  padding: 0.5rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Default body cell alignment */
+#allTransactionsTable tbody td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* Date column – LEFT aligned */
+#allTransactionsTable tbody td.date-col {
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Amount column – RIGHT aligned */
+#allTransactionsTable tbody td.amount-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Chevron column – tight + centered */
+#allTransactionsTable tbody td.chevron-col {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+  text-align: center;
+}
+
+.tx-link {
+  padding: 0;
+  width: 100%;
+}
+
+.tx-chevron {
+  font-size: 0.9rem;
+  padding: 0;
+  margin: 0;
+}
+
+#allTransactionsTable {
+  table-layout: fixed;
+}
+
+/* FINAL chevron override */
+#allTransactionsTable th.chevron-col,
+#allTransactionsTable td.chevron-col {
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  padding: 0 !important;
+  text-align: center;
+}
+
+.chevron-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.tx-link {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tx-chevron {
+  font-size: 0.85rem;
+  line-height: 1;
 }

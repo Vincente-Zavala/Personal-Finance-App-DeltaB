@@ -135,25 +135,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                 </td>
 
-                <td>
+                <td class="chevron-col">
                     ${
                         linkable
                         ? `
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="align-items-center">
                             <button
                                 class="btn btn-sm p-0 tx-link"
                                 data-tx-id="${tx.id}"
                                 type="button"
                                 title="View linked transaction">
-                                <i class="fa fa-link text-primary"></i>
-                            </button>
-                
-                            <button
-                                class="btn btn-sm p-0 tx-unlink"
-                                data-tx-id="${tx.id}"
-                                type="button"
-                                title="Unlink transaction">
-                                <i class="fa fa-unlink text-primary"></i>
+                                <i class="fa fa-chevron-right tx-chevron text-primary"></i>
                             </button>
                         </div>
                         `
@@ -163,8 +155,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 `;
             
                 // DATE
-
                 const dateTd = document.createElement("td");
+                dateTd.classList.add("date-col");
             
                 const dateDisplay = document.createElement("span");
                 dateDisplay.className = "tx-display tx-date fw-semibold";
@@ -181,27 +173,60 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 tr.appendChild(dateTd);
             
+                // // TYPE
+                // const typeTd = document.createElement("td");
+            
+                // const typeDisplay = document.createElement("span");
+                // typeDisplay.className = "tx-display";
+                // typeDisplay.textContent = tx.type_name;
+            
+                // const typeSelect = buildTypeSelect(tx);
+                // typeSelect.classList.add("all-tx-input", "d-none");
+                // typeSelect.name = "type";
+            
+                // typeTd.append(typeDisplay, typeSelect);
+                // tr.appendChild(typeTd);
+
                 // TYPE
                 const typeTd = document.createElement("td");
-            
+
                 const typeDisplay = document.createElement("span");
-                typeDisplay.className = "tx-display";
-                typeDisplay.textContent = tx.type_name;
-            
+                typeDisplay.className = "tx-display d-inline-flex align-items-center gap-2";
+
+                const typeKey = tx.type_name.toLowerCase().replace(/\s+/g, "");
+                const style = categoryTypeStyles[typeKey];
+
+                if (style) {
+                    const icon = document.createElement("i");
+                    icon.className = `fa-solid ${style.icon}`;
+                    icon.style.color = style.color;
+
+                    const label = document.createElement("span");
+                    label.textContent = tx.type_name;
+                    label.style.color = style.color;
+
+                    typeDisplay.append(icon, label);
+                } else {
+                    typeDisplay.textContent = tx.type_name;
+                }
+
                 const typeSelect = buildTypeSelect(tx);
                 typeSelect.classList.add("all-tx-input", "d-none");
                 typeSelect.name = "type";
-            
+
                 typeTd.append(typeDisplay, typeSelect);
                 tr.appendChild(typeTd);
 
+
                 // CATEGORY
                 const categoryTd = document.createElement("td");
-                categoryTd.classList.add("category-col");
+                categoryTd.classList.add("category-col", "category-border");
 
                 const categoryDisplay = document.createElement("span");
-                categoryDisplay.className = "tx-display";
+                // categoryDisplay.className = "tx-display";
+                categoryDisplay.className = "tx-display badge fw-semibold"; 
                 categoryDisplay.textContent = tx.category_name;
+                categoryDisplay.dataset.type = typeKey;
 
                 // store original category ID and name
                 categoryTd.dataset.originalCategoryId = String(tx.category_id);
@@ -210,8 +235,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const categorySelect = allTxsBuildCategorySelect(tx, tx.type_name);
                 categorySelect.classList.add("all-tx-input", "d-none");
                 categorySelect.name = "category";
-
-                console.log("categorySelect", categorySelect)
 
                 const match = Array.from(categorySelect.options)
                 .find(o => o.text.trim() === tx.category_name);
@@ -235,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const noteTd = document.createElement("td");
             
                 const noteDisplay = document.createElement("span");
-                noteDisplay.className = "tx-display";
+                noteDisplay.className = "tx-display tx-note";
                 noteDisplay.textContent = tx.user_note || "";
             
                 const noteInput = document.createElement("input");
@@ -247,14 +270,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 noteTd.append(noteDisplay, noteInput);
                 tr.appendChild(noteTd);
 
+                
                 // ACCOUNT
                 const accountTd = document.createElement("td");
                 accountTd.textContent = tx.account_display || "";
                 tr.appendChild(accountTd); 
+
             
                 // AMOUNT
                 const amountTd = document.createElement("td");
-                amountTd.className = "text-end";
+                amountTd.classList.add("amount-col");
             
                 const amountDisplay = document.createElement("span");
                 amountDisplay.className = "tx-display fw-semibold text-primary";
@@ -274,6 +299,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             tbody.appendChild(fragment);
+
+            applyCategoryStyles(".category-border", categoryTypeStyles);
+
         })
         .catch(err => {
             console.error("Transaction load failed:", err);

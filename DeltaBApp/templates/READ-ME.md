@@ -2,7 +2,7 @@
 
 Deltab is a production-grade personal finance web application that allows users to import bank transactions, track spending, manage account balances, set category-based budgets, and monitor financial activity over time with strong data integrity guarantees.
 
-This project was intentionally designed to demonstrate production system ownership: deployment, database safety, observability, failure handling, and recovery.
+This project was intentionally designed to demonstrate **production system ownership**: deployment, database safety, observability, failure handling, and recovery.
 
 ---
 
@@ -23,8 +23,8 @@ All changes are tested in staging before production release.
 ## Architecture Overview
 
 **Application**
-- Django (monolithic web service)
-- PostgreSQL (Supabase-managed)
+- Django
+- PostgreSQL (Supabase)
 - Hosted on Render
 - File storage via Supabase object storage
 
@@ -39,7 +39,7 @@ All changes are tested in staging before production release.
 ## Core Features
 
 - Manual and imported transaction tracking
-- Double-entry-style transaction modeling (entries per transaction)
+- Double-entry-style transaction modeling
 - Account balance tracking with history
 - Category-based budgets
 - Pending transaction review workflow
@@ -65,28 +65,41 @@ The database schema is designed to protect data integrity even if the applicatio
 
 ### Migrations
 - All schema changes are applied via Django migrations
+- Migrations are created locally and committed to source control
+- Migrations run automatically during service startup
 - No manual production DB changes
 - Migrations validated in staging before production
 
+A failed migration prevents the service from starting, avoiding schema drift.
+
 ---
 
-## Transaction Safety
+## Transaction Safety & Rollback Verification
 
 Multi-step financial operations are wrapped in `transaction.atomic()` blocks.
 
-### Example:
-When converting a pending transaction into a finalized transaction:
-- PendingTransaction is deleted
-- PendingEntry rows are deleted
-- Transaction row is created
-- Entry rows are created
-- Account balances are updated
+### Verified Rollback via Exception Injection
 
-If any step fails, the entire operation is rolled back, guaranteeing:
-- No partial writes
-- No balance corruption
+Rollback behavior was explicitly validated by **injecting controlled failures** during multi-step writes.
 
-This ensures ACID compliance, particularly atomicity and consistency.
+#### Example Scenario
+During transfer import processing:
+- A `Transaction` row is created
+- An exception is intentionally raised before `Entry` creation and pending cleanup
+
+Observed behavior:
+- Transaction row was rolled back
+- No Entry rows were created
+- PendingTransaction rows were preserved
+- Account balances remained unchanged
+
+This confirmed that partial writes do not persist when failures occur inside atomic blocks.
+
+### ACID Guarantees
+- **Atomicity:** All-or-nothing writes
+- **Consistency:** Schema constraints enforced by the database
+- **Isolation:** Concurrent requests do not corrupt balances
+- **Durability:** Committed data persists across restarts
 
 ---
 
@@ -95,6 +108,7 @@ This ensures ACID compliance, particularly atomicity and consistency.
 Configuration is entirely environment-driven.
 
 - Required environment variables are explicitly defined
+- Configuration is validated at startup
 - Application fails fast if critical config is missing
 - Environment flag determines staging vs production behavior
 - Secrets (DB credentials, Django secret key) are isolated per environment
@@ -129,17 +143,51 @@ This allows debugging issues without SSH access to production hosts.
 
 The system is intentionally tested against failure scenarios in staging.
 
-### Failure Scenarios
-- Application terminated mid-database write
-- Database connection misconfiguration
-- Invalid or missing environment configuration
+### Verified Failure Scenarios
 
-### Recovery Procedures
-- Redeploy known-good application version
-- Restore database from Supabase backup
-- Verify data integrity and service health
+#### 1. Application Termination During Write
+A long-running transaction was introduced inside an atomic block.  
+The application service was terminated mid-request.
 
-Backups are not assumed safe until restore is verified.
+Result:
+- Open database transaction was rolled back automatically
+- No partial Transaction or Entry rows persisted
+- Account balances were unchanged
+
+#### 2. Database Connectivity Failure
+Database connectivity is verified at application startup.
+
+When database connectivity failed:
+- The application refused to start
+- No traffic was served
+- No database writes occurred
+
+This prevents the application from running in a degraded state.
+
+#### 3. Invalid Configuration Deployment
+When required environment variables were missing:
+- Application startup failed immediately
+- Deployment was rejected
+- No runtime instability occurred
+
+This prevents configuration drift from causing silent data corruption.
+
+---
+
+## Backup & Recovery
+
+Database backups are performed via the managed PostgreSQL provider.
+
+### Restore Validation
+Backups are not assumed valid until restoration is verified.
+
+Recovery procedures were tested by restoring backed-up data into a non-production environment and validating:
+- Application startup
+- Data integrity
+- Relationship consistency
+- Core application workflows
+
+This ensures recoverability and protects against silent data loss.
 
 ---
 
@@ -151,7 +199,7 @@ Operational failures are documented with:
 - Detection method
 - Preventive measures
 
-This encourages continuous improvement and operational maturity.
+This promotes continuous improvement and operational maturity.
 
 ---
 
@@ -161,15 +209,16 @@ This encourages continuous improvement and operational maturity.
 - Safe handling of financial data
 - Strong relational schema design
 - ACID-compliant database operations
+- Explicit failure injection and recovery
 - Observability-first debugging
 - Environment isolation and config hygiene
-- Failure recovery and data protection
 
 ---
 
 ## Future Improvements
 
 - Automated backup restore verification
+- Centralized error aggregation
 - Background job processing for imports
 - Read replicas for analytics
 - Budget forecasting and goal automation

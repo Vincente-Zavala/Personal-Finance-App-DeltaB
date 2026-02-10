@@ -101,18 +101,18 @@
               <h6 class="text-primary fw-semibold mb-2">All Transactions</h6>
               <div class="bg-secondary rounded shadow-sm overflow-auto" style="max-height: 700px;">
                 <input type="hidden" name="redirect" value="{{ request.path }}">
-                <table class="table table-bordered table-hover table-sm align-middle mb-0" style="border-color: var(--light);" id="allTransactionsTable">
-                  <thead class="bg-light text-white sticky-top">
+                <table class="table table-hover table-bordered table-sm align-middle mb-0" style="border-color: var(--light);" id="allTransactionsTable">
+                  <thead class="table-light text-white sticky-top text-center">
                     <tr id="allTransactionsHeader">
-                      <th scope="col"></th>
                       <th scope="col"  class="editcol" hidden></th>
-                      <th>Date</th>
+                      <th scope="col" class="chevron-col"></th>
+                      <th class="date-col">Date</th>
                       <th>Type</th>
                       <th>Category</th>
                       <th id="allDestinationHeader" style="display:none;">Destination Account</th>
-                      <th>Note</th>
+                      <th class="text-start">Note</th>
                       <th>Account</th>
-                      <th class="text-end">Amount</th>
+                      <th class="amount-col">Amount</th>
                     </tr>
                   </thead>
                   <tbody id="allTransactionsBody">
