@@ -1,6 +1,6 @@
 # Incident Postmortem: 001 - Atomic Integrity & Transaction Processing Latency
-**Date:** 2025-01-05
-**Status:** Resolved
+**Date:** 2025-01-05  
+**Status:** Resolved  
 **Severity:** High (Risk of Data Inconsistency)
 
 ## Summary
