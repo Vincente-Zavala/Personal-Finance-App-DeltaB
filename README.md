@@ -1,70 +1,71 @@
-# Deltab – Production Budget & Transaction Management System
+# Deltab – Budget & Transaction Management System
 
-## Overview
+## Overview ##
 
-Deltab is a production-grade personal finance web application that allows users to track bank transactions, account balances, budgets, and financial goals. The system emphasizes **data integrity, transaction safety, observability, and operational discipline**, and was intentionally designed to be deployed, broken, recovered, and documented like a real production service.
+Deltab is a personal finance web application that allows users to track bank transactions, account balances, budgets, and financial goals. This system emphasizes data integrity, observability, and operational discipline, and was intentionally designed to be deployed, broken, recovered, and documented like a real production service.
 
 **Production URL:** https://deltab.onrender.com  
 **Staging URL:** https://deltab-staging.onrender.com
 
----
+-----
 
-## Architecture
+## System Architecture ##
 
 ### Application Layer
 - Django (Python)
 - REST-style CRUD endpoints
-- Custom user model with timezone support
-- Middleware-based logging and performance instrumentation
+- Custom user model
+- Middleware-based logging and performance procedures
 
 ### Data Layer
 - PostgreSQL (Supabase)
 - Separate databases for staging and production
-- Strict relational schema with foreign keys, uniqueness constraints, and checks
+- Strict relational schema with foreign keys and uniqueness constraints
 
 ### Hosting & Deployment
 - Render (application hosting)
 - Supabase (managed PostgreSQL + file storage)
 - Environment-based configuration (staging vs production)
 
+### Logging
+- Better Stack
+- JSON Structured logs
+
 ---
 
-## Core Features
+## Core Features ##
 
 - User-managed financial accounts and institutions
-- Transaction addition (manual and bank statement upload)
-- Pending transactions workflow before final commit to reporting
-- Double-entry style transaction modeling via `Transaction` and `Entry`
+- Transaction Upload (manual and bank statement upload)
+- Pending transactions workflow before committing to reporting
+- Double-entry style transaction modeling
 - Budgeting per category and month
 - Bills, reminders, tasks, and savings goals
 
 ---
 
-## Environments
+## Environments ##
 
 Two fully isolated environments are maintained:
 
 - Each environment uses its own database, credentials, and secrets
 - Environment behavior is controlled via environment variables
 - Changes are validated in staging before posting to production
-- Failures in staging do not impact production data or availability
+- Any failures in staging do not impact production data or availability
 
 ---
 
 ## Configuration Discipline
 
 - All sensitive values (DB credentials, Django secret key, environment flags) are supplied via environment variables
-- Staging and production use different secrets and databases
-- Invalid database credentials or missing critical configuration cause the application to fail at startup rather than at runtime
-- Logging verbosity differs by environment (DEBUG in staging, INFO in production)
-
-This approach prevents silent misconfiguration and reduces the blast radius of configuration errors.
+- Invalid database credentials or missing critical configurations cause the application to fail at startup rather than at runtime
+- Logging levels differ by environment (DEBUG in staging, INFO in production)
 
 ---
 
-## Database Design & Safety
+## Database Design & Safety ##
 
-The database schema is intentionally defensive and enforces correctness independently of application logic.
+The database schema is intentionally strict to enforce data integrity.
 
 ### Schema Integrity
 
@@ -79,10 +80,9 @@ The database schema is intentionally defensive and enforces correctness independ
 ### Key Models
 
 - Users (custom user model)
-- Institutions > Accounts
+- Bank Institutions > Accounts
 - Transactions > Entries (supports transfers and multi-entry transactions)
-- PendingTransactions > PendingEntries (pre-commit workflow)
-- Budgets, MonthlySummaries (Budget History), AccountBalanceHistory
+- Budgets, Monthly Summaries (Budget History), Account Balance History
 - Tasks, Reminders, Goals
 
 ### Migrations
@@ -95,11 +95,11 @@ Even if the application encounters errors, the database schema prevents invalid 
 
 ---
 
-## Transaction Safety
+## Transaction Safety ##
 
 Several multi-step write operations are wrapped in `transaction.atomic()` blocks.
 
-### Example: Statement Upload → Final Transaction
+### Example: Bank Statement Upload → Final Transaction
 
 1. Bank statement upload creates a `PendingTransaction` and `PendingEntry`
 2. User assigns category and transaction type
@@ -109,11 +109,11 @@ Several multi-step write operations are wrapped in `transaction.atomic()` blocks
 6. Account balances are updated
 7. Transfers are detected and paired automatically when applicable
 
-All steps occur inside atomic transactions. If any step fails, **no partial data is committed**, ensuring consistency.
+All steps occur inside atomic transactions. If any step fails, no partial data is committed, ensuring consistency.
 
 ---
 
-## Observability
+## Observability ##
 
 ### Logging
 
@@ -128,7 +128,7 @@ Custom middleware logs:
 - Request latency
 - SQL query count per request
 - Slow SQL queries (>50ms)
-- Memory usage deltas per request
+- Memory usage changes per request
 
 This enables identification of:
 - Slow endpoints
@@ -143,16 +143,16 @@ This enables identification of:
 
 ---
 
-## Failure Testing & Recovery
+## Failure Testing & Recovery ##
 
 ### Intentional Failures Tested
 
 - **Application killed during database write**
-  - Result: transaction rollback, no partial data
+  - Result: transaction rollback, no partial data commited
 - **Broken database connection**
   - Result: application fails to start
 - **Bad configuration deployment**
-  - Result: startup failure, no undefined behavior
+  - Result: applications fails to start
 
 These failures validate that the system fails fast and safely.
 
@@ -160,12 +160,11 @@ These failures validate that the system fails fast and safely.
 
 - Application recovery via redeploy
 - Git-based rollback supported
-- Weekly PostgreSQL backups
-- Database successfully restored from backup without data corruption
+- Weekly PostgreSQL backups (Database successfully restored from backup without data corruption)
 
 ---
 
-## Postmortems
+## Postmortems ##
 
 Formal postmortems are planned as part of ongoing operational maturity improvements. Future work includes documenting:
 - Failure timeline
@@ -175,7 +174,7 @@ Formal postmortems are planned as part of ongoing operational maturity improveme
 
 ---
 
-## Why This Project Matters
+## Why This Project Matters ##
 
 This project was built to demonstrate the ability to:
 - Design safe relational schemas
@@ -186,10 +185,9 @@ This project was built to demonstrate the ability to:
 
 ---
 
-## Future Improvements
+## Future Improvements ##
 
 - Automated backup and restore testing
 - Formalized postmortem documentation
 - Error aggregation (e.g., Sentry)
 - CI-based migration checks
-- Schema mismatch failure testing
