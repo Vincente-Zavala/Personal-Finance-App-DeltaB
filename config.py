@@ -29,4 +29,4 @@ class Config:
         ]
         missing_vars = [var for var in required_vars if not getattr(cls, var)]
         if missing_vars:
-            raise ValueError(f"Missing required variables")
+            raise ValueError("Missing required variables")

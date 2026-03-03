@@ -1,30 +1,21 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
-from django.template import loader
 import datetime
-from django.contrib import messages
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from decimal import Decimal
 from django.utils import timezone
-from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction, PendingEntry, Task, Goal, Reminder, MonthlySummary, Institution, Entry, StatementUpload
+from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, PendingTransaction, PendingEntry, Task, Goal, Reminder, MonthlySummary, Institution, Entry, StatementUpload
 from django.db.models import Q, Sum
-from django.db.models.functions import ExtractYear, ExtractMonth, ExtractDay
 from collections import defaultdict
 from django.db import models
 import calendar
-from django.db import transaction
-from django.core.serializers.json import DjangoJSONEncoder
+from decimal import InvalidOperation
 from dateutil.relativedelta import relativedelta
 import json
-from django.template.loader import render_to_string
 from django.http import JsonResponse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from collections import defaultdict
 import pandas as pd
-from django.db.models import Prefetch, Window
+from django.db.models import Prefetch
 from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.db.models.functions import TruncDate
@@ -34,18 +25,12 @@ import pytz
 from django.db.models import Exists, OuterRef
 import logging
 import time
-from django.db import connection
-from uuid import uuid4
 from django.db import transaction as db_transaction
-from decimal import Decimal
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from django.db.models import F, Value
-from django.db.models.functions import Concat
-from django.db.models import Sum, Max, Case, When, F, Value, DecimalField
-from .models import Transaction
+from django.db.models import Max, Case, When, DecimalField
 from .serializers import TransactionSerializer, PendingTransactionSerializer
 from django.views.decorators.http import require_POST
 from datetime import timedelta
@@ -73,8 +58,6 @@ def savebalancehistory(account, date):
 
 # Net Calculations
 def netcalculations(categorytype_totals, budgetmap_category):
-
-    budgettotal = sum(budgetmap_category.values())
 
     netincome = 0
     netbudget = 0
@@ -218,8 +201,6 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
 # GET SELECTED MONTH/YEAR #
 def getselecteddate(request):
 
-    user = request.user
-
     user_tz = pytz.timezone(request.user.timezone)
     user_now = timezone.localtime(timezone.now(), user_tz)
     today = user_now.date()
@@ -295,8 +276,6 @@ def previousdate(selected_month, selected_year):
 
 # CALCULATE SUM OF CATEGORIES FROM TRANSACTIONS #
 def categorytransactionsum(mode, selected_month, selected_year, selected_fromdate, selected_todate, user):
-
-    total = 0
 
     if mode == "monthyear":
 
@@ -502,7 +481,6 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
         todateday = selected_todate.day
         todatemonth = selected_todate.month
-        todateyear = selected_todate.year
 
         adjbudgets = Budget.objects.filter(month__range=(fromdatemonth, todatemonth), year=fromdateyear, user=user)
 
@@ -835,7 +813,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
             if inputtype in TRANSFER_TYPES:
 
                 # Manual
-                if importkey == None:
+                if importkey is None:
 
                     neg_signed_amount, pos_signed_amount = manual_split_transfer_amount(amount)
                     transfer_note = build_transfer_note(inputtype, source_account, final_account)
@@ -876,13 +854,13 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
 
 
                 # Import
-                elif manualkey == None:
+                elif manualkey is None:
 
                     signed_amount = import_split_transfer_amount(amount, source_account, final_account)
                     transfer_note = build_transfer_note(inputtype, source_account, final_account)
                     matched, match_entry = matchtransaction(date, user, amount, categorytype, final_account)
 
-                    if matched == False:
+                    if not matched:
                     
                         tx = Transaction.objects.create(
                             user_note=transfer_note,
@@ -895,7 +873,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
                         )
 
                         
-                        new_entry = Entry.objects.create(
+                        Entry.objects.create(
                             transaction=tx,
                             bank_note=note,
                             account=source_account,
@@ -909,7 +887,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
 
                     else:
 
-                        new_entry = Entry.objects.create(
+                        Entry.objects.create(
                             transaction=match_entry.transaction,
                             bank_note=note,
                             account=source_account,
@@ -989,16 +967,12 @@ def duplicateaddtransaction(request):
 
         #GET CATEGORYTYPE, CATEGORY, ACCOUNTS
         category_id = request.POST.get("categorychoice")
-        category = Category.objects.get(id=category_id, user=user) if category_id else None
         
         categorytype = CategoryType.objects.get(name__iexact=inputtype)
         categorytype_id = categorytype.id
 
         source_account_id = request.POST.get("sourceaccountchoice")
         source_account = Account.objects.get(id=source_account_id, user=user) if source_account_id else None
-
-        final_account_id = request.POST.get("finalaccountchoice")
-        final_account = Account.objects.get(id=final_account_id, user=user) if final_account_id else None
 
         amount_key = Decimal(str(amount).replace(",", "").strip())
 
@@ -1349,9 +1323,6 @@ def updatetransactions(request):
 
     updated_tx_fields = []
     update_tx_entry = False
-    updated_type = False
-    updated_amount = False
-    updated_destination = False
 
     # -------------------------
     # TRANSACTION FIELDS
@@ -1408,7 +1379,6 @@ def updatetransactions(request):
             if "amount" in request.POST:
                 new_amount = Decimal(request.POST["amount"])
                 update_tx_entry = True
-                updated_amount = True
             
             else:
                 entry = tx.entries.first()
@@ -1421,7 +1391,7 @@ def updatetransactions(request):
             if updated_tx_fields:
                 tx.save(update_fields=updated_tx_fields)
 
-            if update_tx_entry == True:
+            if update_tx_entry:
                 entry = tx.entries.first()
                 source_account = entry.account
 
@@ -1692,6 +1662,7 @@ def linkgoaltransaction(request):
 
 # CREATE BUDGET LIMITS #
 def budgetlimit(request):
+    user = request.user
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
     categorytypes = CategoryType.objects.prefetch_related("category_set")
 
@@ -1847,8 +1818,6 @@ def filtertransactions(qs, user, request):
 
     appliedfilters = []
     one_account = False
-    running_balance = 0
-    account = None
 
     mode = request.POST.get("mode")
 
@@ -1946,7 +1915,6 @@ def filtertransactions(qs, user, request):
 
 # ATOMICITY #
 # FILE UPLOAD
-from django.http import JsonResponse
 def uploadfile(request):
 
     user = request.user
@@ -1979,7 +1947,6 @@ def uploadfile(request):
 
                 # Load accounts
                 accounts = accountlist(user)
-                institutions = institutionlist(user)
 
                 # Create Statement Upload)
                 upload = StatementUpload.objects.create(user=user, filename=filename, file=uploadfile)
@@ -2051,7 +2018,6 @@ def processupload(request):
         return JsonResponse({"error": "No uploaded data found"}, status=400)
 
     df = pd.read_json(upload_json, orient="records")
-    sample_row = df.iloc[0]
 
     account = Account.objects.get(id=account_id, user=user)
 
@@ -2098,15 +2064,15 @@ def processupload(request):
                     # Automatically parse various date formats
                     parsed_date = pd.to_datetime(raw_date)
                     formatted_date = parsed_date.strftime("%b. %d, %Y")
-                    date_key = parsed_date.strftime("%Y-%m-%d")
-                except:
+
+                except (AttributeError, ValueError):
                     formatted_date = str(raw_date)
 
                 # Format amount
                 amount_raw = row_dict[selected["amount"]]
                 try:
                     amount_key = Decimal(str(amount_raw).replace(",", "").strip())
-                except:
+                except (InvalidOperation, ValueError, TypeError):
                     amount_key = Decimal("0")
 
                 amount_display = f"{amount_key:,.2f}"
@@ -2181,8 +2147,6 @@ def processupload(request):
 # PREVIEW
 def getpreview(request):
 
-    user = request.user
-
     transactions = request.session.get("uploadrows")
 
 
@@ -2227,8 +2191,8 @@ def submitupload(request):
                 try:
                     parsed_date = pd.to_datetime(row["date"])
                     date_value = parsed_date.date()
-                except:
-                    raise ValueError(f"Invalid date format: {row['date']}")
+                except (ValueError, TypeError, KeyError) as e:
+                    raise ValueError(f"Invalid date format: {row['date']}") from e
 
                 amount_str = row["amount"].replace(",", "")
 
@@ -2255,7 +2219,7 @@ def submitupload(request):
 
                 try:
                     amount_value = Decimal(amount_str)
-                except:
+                except (InvalidOperation, ValueError, TypeError):
                     raise ValueError(f"Invalid amount: {row['amount']}")
 
                 # ---- CREATE PendingEntry ----
@@ -2498,7 +2462,6 @@ def newtransactions(request):
 
 
 def timed(label, fn):
-    import time
     t0 = time.perf_counter()
     result = fn()
     print(label, time.perf_counter() - t0)
@@ -2509,7 +2472,6 @@ def timed(label, fn):
 @login_required
 def alltransactions(request):
 
-    import time
     t0 = time.perf_counter()
 
     user=request.user
@@ -2840,7 +2802,6 @@ def setup(request):
     accounts = accountlist(user=user)
     institutions = institutionlist(user)
     accounttypes = accounttypelist(user)
-    transactions = transactionlist(user=user)
 
     try:
         expensetype = CategoryType.objects.get(name="Expense")
@@ -3076,7 +3037,6 @@ def goals(request):
 
 @login_required
 def color(request):
-    user=request.user
     name = request.user.get_full_name()
 
 
@@ -3121,7 +3081,6 @@ def signin(request):
 
 @login_required
 def element(request):
-    user=request.user
 
     name = request.user.get_full_name()
 
@@ -3137,7 +3096,6 @@ def element(request):
 
 
 def home(request):
-    user=request.user
     return render(request, "home.html")
 
 

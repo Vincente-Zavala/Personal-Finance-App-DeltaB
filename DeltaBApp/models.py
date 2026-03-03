@@ -5,7 +5,6 @@ from . supabaseupload import SupabaseStorage
 from django.db.models import Sum
 from django.utils.safestring import mark_safe
 import pytz
-import uuid
 
 
 

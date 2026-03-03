@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Transaction, PendingTransaction
-from django.utils.html import strip_tags
 
 class TransactionSerializer(serializers.ModelSerializer):
     type_name = serializers.CharField(read_only=True)
