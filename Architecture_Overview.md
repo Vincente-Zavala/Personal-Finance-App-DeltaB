@@ -8,7 +8,7 @@ graph TB
     Prod[Django: Production]
     SDB[(Supabase: Staging DB)]
     PDB[(Supabase: Prod DB)]
-    BS[Better Stack]
+    BS[BetterStack]
     Backup{{Cloud Backup}}
 
     %% Flow

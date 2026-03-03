@@ -28,7 +28,7 @@ Deltab is a personal finance web application that allows users to track bank tra
 - Environment-based configuration (staging vs production)
 
 ### Logging
-- Better Stack
+- BetterStack
 - JSON Structured logs
 
 ---

@@ -1221,8 +1221,10 @@ def addpendingtransaction(request):
 
 
             except Exception as e:
-                print("Transaction creation failed, rollback:", e)
                 traceback.print_exc()
+                logger.error(f"CRITICAL: Bulk Transaction Failed. User: {user.id}. Error: {e}")
+                raise e
+
 
     return JsonResponse({
         "status": "ok",
