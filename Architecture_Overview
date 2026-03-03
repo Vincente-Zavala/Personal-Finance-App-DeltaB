@@ -1,0 +1,12 @@
+graph LR
+    subgraph Development
+        GA[GitHub Actions]
+    end
+
+    User((User)) --> Render[Render: Django API]
+    GA -->|Deploy| Render
+    Render <--> DB[(Supabase: Postgres)]
+    Render -->|Log Stream| BS[Better Stack: Logging]
+    
+    style GA fill:#f9f,stroke:#333
+    style BS fill:#bbf,stroke:#333
