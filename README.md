@@ -9,7 +9,7 @@ Deltab is a personal finance web application that allows users to track bank tra
 
 -----
 
-## System Architecture ##
+## System Architecture
 
 ### Application Layer
 - Django (Python)
@@ -33,7 +33,7 @@ Deltab is a personal finance web application that allows users to track bank tra
 
 ---
 
-## Core Features ##
+## Core Features
 
 - User-managed financial accounts and institutions
 - Transaction Upload (manual and bank statement upload)
@@ -44,7 +44,7 @@ Deltab is a personal finance web application that allows users to track bank tra
 
 ---
 
-## Environments ##
+## Environments
 
 Two fully isolated environments are maintained:
 
@@ -63,7 +63,7 @@ Two fully isolated environments are maintained:
 
 ---
 
-## Database Design & Safety ##
+## Database Design & Safety
 
 The database schema is intentionally strict to enforce data integrity.
 
@@ -95,7 +95,7 @@ Even if the application encounters errors, the database schema prevents invalid 
 
 ---
 
-## Transaction Safety ##
+## Transaction Safety
 
 Several multi-step write operations are wrapped in `transaction.atomic()` blocks.
 
@@ -113,7 +113,7 @@ All steps occur inside atomic transactions. If any step fails, no partial data i
 
 ---
 
-## Observability ##
+## Observability
 
 ### Logging
 
@@ -143,7 +143,7 @@ This enables identification of:
 
 ---
 
-## Failure Testing & Recovery ##
+## Failure Testing & Recovery
 
 ### Intentional Failures Tested
 
@@ -164,7 +164,7 @@ These failures validate that the system fails fast and safely.
 
 ---
 
-## Postmortems ##
+## Postmortems
 
 Formal postmortems are planned as part of ongoing operational maturity improvements. Future work includes documenting:
 - Failure timeline
@@ -174,7 +174,7 @@ Formal postmortems are planned as part of ongoing operational maturity improveme
 
 ---
 
-## Why This Project Matters ##
+## Why This Project Matters
 
 This project was built to demonstrate the ability to:
 - Design safe relational schemas
@@ -185,7 +185,7 @@ This project was built to demonstrate the ability to:
 
 ---
 
-## Future Improvements ##
+## Future Improvements
 
 - Automated backup and restore testing
 - Formalized postmortem documentation
