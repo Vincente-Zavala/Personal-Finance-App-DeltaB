@@ -53,4 +53,5 @@ urlpatterns = [
     path("api/pending-transactions/", pendingtransactions_api, name="pendingtransactions_api"),
     path("api/categories/", categories_api, name="categories_api"),
     path("api/accounts/", accounts_api, name="accounts_api"),
+    path('health/', views.health_check, name='health_check'),
 ]

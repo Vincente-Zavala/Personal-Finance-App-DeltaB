@@ -35,6 +35,7 @@ from .serializers import TransactionSerializer, PendingTransactionSerializer
 from django.views.decorators.http import require_POST
 from datetime import timedelta
 import traceback
+from django.http import HttpResponse
 
 
 User = get_user_model()
@@ -3145,3 +3146,6 @@ def accounttypelist(user):
 
 def transactionlist(user):
     return Transaction.objects.filter(user=user)
+
+def health_check(request):
+    return HttpResponse("OK", status=200)
