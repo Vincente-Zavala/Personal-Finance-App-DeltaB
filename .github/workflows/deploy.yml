@@ -15,7 +15,7 @@ jobs:
       SUPABASE_URL: "https://xyz.supabase.co"
       SUPABASE_PUBLIC_KEY: "mock-key"
       SUPABASE_SERVICE_KEY: "mock-key"
-      APP_ENV: "testing"
+      APP_ENV: "staging"
 
     services:
       # This creates the actual DB for the tests to talk to
