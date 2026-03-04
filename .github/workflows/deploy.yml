@@ -2,11 +2,37 @@ name: Django Deployment Pipeline
 
 on:
   push:
-    branches: [ main ]  # Change this to 'master' if that is your branch name
+    branches: [ main ]
 
 jobs:
   deploy-job:
     runs-on: ubuntu-latest
+    
+    # These satisfy your config.py validation
+    env:
+      SECRET_KEY: "ci-secret-key"
+      DATABASE_URL: "postgres://user:password@localhost:5432/project_db"
+      SUPABASE_URL: "https://xyz.supabase.co"
+      SUPABASE_PUBLIC_KEY: "mock-key"
+      SUPABASE_SERVICE_KEY: "mock-key"
+      APP_ENV: "testing"
+
+    services:
+      # This creates the actual DB for the tests to talk to
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: project_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
