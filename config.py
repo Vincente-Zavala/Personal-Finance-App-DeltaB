@@ -15,7 +15,6 @@ class Config:
     SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
     SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
-    # Add other environment variables you need here
 
     # Function to validate required env vars
     @classmethod
