@@ -48,10 +48,6 @@ jobs:
       - name: Run Django Tests
         run: python manage.py test
 
-      - name: Trigger Render Deploy
-        if: success()
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-
       - name: Health Check (With Cold Start Support)
         run: |
           echo "Waking up the Free Tier instance..."
@@ -65,3 +61,7 @@ jobs:
             echo "Health Check Failed with status: $RESPONSE"
             exit 1
           fi
+
+      - name: Trigger Render Deploy
+        if: success()
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
