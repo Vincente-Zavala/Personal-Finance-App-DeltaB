@@ -57,7 +57,7 @@ jobs:
           echo "Waking up the Free Tier instance..."
           # --connect-timeout 60 gives it a full minute to spin up from sleep
           # --retry 3 tries again if the connection is refused during boot
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 60 --retry 3 --retry-delay 5 https://your-app-url.render.com/health/)
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 60 --retry 3 --retry-delay 5 https://deltab-staging.onrender.com/health/)
           
           if [ "$RESPONSE" -eq 200 ]; then
             echo "Health Check Passed: App is awake and responding."
