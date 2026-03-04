@@ -1,4 +1,13 @@
-steps:
+name: Django Deployment Pipeline
+
+on:
+  push:
+    branches: [ main ]  # Change this to 'master' if that is your branch name
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
