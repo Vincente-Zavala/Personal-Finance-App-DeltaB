@@ -14,3 +14,5 @@ __pycache__/
 prod.tfvars
 staging.tfvars
 *.tfstate*
+
+staticfiles

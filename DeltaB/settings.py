@@ -15,7 +15,6 @@ import dj_database_url
 import os
 import logging
 from dotenv import load_dotenv
-from config import Config
 from pythonjsonlogger import jsonlogger
 from django.db import connections
 from django.db.utils import OperationalError
@@ -71,6 +70,37 @@ LOGGING = {
         },
     },
 }
+
+
+class Config:
+    """
+    Centralized configuration management.
+    Handles environment variables and validation.
+    """
+    ENV = os.getenv("APP_ENV", "staging")
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    
+    # Supabase Configuration
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_PUBLIC_KEY = os.getenv("SUPABASE_PUBLIC_KEY")
+    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+    SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
+
+    @classmethod
+    def validate(cls):
+        """Ensures all critical environment variables are set before the app starts."""
+        required_vars = [
+            "SECRET_KEY",
+            "DATABASE_URL",
+            "SUPABASE_URL",
+            "SUPABASE_PUBLIC_KEY",
+            "SUPABASE_SERVICE_KEY",
+        ]
+        missing = [var for var in required_vars if not getattr(cls, var)]
+        if missing:
+            raise ValueError(f"Critical Configuration Missing: {', '.join(missing)}")
 
 # Validate configuration
 Config.validate()
@@ -194,6 +224,9 @@ except OperationalError as e:
 
 if ENV not in ("staging", "production"):
     raise RuntimeError("Invalid Environment")
+
+
+
 
 
 

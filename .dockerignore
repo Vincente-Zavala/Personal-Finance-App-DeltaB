@@ -9,3 +9,5 @@ __pycache__/
 
 prod.tfvars
 staging.tfvars
+
+staticfiles
