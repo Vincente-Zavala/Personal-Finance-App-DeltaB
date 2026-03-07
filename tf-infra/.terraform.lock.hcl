@@ -1,0 +1,48 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/render-oss/render" {
+  version     = "1.8.0"
+  constraints = "~> 1.0"
+  hashes = [
+    "h1:v+yPl5pwl3V+TTnnhgYRs57JyrCyq4D84GqBCe/iAyQ=",
+    "zh:0598fddeedf1e4217ffcb3b44f45018b1378d6007643af5ceaa37887d89f9851",
+    "zh:1a80d175bfc4a12b6d130ea2ca93dfa590978d6f20e1ab9484f2a690ab73e33b",
+    "zh:1c4ccc09aa20688b938e67d8c5c32f61e2ba7b98f9ac18686851a938f4fdfbd7",
+    "zh:2137f8a4ff91457dc5a18cfbdbf40fee8ee083804cd0484979edd5d67c2c4d2b",
+    "zh:4272ee3c7302e1f695ca97ea10f285727ad71a4631bef80ee5fe02157a60de7f",
+    "zh:6f130b02ebb92c583db7b727383ed82d65bfd7490a38ef4fba67c72964b1b1cb",
+    "zh:7c0a834b705506f568df8c72974b4b27e563e2b2dbea316abee10d79fb71ff33",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:93161ae4b5cf64e2f4874710f9c81c30bd80c6777b7b91efb7861841e1317faf",
+    "zh:9a40b010a7652eb561bcc35a321c2247ddafd76ee084b4726e763ee797bea958",
+    "zh:b676e712ca3950efeb0081845e202ed230e0c967e6ae4a0bc415344db11896de",
+    "zh:bda6fb2643c27276f0e68275024b64fc7d3135619669930a59757f8a728fad22",
+    "zh:d22bfa38c742c8ea8eca8b282729fe2768fd1650d70c7756990fcada3d653f53",
+    "zh:ec9d8bb4a2683d8efbad86bd154ecd15416e21c1992bb67bb8952e5ce31720cc",
+    "zh:f1a7ad3096a8abc690c4c76341d94c3d56bb71bd65ac2842b610b515a0fbd72b",
+  ]
+}
+
+provider "registry.terraform.io/supabase/supabase" {
+  version     = "1.7.0"
+  constraints = "~> 1.0"
+  hashes = [
+    "h1:A2vxFbsye4Ka/5qzyYcJ61y/p6CCiriSObIUZbQ96tY=",
+    "zh:1ad20fff727b53bf72967511fc76909d2e73e1aa385808ec107de644ef23fb40",
+    "zh:330b5a55b65eae87f7de8ab9d02c70d58b4a317fda9ada9166d0d83191c16f31",
+    "zh:58644bb8b0bc23c6b65afc904c11c0c00ba3b209048dac666568ec01823a380b",
+    "zh:59e13950d8e6a8b3a68d28fb131f93c5d2c52601e14dae62303bf9514e2f8345",
+    "zh:6847fb09cb10bad889e59826a53a949830812d7908aeb07fe49b8c95acee5d42",
+    "zh:83aed2860f0ead9a90f0b4022fd3a3e9ca91ba2abe8f9e45d5d23a9f7b88f67c",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:89b7c8120f471cadd30b5df611717dd46d2227779bcce348b647c20ffb5017da",
+    "zh:a78a9218dde7bb58e62699d8facfefdb062a7d11e38d517ac2d1b9231cd360a7",
+    "zh:b84377dd541df61d2b6a4ca0aa813ff48996fbd14251be1309605d781e869d94",
+    "zh:c2fed594cc81d61a96193223ba488d3816ea65345b02b3dbd0d3a16d409c820e",
+    "zh:dedc02702b92798d2251b959574697eeb0bec7aaff13eefd355edd0d62fb0a37",
+    "zh:e16510d41c6d0e0abbc8391a16fa47f88753f3091eb201dc934e60e60e3555a9",
+    "zh:ee6fbbe127f5fbaa4db3dc80714cf1fca116813f09bc72cd5eac73d577dce1e1",
+    "zh:ef990054556afba5c709e3070add35a81ac7ddb7e961ea243d74d22f98e91ccb",
+  ]
+}

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deltab-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: deltab-web
+  template:
+    metadata:
+      labels:
+        app: deltab-web
+    spec:
+      containers:
+      - name: deltab-web-container
+        image: vincentz000/deltab-web:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - secretRef:
+            name: deltab-secrets

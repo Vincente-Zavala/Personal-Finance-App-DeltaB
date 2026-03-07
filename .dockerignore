@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 .git
 .env
+*.tfvars
+*.tfstate*
+
+prod.tfvars
+staging.tfvars
