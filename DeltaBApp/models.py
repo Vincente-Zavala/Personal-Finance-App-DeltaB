@@ -132,8 +132,8 @@ class Transaction(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL, null=True, blank=True)
 
-    cached_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
-    cached_account_display = models.CharField(max_length=500, blank=True, default="")
+    cached_amount = models.DecimalField(max_digits=20, decimal_places=2)
+    cached_account_display = models.CharField(max_length=500, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
