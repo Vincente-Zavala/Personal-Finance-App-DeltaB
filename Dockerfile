@@ -1,19 +1,19 @@
 FROM python:3.11-slim
 
-# Set environment variables
+# Environment Variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-# Install system dependencies for PostgreSQL
+# System Dependencies
 RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Python Dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project code
+# Project Code
 COPY . .
 
 EXPOSE 8000

@@ -17,5 +17,4 @@ jobs:
         run: pip install ruff
         
       - name: Run Ruff
-        #fails builds
         run: ruff check .

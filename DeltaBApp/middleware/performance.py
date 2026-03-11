@@ -1,66 +1,58 @@
 import time
-import traceback
-import uuid
 import logging
+import uuid
 from django.db import connection
 from django.utils.deprecation import MiddlewareMixin
 
+logger = logging.getLogger(__name__)
+
 class PerformanceMiddleware(MiddlewareMixin):
-    SLOW_QUERY_THRESHOLD_MS = 50  # alert threshold
+    SLOW_QUERY_THRESHOLD_MS = 50
 
     def process_request(self, request):
-        """Log basic request info + start timers & query counters."""
-        user = request.user.username if request.user.is_authenticated else "anon"
         request._start_time = time.perf_counter()
         request._queries_before = len(connection.queries)
-        request._request_id = str(uuid.uuid4())  # Add request ID for each request
 
-        logger = logging.getLogger()
-        logger.info(f"Request {request.method} {request.path} (user={user})",
-                    extra={'request_id': request._request_id, 'user': user})
+        if not hasattr(request, '_request_id'):
+            request._request_id = str(uuid.uuid4())
 
     def process_exception(self, request, exception):
-        """Log full traceback for debugging."""
         request_id = getattr(request, '_request_id', 'unknown')
-        logger = logging.getLogger()
-        logger.error(f"Exception occurred at {request.path} (ID: {request_id})", 
-                     extra={'request_id': request_id, 'exception': str(exception)})
 
-        # Optional: print the full traceback to the console (or log it)
-        print(traceback.format_exc(), flush=True)
+        logger.exception(f"Exception at {request.path}", extra={'request_id': request_id})
 
     def process_response(self, request, response):
-        """Log performance + SQL queries."""
-
-        # === Request duration ===
+        request_id = getattr(request, '_request_id', 'unknown')
         start = getattr(request, "_start_time", None)
+        user = getattr(request.user, 'username', 'anon') if request.user.is_authenticated else 'anon'
+        
+        logger.info(f"HTTP {request.method} {request.path} -> {response.status_code} (ID: {request_id})")
+
         if start:
             duration_ms = (time.perf_counter() - start) * 1000
-            logger = logging.getLogger()
-            logger.info(f"Request {request.path} took {duration_ms:.2f} ms", 
-                        extra={'request_id': request._request_id, 'duration_ms': duration_ms})
-
-        # === Query diff ===
-        before = getattr(request, "_queries_before", None)
-        total_queries_now = len(connection.queries)
-        query_count = total_queries_now - before if before is not None else 0
-
+            
+            # Defensive check for the user
+            current_user = getattr(request, 'user', None)
+            user_display = current_user.username if current_user and current_user.is_authenticated else "Anonymous"
+            
+            logger.info(
+                f"Performance: {duration_ms:.2f}ms | User: {user_display}", 
+                extra={
+                    'request_id': request_id, 
+                    'duration_ms': duration_ms,
+                    'user': user_display # Pass the string to avoid serialization issues
+                }
+            )
+        # SQL Analysis
+        before = getattr(request, "_queries_before", 0)
+        query_count = len(connection.queries) - before
         if query_count > 0:
-            logger = logging.getLogger()
-            logger.info(f"Request {request.path} executed {query_count} SQL queries",
-                        extra={'request_id': request._request_id, 'query_count': query_count})
-
-            # Log slow queries
-            new_queries = connection.queries[before:]
-            slow = []
-
-            for q in new_queries:
-                q_time_ms = float(q.get("time", 0)) * 1000
-                if q_time_ms > self.SLOW_QUERY_THRESHOLD_MS:
-                    slow.append((q_time_ms, q["sql"]))
-
-            for ms, sql in slow:
-                logger.warning(f"Slow query detected: ({ms:.2f} ms) {sql}",
-                               extra={'request_id': request._request_id, 'sql': sql, 'slow_ms': ms})
-
+            logger.info(f"SQL: {query_count} queries executed",
+                        extra={'request_id': request_id, 'query_count': query_count})
+            
+            for q in connection.queries[before:]:
+                ms = float(q.get("time", 0)) * 1000
+                if ms > self.SLOW_QUERY_THRESHOLD_MS:
+                    logger.warning(f"SLOW SQL: {ms:.2f}ms | {q['sql']}",
+                                   extra={'request_id': request_id})
         return response

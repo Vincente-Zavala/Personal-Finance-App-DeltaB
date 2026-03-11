@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
             labels: labels,
             datasets: [
                 {
-                    label: "Spent",
+                    label: "Received/Spent",
                     data: spentData,
                     backgroundColor: "#ff6b6b"
                 },

@@ -20,7 +20,7 @@ provider "render" {
   owner_id = var.render_owner_id
 }
 
-# This represents your existing Supabase project
+# SUPABASE
 resource "supabase_project" "finance_db" {
   name            = var.db_name
   organization_id = var.supabase_org_id
@@ -34,7 +34,7 @@ resource "supabase_project" "finance_db" {
   }
 }
 
-# This represents your existing Render web service
+# RENDER
 resource "render_web_service" "finance_app" {
   name    = var.app_name
   plan    = "free"

@@ -7,7 +7,6 @@
 
 <!-- Content Start -->
 <div class="content">
-
     <!-- Widget Start -->
     <div class="container-fluid pt-4 px-4">
         <div class="row g-4">
@@ -50,7 +49,7 @@
                                 <i class="fa fa-check fa-lg text-primary"></i>
                                 <div class="text-start">
                                     <p class="mb-0 text-muted small">Completed</p>
-                                    <h6 class="m-0 fw-bold">#</h6>
+                                    <h6 class="m-0 fw-bold">0</h6>
                                 </div>
                             </div>
                         </div>
@@ -147,7 +146,7 @@
             <div>
                 <!-- Goal Item -->
                 {% for goal in goals %}
-                <div class="goal-item bg-secondary border border-light p-3 rounded-4 mb-3 shadow-sm" data-goal-id="{{ goal.id }}" data-goal-amount="{{ goal.amount }}">
+                <div class="goal-item bg-secondary border border-light p-3 rounded-4 mb-3 shadow-sm" data-goal-id="{{ goal.id }}" data-goal-amount="{{ goal.amount }}" data-saved-amount="{{ goal.saved }}">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="text-white mb-0"><i class="fa fa-hashtag fa-1x text-primary me-3"></i>{{ goal.name }}</h6>
                         <span class="badge fw-semibold border border-{{ goal.statuscolor }} text-{{ goal.statuscolor }}">{{ goal.status }}</span>
@@ -157,7 +156,7 @@
                         style="width: 0%;" 
                         aria-valuenow="0" 
                         aria-valuemin="0" 
-                        aria-valuemax="{{ goal.amount }}">
+                        aria-valuemax="100">
                         </div>                           
                     </div>
                     <div class="d-flex justify-content-between mt-2 text-muted small">
@@ -188,7 +187,6 @@
                                             <th>Category</th>
                                             <th>Note</th>
                                             <th>Source Account</th>
-                                            <th>Destination Account</th>
                                             <th class="text-end">Amount</th>
                                         </tr>
                                     </thead>
@@ -205,10 +203,9 @@
                                             <td>{{ transaction.date }}</td>
                                             <td>{{ transaction.category.type }}</td>
                                             <td>{{ transaction.category }}</td>
-                                            <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.note }}</td>
-                                            <td>{{ transaction.sourceaccount }}</td>
-                                            <td>{{ transaction.destinationaccount|default:'--' }}</td>
-                                            <td class="text-end fw-semibold text-primary">${{ transaction.amount }}</td>
+                                            <td class="text-truncate" style="max-width:150px;" title="{{ transaction.note }}">{{ transaction.user_note }}</td>
+                                            <td>{{ transaction.account }}</td>
+                                            <td class="text-end fw-semibold text-primary">${{ transaction.display_amount }}</td>
                                         </tr>
                                         {% empty %}                                    
                                         <tr>
@@ -269,15 +266,14 @@
 {% block scripts %}
 
     <script src="{% static 'js/tasks.js' %}"></script>
-
-    <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 
     <script src="{% static 'js/flatpickr.js' %}"></script>
-
     <script>
         const linkGoalTransactionUrl = "{% url 'linkgoaltransaction' %}";
         const csrfToken = "{{ csrf_token }}";
     </script>
     <script src="{% static 'js/linkgoaltransaction.js' %}"></script>
+
+    <script src="{% static 'js/guest_user_warning.js' %}"></script>
 
 {% endblock %}

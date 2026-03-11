@@ -132,9 +132,11 @@ class Transaction(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions")
     uploadsource = models.ForeignKey('StatementUpload', on_delete=models.SET_NULL, null=True, blank=True)
 
+    cached_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cached_account_display = models.CharField(max_length=500, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Hash / keys
     base_key = models.CharField(max_length=128, db_index=True)
     import_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
     manual_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
@@ -144,79 +146,64 @@ class Transaction(models.Model):
         return not self.entries.filter(paired=False).exists()
 
     @property
-    def amount(self):
-        entries = self.entries.all()
-
-        pos = entries.filter(amount__gt=0).first()
-        neg = entries.filter(amount__lt=0).first()
-
-        # Transfer
-        if pos and neg:
-            return pos.amount
-
-        # Normal transaction
-        total = entries.aggregate(total=Sum("amount"))["total"]
-        return total or 0
-
-    @property
     def account(self):
 
         entries = self.entries.all()
 
-        # No entries fallback
         if not entries:
             return ""
 
-        # Normal transaction (single entry)
         if entries.count() == 1:
             return entries.first().account.name
 
-        # Transfer (two entries)
         source = entries.filter(amount__lt=0).first()
         dest = entries.filter(amount__gt=0).first()
 
-        # Build with Font Awesome icon
         if source and dest:
             html = f"{source.account.name} > {dest.account.name}"
             return mark_safe(html)
 
-        # Fallback
         html = " <i class='fa-solid fa-arrow-right mx-1'></i> ".join(
             e.account.name for e in entries
         )
         return mark_safe(html)
 
 
-    @property
-    def account_display(self):
+    def update_cached_values(self):
+        # 1. Fetch entries with related data to avoid N+1 during the update
+        entries = list(self.entries.select_related('account__institution').all())
+        
+        # --- AMOUNT LOGIC ---
+        pos = next((e for e in entries if e.amount > 0), None)
+        neg = next((e for e in entries if e.amount < 0), None)
 
-        entries = list(self.entries.all())
-
-        # No entries fallback
+        if pos and neg:
+            self.cached_amount = pos.amount
+        else:
+            self.cached_amount = sum(e.amount for e in entries) or 0
+        
+        # --- ACCOUNT DISPLAY LOGIC ---
         if not entries:
-            return ""
-
-        # Normal transaction (single entry)
-        if len(entries) == 1:
+            self.cached_account_display = ""
+        elif len(entries) == 1:
             e = entries[0]
-            return f"{e.account.institution.name} {e.account.name}"
+            self.cached_account_display = f"{e.account.institution.name} {e.account.name}"
+        else:
+            source = next((e for e in entries if e.amount < 0), None)
+            dest = next((e for e in entries if e.amount > 0), None)
 
-        # Transfer (two entries)
-        source = next((e for e in entries if e.amount < 0), None)
-        dest = next((e for e in entries if e.amount > 0), None)
-
-        # Build with Font Awesome icon
-        if source and dest:
-            return (
-                f"{source.account.institution.name} {source.account.name}"
-                f" > "
-                f"{dest.account.institution.name} {dest.account.name}"
-            )
-
-        # Fallback for more than 2 entries
-        return "> ".join(
-            f"{e.account.institution.name} - {e.account.name}" for e in entries
-        )
+            if source and dest:
+                self.cached_account_display = (
+                    f"{source.account.institution.name} {source.account.name} > "
+                    f"{dest.account.institution.name} {dest.account.name}"
+                )
+            else:
+                self.cached_account_display = " > ".join(
+                    f"{e.account.institution.name} - {e.account.name}" for e in entries
+                )
+        
+        # Save both fields at once
+        self.save(update_fields=['cached_amount', 'cached_account_display'])
 
 
 
@@ -237,6 +224,17 @@ class Entry(models.Model):
     
     destination_account = models.ForeignKey(Account, blank=True, null=True, on_delete=models.CASCADE, related_name="entries")
     paired = models.BooleanField(default=True)
+
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Tell the parent transaction to recalculate
+        self.transaction.update_cached_values()
+
+    def delete(self, *args, **kwargs):
+        tx = self.transaction
+        super().delete(*args, **kwargs)
+        tx.update_cached_values()
 
     def __str__(self):
         return f"{self.account.name} {self.amount}"
@@ -267,7 +265,6 @@ class PendingTransaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pendingtransactions")
 
-    # Hash / keys
     base_key = models.CharField(max_length=128, db_index=True)
     import_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
     manual_key = models.CharField(max_length=128, db_index=True, null=True, blank=True)
@@ -293,24 +290,19 @@ class PendingTransaction(models.Model):
 
         pendingentries = self.pendingentries.all()
 
-        # No entries fallback
         if not pendingentries:
             return ""
 
-        # Normal transaction (single entry)
         if pendingentries.count() == 1:
             return pendingentries.first().account.name
 
-        # Transfer (two entries)
         source = pendingentries.filter(amount__lt=0).first()
         dest = pendingentries.filter(amount__gt=0).first()
 
-        # Build with Font Awesome icon
         if source and dest:
             html = f"{source.account.name} <i class='fa-solid fa-arrow-right mx-1'></i> {dest.account.name}"
             return mark_safe(html)
 
-        # Fallback
         html = " <i class='fa-solid fa-arrow-right mx-1'></i> ".join(
             e.account.name for e in pendingentries
         )

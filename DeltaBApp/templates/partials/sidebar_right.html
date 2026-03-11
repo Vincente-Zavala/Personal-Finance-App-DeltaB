@@ -47,16 +47,14 @@
                             <span class="text-muted small">{{ account.institution.name }}</span>
                         </div>
                     </div>
-                    <span class="account-balance fw-semibold text-primesec">${{ account.balance }}</span>
+                    <span class="account-balance fw-semibold text-primesec">${{ account.balance|abs_val }}</span>
                 </div>
                 {% endfor %}
                 {% endfor %}
             </div>
         </div>
-
-        <!-- Footer -->
         <div class="sidebar-footer mt-auto text-center pt-3">
-            <small class="text-muted">© 2025 FinanceApp</small>
+            <small class="text-muted">© 2026 FinanceApp</small>
         </div>
     </nav>
 </div>

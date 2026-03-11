@@ -1,7 +1,6 @@
 #!/bin/bash
 echo "Launching DeltaB Finance Project..."
 
-# Make sure docker-compose is running
 docker compose up -d --build
 
 echo "Running Database Migrations to Supabase..."

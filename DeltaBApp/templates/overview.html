@@ -107,16 +107,10 @@
                     </div>
                     <div class="section-divider bottom-only"></div>
                     <!-- Categories Start-->
-                        <div class="col-sm-12 col-xl-6 mb-4">
+                        <div class="col-sm-12 col-xl-12 mb-4">
                             <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
                                 <h6 class="mb-4">Budget vs Expense</h6>
                                 <canvas id="budgetexpense-bar" style="max-height: 300px; width: 100%;"></canvas>
-                            </div>
-                        </div>
-                        <div class="col-sm-12 col-xl-6 mb-4">
-                            <div class="bg-secondary rounded h-100 p-4 border border-light" style="height: 300px;">
-                                <h6 class="mb-4">Savings</h6>
-                                <canvas id="savingstransaction-line" style="max-height: 300px; width: 100%;"></canvas>
                             </div>
                         </div>
                         <div class="col-sm-12 col-xl-6 mb-4">
@@ -148,28 +142,19 @@
 {% block scripts %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 
     <script src="{% static 'js/flatpickr.js' %}"></script> 
-
     <script src="{% static 'js/iconcolorstyling.js' %}"></script> 
-
-    <!-- Template Javascript -->
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/dateoptions.js' %}"></script>
     <script src="{% static 'js/periodsections.js' %}"></script> 
-
     <script id="charts-data" type="application/json">{{ charts_data|safe }}</script>
     <script src="{% static 'js/charts.js' %}"></script>
-
     <script id="incomeexpense-chart-data" type="application/json">{{ incomeexpensedata|safe }}</script>
     <script src="{% static 'js/incomeexpensechart.js' %}"></script>
-
     <script id="budgetexpense-chart-data" type="application/json">{{ budgetexpensedata|safe }}</script>
     <script src="{% static 'js/budgetexpense.js' %}"></script>
-
     <script id="savingstransaction-chart-data" type="application/json">{{ savingsdata|safe }}</script>
-    <script src="{% static 'js/savingstransaction.js' %}"></script>
+    <!-- <script src="{% static 'js/savingstransaction.js' %}"></script> -->
 
 {% endblock %}

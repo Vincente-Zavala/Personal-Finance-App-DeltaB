@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic.base import RedirectView
 from .views import alltransactions_api, pendingtransactions_api, categories_api, accounts_api
 from . import views
+from django.conf import settings
 
 urlpatterns = [
     path('', RedirectView.as_view(url='home')),
@@ -39,7 +40,6 @@ urlpatterns = [
     path("updatetransactions/", views.updatetransactions, name="updatetransactions"),
     path("previousmonthlimit/", views.previousmonthlimit, name="previousmonthlimit"),
     path("updateaccounts/", views.updateaccounts, name="updateaccounts"),
-    path("signup/", views.signup, name="signup"),
     path("signin/", views.signin, name="signin"),
     path("home/", views.home, name="home"),
     path("uploadfile/", views.uploadfile, name="uploadfile"),
@@ -55,3 +55,8 @@ urlpatterns = [
     path("api/accounts/", accounts_api, name="accounts_api"),
     path('health/', views.health_check, name='health_check'),
 ]
+
+if settings.ALLOW_REGISTRATION:
+    urlpatterns += [
+        path('signup/', views.signup, name='signup'),
+    ]

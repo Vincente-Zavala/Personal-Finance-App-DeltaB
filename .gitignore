@@ -1,18 +1,22 @@
-#SQL LITE DB
+# --- Databases ---
 db.sqlite3
+db.sqlite3-journal
 
-# Python Cache
+# --- Python & Environment ---
 __pycache__/
 *.pyc
-
-# Env
 .env
 *.env
+venv/
+.venv/
 
-# Ter
+# --- Infrastructure (Terraform) ---
 *.tfvars
 prod.tfvars
 staging.tfvars
 *.tfstate*
+.terraform/
 
-staticfiles
+# --- Static & Media ---
+staticfiles/
+media/

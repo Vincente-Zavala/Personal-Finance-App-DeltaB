@@ -1457,3 +1457,20 @@ padding: 1rem;
   font-size: 0.85rem;
   line-height: 1;
 }
+
+/* Force the table to the edge of the DeltaB container */
+#allTransactionsTable {
+  width: 100% !important;
+  table-layout: fixed; /* Prevents columns from jumping around */
+}
+
+/* Force the Note column to absorb all extra space */
+#allTransactionsTable th:nth-child(6), 
+#allTransactionsTable td:nth-child(6) {
+  width: auto; 
+  min-width: 200px;
+}
+
+/* Keep functional columns compact */
+.date-col { width: 110px; }
+.amount-col { width: 100px; }

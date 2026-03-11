@@ -1,24 +1,28 @@
-Django==4.2.23
+# --- Core Web Framework ---
+Django==4.2.19
 asgiref==3.9.1
-sqlparse==0.5.1
+pytz==2024.1
 tzdata==2025.1
 
-gunicorn==21.2.0
-whitenoise==6.6.0
+# --- API & Data Handling ---
+djangorestframework==3.15.2
+pandas==2.2.3
+openpyxl==3.1.5
+sqlparse==0.5.1
 
+# --- Database & Storage ---
 dj-database-url==2.2.0
 psycopg2-binary==2.9.9
-
-python-dotenv==1.2.1
+psycopg[binary]==3.2.4
 supabase==2.24.0
-pandas
-psycopg[binary]
-openpyxl==3.1.5
+faker==36.1.1
 
-djangorestframework==3.15.0
+# --- Production Server & Static Files ---
+gunicorn==23.0.0
+whitenoise==6.6.0
 
+# --- Observability & Environment ---
+python-dotenv==1.0.1
 psutil==5.9.6
-
-python-json-logger
-logtail-python
-pytz==2024.1
+python-json-logger==3.2.1
+logtail-python==0.2.2

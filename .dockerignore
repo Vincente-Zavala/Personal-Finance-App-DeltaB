@@ -1,13 +1,20 @@
+# --- Python Environment & Artifacts ---
 venv/
 .venv/
 __pycache__/
 *.pyc
+
+# --- Source Control ---
 .git
+
+# --- Secrets & Environment Config ---
 .env
 *.tfvars
-*.tfstate*
-
 prod.tfvars
 staging.tfvars
 
-staticfiles
+# --- Infrastructure State ---
+*.tfstate*
+
+# --- Build Artifacts ---
+staticfiles/

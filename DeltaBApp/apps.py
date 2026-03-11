@@ -6,4 +6,4 @@ class DeltaBAppConfig(AppConfig):
     name = "DeltaBApp"
 
     def ready(self):
-        pass
+        import DeltaBApp.demo_signals

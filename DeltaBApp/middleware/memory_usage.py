@@ -1,9 +1,10 @@
 import psutil
 import os
 import logging
+import uuid
 from django.utils.deprecation import MiddlewareMixin
-import uuid  # For generating a request ID
 
+logger = logging.getLogger(__name__)
 process = psutil.Process(os.getpid())
 
 def get_mem_mb():
@@ -12,9 +13,11 @@ def get_mem_mb():
 class MemoryUsageMiddleware(MiddlewareMixin):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        # Generate a unique request ID for the request (you could also use UUID)
+
+        if not hasattr(request, '_request_id'):
+            request._request_id = str(uuid.uuid4())
+        
         request._mem_before = get_mem_mb()
-        request._request_id = str(uuid.uuid4())  # Add a unique request ID for each request
 
     def process_response(self, request, response):
         mem_before = getattr(request, "_mem_before", None)
@@ -24,8 +27,6 @@ class MemoryUsageMiddleware(MiddlewareMixin):
             mem_after = get_mem_mb()
             diff = mem_after - mem_before
 
-            # Log memory usage with request ID
-            logger = logging.getLogger()
             logger.info(
                 f"Memory usage for request {request.path} (ID: {request_id})", 
                 extra={

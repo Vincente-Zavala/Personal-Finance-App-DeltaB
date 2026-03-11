@@ -6,7 +6,8 @@ class TransactionSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(read_only=True)
     formatted_date = serializers.SerializerMethodField()
     date_iso = serializers.DateField(source="date", read_only=True)
-    amount = serializers.DecimalField(source="amount_value", max_digits=20, decimal_places=2, read_only=True)
+    amount = serializers.DecimalField(source="cached_amount", max_digits=20, decimal_places=2, read_only=True)
+    account_display = serializers.CharField(source="cached_account_display", read_only=True)
 
     class Meta:
         model = Transaction

@@ -13,17 +13,6 @@
 
           {% include "partials/page_titles.html" %}
 
-          <!-- Left: Applied Filters -->
-          <!-- <div class="d-flex flex-wrap gap-2">
-              {% if appliedfilters %}
-                  {% for filter in appliedfilters %}
-                      <span class="badge bg-primary text-white">{{ filter }}</span>
-                  {% endfor %}
-              {% else %}
-                  <span class="text-muted">No filters applied</span>
-              {% endif %}
-          </div> -->
-
           <div class="d-flex flex-wrap gap-2" id="appliedFiltersContainer">
             <span class="text-muted">No filters applied</span>
           </div>
@@ -105,7 +94,6 @@
                   <thead class="table-light text-white sticky-top text-center">
                     <tr id="allTransactionsHeader">
                       <th scope="col"  class="editcol" hidden></th>
-                      <th scope="col" class="chevron-col"></th>
                       <th class="date-col">Date</th>
                       <th>Type</th>
                       <th>Category</th>
@@ -117,7 +105,7 @@
                   </thead>
                   <tbody id="allTransactionsBody">
                     <tr id="allloadingRow">
-                      <td colspan="7" class="text-center text-muted py-4">
+                      <td colspan="8" class="text-center text-muted py-4">
                         Loading All Transactions...
                       </td>
                     </tr>
@@ -147,8 +135,6 @@
                           </h6>                       
                           <div class="d-flex justify-content-center gap-3 mb-3">
                             <input type="hidden" name="mode" id="mode" value="monthyear">
-                            <!-- <button type="button" onclick="setMode('monthyear')" class="btn btn-outline-primary active" id="monthbutton">Month</button>
-                            <button type="button" onclick="setMode('custom')" class="btn btn-outline-primary" id="custombutton">Custom</button> -->
                             <button type="button" id="monthbutton" 
                               class="btn btn-outline-primary {% if mode != 'custom' %}active{% endif %}" 
                               onclick="document.getElementById('mode').value='monthyear'; togglePeriodSections('monthyear')">
@@ -329,7 +315,6 @@
 
 {% block scripts %}
 
-  <!-- Template Javascript -->
   <script src="{% static 'js/datedropdown.js' %}"></script>
   <script src="{% static 'js/toggleedit.js' %}"></script>
   <script src="{% static 'js/nestedlist.js' %}"></script>
@@ -340,6 +325,8 @@
 
   <script src="{% static 'js/iconcolorstyling.js' %}"></script>
   <script src="{% static 'js/highlightrows.js' %}"></script>
+  <script src="{% static 'js/guest_user_warning.js' %}"></script>
+
 
   <script>
     const ALL_TRANSACTIONS_API_URL = "{% url 'alltransactions_api' %}";
@@ -347,8 +334,6 @@
 
   <script type="module" src="{% static 'js/loadpendingtransactionstable.js' %}"></script>
   <script type="module" src="{% static 'js/loadalltransactionstable.js' %}"></script>
-
-
 
   <script>
     const PENDING_TRANSACTIONS_API_URL = "{% url 'pendingtransactions_api' %}";
@@ -365,7 +350,6 @@
   <script src="{% static 'js/pendingdeletetransactions.js' %}"></script>
   <script type="module" src="{% static 'js/categories_accounts.js' %}"></script>
 
-  <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 
   <script src="{% static 'js/flatpickr.js' %}"></script> 
 

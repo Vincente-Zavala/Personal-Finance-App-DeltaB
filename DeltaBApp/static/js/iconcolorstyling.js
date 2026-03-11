@@ -7,6 +7,7 @@ const categoryTypeStyles = {
     debt: { color: "#EB8314", icon: "fa-file-invoice-dollar" },
     investment: { color: "#EB14A0", icon: "fa-chart-line" },
     refund: { color: "#8B5CF6", icon: "fa-rotate-left" },
+    reimbursement: { color: "#8B5CF6", icon: "fa-rotate-left" },
     retirement: { color: "#FFD700", icon: "fa-sun" },
   };
   

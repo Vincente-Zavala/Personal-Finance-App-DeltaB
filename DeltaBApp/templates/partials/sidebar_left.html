@@ -2,22 +2,16 @@
    <div class="navbar navbar-dark">
       <a href="{% url 'overview' %}" class="navbar-brand mx-4 mb-2">
           <h3 class="text-primary"><i class="fa fa-user-edit me-2"></i>DeltaB</h3>
+
+          {% if request.user.username == 'demo_user' %}
+          <div class="ms-4">
+            <span class="badge rounded-pill border border-primary text-primary px-2" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+               DEMO MODE <span class="opacity-50">|</span> VIEW ONLY
+           </span>
+          </div>
+          {% endif %}
       </a>
       <!-- Notification Icons -->
-      <div class="notification-wrapper">
-         <a href="" class="notify-icon">
-            <i class="fa fa-envelope"></i>
-         </a>
-
-         <a href="" class="notify-icon has-badge ms-2">
-            <i class="fa fa-bell"></i>
-            <span class="badge">3</span>
-         </a>
-
-         <a href="" class="notify-icon ms-2">
-            <i class="fa fa-triangle-exclamation"></i>
-         </a>
-      </div>
       <div class="navbar-nav w-100">
          <a href="{% url 'overview' %}" 
             class="nav-item nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">

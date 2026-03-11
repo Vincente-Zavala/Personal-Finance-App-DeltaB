@@ -6,4 +6,6 @@ TYPEICONMAP = {
     "Debt": "fa-file-invoice-dollar",
     "Transfer": "fa-retweet",
     "Retirement": "fa-sun",
+    "Refund": "fa-rotate-left",
+    "Reimbursement": "fa-rotate-left",
 }

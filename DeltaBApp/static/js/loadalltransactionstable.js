@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-        // 🔴 PRELOAD GLOBAL DATA (BLOCKING)
         await Promise.all([
             loadCategories(),
             loadAccounts()
@@ -56,8 +55,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             // Close the modal after rendering
-            const filterModalEl = document.getElementById("filterModalTransactions"); // your modal id
-            const filterModal = bootstrap.Modal.getInstance(filterModalEl); // get modal instance
+            const filterModalEl = document.getElementById("filterModalTransactions");
+            const filterModal = bootstrap.Modal.getInstance(filterModalEl);
             if (filterModal) {
                 filterModal.hide();
             }
@@ -85,7 +84,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!data.transactions || !data.transactions.length) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No transactions found.</td>
+                        <td colspan="20" class="text-center text-muted py-4">No transactions found.</td>
                     </tr>
                 `;
                 return;
@@ -135,23 +134,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                 </td>
 
-                <td class="chevron-col">
-                    ${
-                        linkable
-                        ? `
-                        <div class="align-items-center">
-                            <button
-                                class="btn btn-sm p-0 tx-link"
-                                data-tx-id="${tx.id}"
-                                type="button"
-                                title="View linked transaction">
-                                <i class="fa fa-chevron-right tx-chevron text-primary"></i>
-                            </button>
-                        </div>
-                        `
-                        : ""
-                    }
-                </td>
                 `;
             
                 // DATE
@@ -172,20 +154,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 dateTd.append(dateDisplay, dateInput);
 
                 tr.appendChild(dateTd);
-            
-                // // TYPE
-                // const typeTd = document.createElement("td");
-            
-                // const typeDisplay = document.createElement("span");
-                // typeDisplay.className = "tx-display";
-                // typeDisplay.textContent = tx.type_name;
-            
-                // const typeSelect = buildTypeSelect(tx);
-                // typeSelect.classList.add("all-tx-input", "d-none");
-                // typeSelect.name = "type";
-            
-                // typeTd.append(typeDisplay, typeSelect);
-                // tr.appendChild(typeTd);
 
                 // TYPE
                 const typeTd = document.createElement("td");
@@ -223,7 +191,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 categoryTd.classList.add("category-col", "category-border");
 
                 const categoryDisplay = document.createElement("span");
-                // categoryDisplay.className = "tx-display";
                 categoryDisplay.className = "tx-display badge fw-semibold"; 
                 categoryDisplay.textContent = tx.category_name;
                 categoryDisplay.dataset.type = typeKey;
@@ -397,9 +364,9 @@ document.addEventListener("click", (e) => {
 
         if (dateInput && !dateInput._flatpickr) {
             flatpickr(dateInput, {
-                dateFormat: "Y-m-d",      // value sent to backend
-                altInput: true,           // pretty display
-                altFormat: "M j, Y",      // Jan 5, 2025
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "M j, Y", 
                 allowInput: true,
                 defaultDate: dateInput.value
             });
@@ -410,8 +377,8 @@ document.addEventListener("click", (e) => {
         const amountDisplay = row.querySelector('.tx-display.fw-semibold');
 
         if (amountInput && amountDisplay) {
-            row.dataset.originalAmountValue = amountInput.value; // numeric
-            row.dataset.originalAmountText = amountDisplay.textContent; // $ formatted
+            row.dataset.originalAmountValue = amountInput.value;
+            row.dataset.originalAmountText = amountDisplay.textContent;
         }
         
         
@@ -452,7 +419,7 @@ document.addEventListener("click", (e) => {
         }, row.dataset.originalType);
     
         restoredCategorySelect.value = row.dataset.originalCategoryId;
-        restoredCategorySelect.classList.add("all-tx-input", "d-none"); // hide input
+        restoredCategorySelect.classList.add("all-tx-input", "d-none");
         categoryTd.appendChild(restoredCategorySelect);
     
         // Restore display span
@@ -463,7 +430,7 @@ document.addEventListener("click", (e) => {
             categoryTd.insertBefore(categoryDisplay, restoredCategorySelect);
         }
         categoryDisplay.textContent = row.dataset.originalCategoryName;
-        categoryDisplay.classList.remove("d-none"); // show display
+        categoryDisplay.classList.remove("d-none");
     
 
         // --- RESTORE AMOUNT ---
@@ -502,8 +469,8 @@ document.addEventListener("click", (e) => {
         const noteDisplay = noteInput?.previousElementSibling;
         if (noteInput && noteDisplay) {
             noteInput.value = noteDisplay.textContent;
-            noteInput.classList.add("d-none"); // hide input
-            noteDisplay.classList.remove("d-none"); // show display
+            noteInput.classList.add("d-none");
+            noteDisplay.classList.remove("d-none");
         }
     
         // --- Hide cancel/save buttons and show edit button ---
@@ -551,7 +518,7 @@ document.addEventListener("click", (e) => {
             }
         });
 
-        if (Object.keys(changes).length === 1) return; // no changes
+        if (Object.keys(changes).length === 1) return;
         updateTransactions(changes, row);
     }
 });
@@ -586,7 +553,7 @@ document.addEventListener("click", (e) => {
                 return;
             }
 
-            finalizeRowUpdate(row); // 👈 commit UI changes
+            finalizeRowUpdate(row);
         })
         .catch(err => console.error("Update failed:", err));
     }
@@ -598,63 +565,121 @@ document.addEventListener("click", (e) => {
     // -------------------------
     function renderAllTransactions(transactions, appliedFilters = [], oneAccount = false) {
 
+        // const tbody = document.getElementById("allTransactionsBody");
+        // const theadRow = document.getElementById("allTransactionsHeader");
+        
+        // if (!tbody || !theadRow) return;
+    
+        // // Clear table rows
+        // tbody.innerHTML = "";
+
+        // // Add running balance header dynamically
+        // if (oneAccount && !document.getElementById("runningBalanceHeader")) {
+        //     const th = document.createElement("th");
+        //     th.id = "runningBalanceHeader";
+        //     th.textContent = "Running Balance";
+        //     theadRow.appendChild(th);
+        // } else if (!oneAccount && document.getElementById("runningBalanceHeader")) {
+        //     // Remove column if not one account
+        //     document.getElementById("runningBalanceHeader").remove();
+        // }
+    
+        // if (!transactions.length) {
+        //     tbody.innerHTML = `
+        //         <tr>
+        //             <td colspan="7" class="text-center text-muted py-4">
+        //                 No transactions found.
+        //             </td>
+        //         </tr>
+        //     `;
+        // } else {
+        //     const fragment = document.createDocumentFragment();
+    
+        //     transactions.forEach(tx => {
+        //         const tr = document.createElement("tr");
+        //         tr.classList.add("transaction-row");
+        //         tr.dataset.type = tx.type_name;
+    
+        //         tr.innerHTML = `
+        //             <td class="editcol" hidden>
+        //                 <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
+        //             </td>
+        //             <td>${tx.formatted_date}</td>
+        //             <td class="category-cell">${tx.type_name}</td>
+        //             <td>${tx.category_name || ""}</td>
+        //             <td class="destination-col" style="display: none;">${tx.destination_account_display || ""}</td>
+        //             <td class="text-truncate" style="max-width:400px;" title="${tx.user_note || ""}">${tx.user_note || ""}</td>
+        //             <td>${tx.account_display}</td>
+        //             <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
+        //             ${oneAccount ? `<td class="text-end fw-semibold text-white">$${tx.running_balance}</td>` : ""}
+        //         `;
+        //         fragment.appendChild(tr);
+        //     });
+    
+        //     tbody.appendChild(fragment);
+        // }
         const tbody = document.getElementById("allTransactionsBody");
         const theadRow = document.getElementById("allTransactionsHeader");
-        
         if (!tbody || !theadRow) return;
     
-        // Clear table rows
         tbody.innerHTML = "";
-
-        // Add running balance header dynamically
-        if (oneAccount && !document.getElementById("runningBalanceHeader")) {
-            const th = document.createElement("th");
-            th.id = "runningBalanceHeader";
-            th.textContent = "Running Balance";
-            theadRow.appendChild(th);
-        } else if (!oneAccount && document.getElementById("runningBalanceHeader")) {
-            // Remove column if not one account
-            document.getElementById("runningBalanceHeader").remove();
+    
+        // Toggle Running Balance Header
+        let balanceHeader = document.getElementById("runningBalanceHeader");
+        if (oneAccount) {
+            if (!balanceHeader) {
+                balanceHeader = document.createElement("th");
+                balanceHeader.id = "runningBalanceHeader";
+                balanceHeader.textContent = "Running Balance";
+                theadRow.appendChild(balanceHeader);
+            }
+        } else if (balanceHeader) {
+            balanceHeader.remove();
         }
     
         if (!transactions.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        No transactions found.
-                    </td>
-                </tr>
-            `;
-        } else {
-            const fragment = document.createDocumentFragment();
-    
-            transactions.forEach(tx => {
-                const tr = document.createElement("tr");
-                tr.classList.add("transaction-row");
-                tr.dataset.type = tx.type_name;
-    
-                tr.innerHTML = `
-                    <td class="editcol" hidden>
-                        <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
-                    </td>
-                    <td>${tx.formatted_date}</td>
-                    <td class="category-cell">${tx.type_name}</td>
-                    <td>${tx.category_name || ""}</td>
-                    <td class="text-truncate" style="max-width:400px;" title="${tx.note || ""}">${tx.note || ""}</td>
-                    <td>${tx.account_display}</td>
-                    <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
-                    ${oneAccount ? `<td class="text-end fw-semibold text-white">$${tx.running_balance}</td>` : ""}
-                `;
-                fragment.appendChild(tr);
-            });
-    
-            tbody.appendChild(fragment);
+            const colCount = theadRow.querySelectorAll("th").length;
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4">No transactions found.</td></tr>`;
+            return;
         }
+    
+        const fragment = document.createDocumentFragment();
+        transactions.forEach(tx => {
+            const tr = document.createElement("tr");
+            tr.classList.add("transaction-row");
+            const typeKey = tx.type_name.toLowerCase().replace(/\s+/g, "");
+    
+            tr.innerHTML = `
+                <td class="editcol" hidden>
+                    <input class="form-check-input" type="checkbox" value="${tx.id}">
+                </td>
+                <td class="date-col fw-semibold">${tx.formatted_date}</td>
+                <td>${getTypeHTML(tx.type_name)}</td>
+                <td class="category-col category-border">
+                    ${getCategoryHTML(tx, typeKey)}
+                </td>
+                <td class="destination-col" style="display: none;">
+                    ${tx.destination_account_display || ""}
+                </td>
+                <td class="text-start" style="max-width:400px;" title="${tx.user_note || ""}">
+                    <span class="tx-display tx-note">${tx.user_note || ""}</span>
+                </td>
+                <td>${tx.account_display || ""}</td>
+                <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
+                ${oneAccount ? `<td class="text-end fw-semibold text-white">$${tx.running_balance}</td>` : ""}
+            `;
+            fragment.appendChild(tr);
+        });
+    
+        tbody.appendChild(fragment);
+    
+        // IMPORTANT: Re-run the color styling script after injecting new rows
+        applyCategoryStyles(".category-border", categoryTypeStyles);
     
         // Render applied filters
         const filtersContainer = document.getElementById("appliedFiltersContainer");
         if (filtersContainer) {
-            filtersContainer.innerHTML = ""; // clear old filters
+            filtersContainer.innerHTML = "";
             if (appliedFilters.length) {
                 appliedFilters.forEach(filter => {
                     const span = document.createElement("span");
@@ -814,6 +839,25 @@ document.addEventListener("click", (e) => {
             .includes(typeName);
     }
     
+    // Helper to get styled Type HTML
+    function getTypeHTML(typeName) {
+        const typeKey = typeName.toLowerCase().replace(/\s+/g, "");
+        const style = categoryTypeStyles[typeKey];
+        if (style) {
+            return `<span class="tx-display d-inline-flex align-items-center gap-2">
+                        <i class="fa-solid ${style.icon}" style="color: ${style.color}"></i>
+                        <span style="color: ${style.color}">${typeName}</span>
+                    </span>`;
+        }
+        return `<span>${typeName}</span>`;
+    }
+
+    // Helper to get styled Category HTML
+    function getCategoryHTML(tx, typeKey) {
+        return `<span class="tx-display badge fw-semibold" data-type="${typeKey}">
+                    ${tx.category_name || ""}
+                </span>`;
+    }
 
     
 });

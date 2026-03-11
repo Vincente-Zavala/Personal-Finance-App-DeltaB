@@ -10,6 +10,10 @@ import calendar
 from decimal import InvalidOperation
 from dateutil.relativedelta import relativedelta
 import json
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from .decorators import demo_read_only
 from django.http import JsonResponse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
@@ -39,7 +43,6 @@ from django.http import HttpResponse
 
 
 User = get_user_model()
-
 logger = logging.getLogger(__name__)
 
 
@@ -95,18 +98,74 @@ def savebudgetlimit(post_data, month, year, user):
 
 
 
+# CHART DATA #
+# def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user):
 
-def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user):
-    # Chart data
+#     charts_data = []
+#     incomeexpensedata = []
+#     budgetexpensedata = []
+
+#     for ctype in categorytypes:
+#         categories = ctype.category_set.filter(user=user)
+
+#         labels = [cat.name for cat in categories]
+
+#         data = [float(category_totals.get(cat.id, 0)) for cat in categories]
+
+#         charts_data.append({
+#             "type": ctype.name,
+#             "labels": labels,
+#             "data": data,
+#         })
+
+    
+#     # Income vs Expense aggregated
+#     incometotal = sum(
+#         float(category_totals.get(cat.id, 0))
+#         for ctype in categorytypes if ctype.name.lower() == "income"
+#         for cat in ctype.category_set.filter(user=user)
+#     )
+#     expensetotal = sum(
+#         float(category_totals.get(cat.id, 0))
+#         for ctype in categorytypes if ctype.name.lower() == "expense"
+#         for cat in ctype.category_set.filter(user=user)
+#     )
+
+#     incomeexpensedata = [{
+#         "type": "Income vs Expense",
+#         "labels": ["Income", "Expense"],
+#         "data": [incometotal, expensetotal],
+#     }]
+
+#     # Budget vs Expense
+#     budgetexpensedata = []
+
+#     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
+
+
+#     for cat in categorytypes:
+#         cat_id = cat.id
+#         cat_name = cat.name
+#         data = categorytype_totals.get(cat_id, {})
+        
+#         budgetexpensedata.append({
+#             'category': cat_name,
+#             'spent': float(data.get('spent', 0)),
+#             'budget': float(data.get('budget', 0))
+#     })
+    
+
+#     return charts_data, incomeexpensedata, budgetexpensedata
+def chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, categorytype_totals, user):
     charts_data = []
-    incomeexpensedata = []
-    budgetexpensedata = []
-
+    
+    # 1. Use the categorytypes we ALREADY fetched (hoisted from view)
     for ctype in categorytypes:
-        categories = ctype.category_set.filter(user=user)
+        # Optimization: Use all_categories passed from the view if possible, 
+        # or at least use .all() if prefetched to avoid the DB hit
+        categories = ctype.category_set.all() 
 
         labels = [cat.name for cat in categories]
-
         data = [float(category_totals.get(cat.id, 0)) for cat in categories]
 
         charts_data.append({
@@ -115,18 +174,27 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
             "data": data,
         })
 
+    # 2. Use the categorytype_totals we ALREADY calculated
+    incometotal = 0
+    expensetotal = 0
     
-    # Income vs Expense aggregated
-    incometotal = sum(
-        float(category_totals.get(cat.id, 0))
-        for ctype in categorytypes if ctype.name.lower() == "income"
-        for cat in ctype.category_set.filter(user=user)
-    )
-    expensetotal = sum(
-        float(category_totals.get(cat.id, 0))
-        for ctype in categorytypes if ctype.name.lower() == "expense"
-        for cat in ctype.category_set.filter(user=user)
-    )
+    budget_vs_expense = []
+
+    for ctype in categorytypes:
+        data = categorytype_totals.get(ctype.id, {})
+        
+        # Aggregate Income vs Expense for the pie chart
+        if ctype.name.lower() == "income":
+            incometotal = float(data.get('spent', 0))
+        elif ctype.name.lower() == "expense":
+            expensetotal = float(data.get('spent', 0))
+
+        # Build Budget vs Expense bar chart data
+        budget_vs_expense.append({
+            'category': ctype.name,
+            'spent': float(data.get('spent', 0)),
+            'budget': float(data.get('budget', 0))
+        })
 
     incomeexpensedata = [{
         "type": "Income vs Expense",
@@ -134,66 +202,7 @@ def chartdata(request, mode, selected_month, selected_year, selected_fromdate, s
         "data": [incometotal, expensetotal],
     }]
 
-    # Budget vs Expense
-    budgetexpensedata = []
-
-    categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
-
-
-    for cat in categorytypes:  # assuming categorytypes is a queryset of categories
-        cat_id = cat.id
-        cat_name = cat.name
-        data = categorytype_totals.get(cat_id, {})
-        
-        budgetexpensedata.append({
-            'category': cat_name,
-            'spent': float(data.get('spent', 0)),
-            'budget': float(data.get('budget', 0))
-    })
-
-
-    # Savings Amount
-    savingstxs = []
-
-    if mode == "monthyear":
-        savingstxs = (
-            Entry.objects.filter(
-                transaction__date__year=selected_year,
-                transaction__date__month=selected_month,
-                transaction__category__type__name="Savings",
-                user=user
-            )
-            .annotate(day=TruncDate("transaction__date"))
-            .values("day")
-            .annotate(total_amount=Sum("amount"))
-            .order_by("day")
-        )
-
-    elif mode == "custom":
-        selected_fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
-        selected_todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
-
-        savingstxs = (
-            Entry.objects.filter(
-                transaction__date__gte=selected_fromdate,
-                transaction__date__lte=selected_todate,
-                transaction__category__type__name="Savings",
-                user=user
-            )
-            .annotate(day=TruncDate("transaction__date"))
-            .values("day")
-            .annotate(total_amount=Sum("amount"))
-            .order_by("day")
-        )
-
-
-    savingsdata = {
-        "labels": [x["day"].strftime("%Y-%m-%d") for x in savingstxs],
-        "data": [float(x["total_amount"]) for x in savingstxs],
-    }
-    
-
-    return charts_data, incomeexpensedata, budgetexpensedata, savingsdata
+    return charts_data, incomeexpensedata, budget_vs_expense
 
 
 
@@ -206,7 +215,6 @@ def getselecteddate(request):
     user_now = timezone.localtime(timezone.now(), user_tz)
     today = user_now.date()
 
-    # Determine mode: POST → session → default
     mode = request.POST.get("mode") or request.session.get("mode") or "monthyear"
     request.session["mode"] = mode
 
@@ -215,7 +223,7 @@ def getselecteddate(request):
     monthname = yearname = fromname = toname = None
 
     if mode == "monthyear":
-        # Get from POST first, fallback to session, then to today
+
         selected_month = int(request.POST.get("month") or request.session.get("month") or today.month)
         selected_year = int(request.POST.get("year") or request.session.get("year") or today.year)
 
@@ -233,7 +241,7 @@ def getselecteddate(request):
         yearname = selected_year
 
     elif mode == "custom":
-        # Get from POST first, fallback to session
+
         selected_fromdate = request.POST.get("fromdate") or request.session.get("fromdate")
         selected_todate = request.POST.get("todate") or request.session.get("todate")
 
@@ -296,19 +304,11 @@ def categorytransactionsum(mode, selected_month, selected_year, selected_fromdat
     
     category_sums = (
         allcategory_txs.values('category_id')
-        .annotate(
-            normal_sum=Sum(Abs('entries__amount'), filter=~Q(type__name__in=["Refund", "Reimbursement"])),
-            refund_sum=Sum(Abs('entries__amount'), filter=Q(type__name="Refund")),
-            reimbursement_sum=Sum(Abs('entries__amount'), filter=Q(type__name="Reimbursement"))
-        )
+        .annotate(total=Sum('cached_amount'))
     )
 
-    # Convert to dict: category_id -> net total
-    category_map = {}
-    for row in category_sums:
-        net_total = (row['normal_sum'] or 0) - (row['refund_sum'] or 0) - (row['reimbursement_sum'] or 0)
-        category_map[row['category_id']] = net_total
-
+    # Simplified mapping
+    category_map = {row['category_id']: abs(row['total'] or 0) for row in category_sums}
 
     return category_map
 
@@ -318,40 +318,34 @@ def categorytransactionsum(mode, selected_month, selected_year, selected_fromdat
 
 # SUMMARY TRANSACTION TOTAL #
 def categorysummarytotal(user, mode, categories, selected_month, selected_year, selected_fromdate, selected_todate):
-
-
-    # Get summaries for that category
     summaries = MonthlySummary.objects.filter(
         user=user,
         year=selected_year,
         month=selected_month
     )
+    summary_map = {s.category_id: (s.amount or 0) for s in summaries}
 
-    summary_map = {s.category_id: s.amount or 0 for s in summaries}
-
-    # If using a custom range, prorate the summary based on days
     if mode == "custom" and selected_fromdate and selected_todate:
-
         fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
-        for category in categories:
+        # PRE-CALCULATE OVERLAP ONCE (SRE Performance Win)
+        days_in_month = calendar.monthrange(selected_year, selected_month)[1]
+        month_start = datetime.date(selected_year, selected_month, 1)
+        month_end = datetime.date(selected_year, selected_month, days_in_month)
 
-            if category.id in summary_map:
+        overlap_start = max(fromdate, month_start)
+        overlap_end = min(todate, month_end)
 
-                days_in_month = calendar.monthrange(selected_year, selected_month)[1]
-                month_start = datetime.date(selected_year, selected_month, 1)
-                month_end = datetime.date(selected_year, selected_month, days_in_month)
+        if overlap_start > overlap_end:
+            prorate_factor = 0
+        else:
+            overlap_days = (overlap_end - overlap_start).days + 1
+            prorate_factor = overlap_days / days_in_month
 
-                overlap_start = max(fromdate, month_start)
-                overlap_end = min(todate, month_end)
-
-                if overlap_start > overlap_end:
-                    summary_map[category.id] = 0
-                else:
-                    overlap_days = (overlap_end - overlap_start).days + 1
-                    summary_map[category.id] = summary_map[category.id] * (overlap_days / days_in_month)
-
+        # APPLY PRORATE
+        for cat_id in summary_map:
+            summary_map[cat_id] *= prorate_factor
 
     return summary_map
 
@@ -395,7 +389,7 @@ def calculatecategorytotals(request, mode, selected_month, selected_year, select
         category_remaining[category.id] = remaining
         category_percentages[category.id] = percent
 
-    # --- Compute totals per category type ---
+    # Compute totals per category type
     for cattype in categorytypes:
         ct_category_ids = categorytype_map[cattype.id]
 
@@ -525,11 +519,11 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
     remaining_budget = incomebudget_total - budgetmap_total
 
     if remaining_budget == 0:
-        remaining_color = "text-success"     # green
+        remaining_color = "text-success"
     elif remaining_budget < 0:
-        remaining_color = "text-danger"      # red
+        remaining_color = "text-danger"
     else:
-        remaining_color = "text-warning"     # yellow
+        remaining_color = "text-warning"
 
     
     
@@ -550,7 +544,6 @@ def builddatetree(user):
         month_name = calendar.month_name[month]
         date_tree[year][month_name].append(day)
 
-    # Sort and deduplicate days
     for year, months in date_tree.items():
         for month, days in months.items():
             date_tree[year][month] = sorted(set(days))
@@ -567,7 +560,6 @@ def builddatetree(user):
 ## --------------------ADDITIONAL VIEWS-------------------- ##
 
 
-## ATOMICITY ##
 # NEW USER #
 def newuser(request):
     if request.method == 'POST':
@@ -580,7 +572,6 @@ def newuser(request):
         staff = False
 
         try:
-            # Start an atomic block to ensure all changes are done together
             with db_transaction.atomic():
                 # Create user
                 user = User.objects.create_user(
@@ -593,18 +584,19 @@ def newuser(request):
                     timezone=timezone,
                 )
 
-                # Create categories (related to the new user)
                 transfertype = CategoryType.objects.get(name="Transfer")
                 Category.objects.create(name="Transfer", type=transfertype, user=user)
 
                 debttype = CategoryType.objects.get(name="Debt")
                 Category.objects.create(name="CC Payment", type=debttype, user=user)
 
-            # After the transaction block, everything is saved and committed
+            logger.info(f"User created successfully: {user.username}")
+
             return redirect("signin")
 
         except Exception as e:
-            print(f"Error creating user: {e}")
+            logger.exception("Failed to create new user profile")
+            return redirect("signup")
 
 
 
@@ -773,7 +765,6 @@ def build_transfer_note(inputtype, source_account, final_account):
 
 
 
-# ATOMICITY #
 # CREATE BULK TRANSACTIONS
 def create_bulk_transactions(*, user, inputtype, amount, note, date, category, categorytype, source_account, final_account, basekey, manualkey, importkey):
 
@@ -782,9 +773,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
     try:
         with db_transaction.atomic():
 
-            # --------------------
             # NORMAL TRANSACTIONS
-            # --------------------
             if inputtype in POSITIVE_TYPES | NEGATIVE_TYPES:
                 signed_amount = signed_amount_for_type(amount, inputtype)
 
@@ -808,9 +797,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
 
                 created_transactions.append(tx)
 
-            # --------------------
             # TRANSFER-LIKE TYPES
-            # --------------------
             if inputtype in TRANSFER_TYPES:
 
                 # Manual
@@ -819,7 +806,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
                     neg_signed_amount, pos_signed_amount = manual_split_transfer_amount(amount)
                     transfer_note = build_transfer_note(inputtype, source_account, final_account)
 
-                    # SOURCE (outgoing)
+                    # SOURCE
                     tx = Transaction.objects.create(
                         user_note=transfer_note,
                         date=date,
@@ -900,8 +887,9 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
 
 
     except Exception as e:
-        print("Failure:", e)
-        traceback.print_exc()
+        logger.exception(
+            f"Import failure for user {user.username} | Account: {source_account} | Amount: {amount}"
+        )
 
 
     return created_transactions
@@ -926,9 +914,6 @@ def matchtransaction(date, user, amount, categorytype, final_account):
     ).first()
 
     if not match_entry:
-        # new_entry.paired = False
-        # new_entry.save(update_fields="paired")
-
         return False, None
 
     match_entry.paired = True
@@ -953,11 +938,8 @@ def duplicateaddtransaction(request):
         note = request.POST.get("inputnote")
         date = request.POST.get("inputdate")
 
-        # add_transactions = []
         groups = []
 
-
-        # CONVERT TO DECIMAL
         if amount:
             amount = abs(Decimal(amount))
         else:
@@ -1018,7 +1000,6 @@ def duplicateaddtransaction(request):
                     "groups": groups
                 })
             except Exception as e:
-                print("Error in addtransaction:", e)
                 return JsonResponse({"status": "error", "error": str(e)})
 
     
@@ -1041,8 +1022,6 @@ def addtransaction(request):
         user_note = request.POST.get("inputnote")
         date = request.POST.get("inputdate")
 
-
-        # CONVERT TO DECIMAL
         if amount:
             amount = abs(Decimal(amount))
         else:
@@ -1110,11 +1089,7 @@ def addtransaction(request):
 def addpendingtransaction(request):
     user = request.user
 
-    print("Debug in addpending")
-
-
     if request.method == "POST":
-        print("debug in POST")
         deleted_ids = []
         new_transactions = []
 
@@ -1122,15 +1097,13 @@ def addpendingtransaction(request):
         categories_list = categorylist(user)
         accounts_list = accountlist(user)
 
-        categorytypes = {ct.name: ct for ct in categorytypes_list}   # key by name
-        categories = {str(cat.id): cat for cat in categories_list}   # key by string id
+        categorytypes = {ct.name: ct for ct in categorytypes_list}
+        categories = {str(cat.id): cat for cat in categories_list}
         accounts = {str(acct.id): acct for acct in accounts_list}
 
         pendingtransactions = PendingTransaction.objects.filter(user=user).prefetch_related('pendingentries__account__institution')
 
 
-
-        # Iterate over all POSTed category choices
         for key, category_id in request.POST.items():
             if not key.startswith("categorychoice_"):
                 continue
@@ -1183,8 +1156,6 @@ def addpendingtransaction(request):
             else:
                 source_account = pendingentries.first().account if pendingentries.exists() else None
 
-            print("Debug about to create")
-
             try:
                 with db_transaction.atomic():
 
@@ -1204,7 +1175,6 @@ def addpendingtransaction(request):
                     )
 
                     for tx in created:
-                        print("debug tx", tx)
                         new_transactions.append({
                             "id": tx.id,
                             "date": tx.date.strftime("%b. %-d, %Y"),
@@ -1216,13 +1186,11 @@ def addpendingtransaction(request):
                         })
 
 
-                    # Delete old pending transaction
                     deleted_ids.append(t.id)
                     t.delete()
 
 
             except Exception as e:
-                traceback.print_exc()
                 logger.error(f"CRITICAL: Bulk Transaction Failed. User: {user.id}. Error: {e}")
                 raise e
 
@@ -1238,7 +1206,6 @@ def addpendingtransaction(request):
 
 
 
-# ATOMICITY #
 # DELETE TRANSACTIONS #
 def deletetransactions(request):
 
@@ -1262,7 +1229,6 @@ def deletetransactions(request):
 
         
         except Exception as e:
-            print(f"Error: {e}")
             return JsonResponse({"status": "error", "message": "An error occurred while deleting transactions."})
 
     return JsonResponse({
@@ -1299,14 +1265,12 @@ def update_entry(user, tx, entry, new_amount, inputtype, categorytype, new_desti
 
 
 
-# ATOMICITY #
+
 # UPDATE TRANSACTIONS #
 @require_POST
 def updatetransactions(request):
 
     user = request.user
-    print("POST DATA:", dict(request.POST))
-
 
     tx_id = request.POST.get("transaction_id")
     if not tx_id:
@@ -1320,18 +1284,14 @@ def updatetransactions(request):
             .get(id=tx_id, user=request.user)
         )
 
-        print("Debug tx", tx)
     except Transaction.DoesNotExist:
         return JsonResponse({"error": "Transaction not found"}, status=404)
 
     updated_tx_fields = []
     update_tx_entry = False
 
-    # -------------------------
+
     # TRANSACTION FIELDS
-    # -------------------------
-
-
     try:
         with db_transaction.atomic():
 
@@ -1345,10 +1305,6 @@ def updatetransactions(request):
 
             if "type" in request.POST:
                 new_type_slug = request.POST["type"]
-
-                # if new_destination:
-                #     updated_destination = True
-
 
                 categorytype = CategoryType.objects.get(name=new_type_slug)
                 tx.type = categorytype
@@ -1370,11 +1326,9 @@ def updatetransactions(request):
                 entry = tx.entries.first()
                 new_destination = entry.destination_account
 
-            print("Debug new_type", categorytype, type(categorytype))
             inputtype = str(categorytype).lower()
 
             if "category" in request.POST:
-                print("Debug within category")
                 tx.category_id = request.POST["category"]
                 updated_tx_fields.append("category")
 
@@ -1388,9 +1342,7 @@ def updatetransactions(request):
                 new_amount = entry.amount
 
 
-            # -------------------------
             # SAVE TRANSACTION
-            # -------------------------
             if updated_tx_fields:
                 tx.save(update_fields=updated_tx_fields)
 
@@ -1408,7 +1360,6 @@ def updatetransactions(request):
             })
 
     except Exception as e:
-        print(f"Error updating transaction: {e}")
         return JsonResponse({"error": "Failed to update transaction. Please try again."}, status=500)
 
 
@@ -1605,7 +1556,7 @@ def addgoal(request):
 
 
 
-# ATOMICITY #
+
 # LINK GOAL TRANSACTIONS #
 @csrf_exempt
 def linkgoaltransaction(request):
@@ -1627,25 +1578,21 @@ def linkgoaltransaction(request):
 
         with db_transaction.atomic():
 
-            # Link or unlink transaction
             if checked:
                 goal.transactions.add(transaction)
             else:
                 goal.transactions.remove(transaction)
 
-            # Recalculate total saved for this goal
             total_saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
 
             goal.saved = total_saved
             goal.save()
 
-            # Build a map of transactions linked to other goals per goal
             transaction_goal_map = {}
             all_goals = Goal.objects.filter(user=goal.user).prefetch_related("transactions")
             for g in all_goals:
                 transaction_goal_map[g.id] = {}
                 for t in Transaction.objects.filter(user=goal.user):
-                    # True if transaction is linked to this goal but NOT the current goal being updated
                     transaction_goal_map[g.id][t.id] = t.goals.exclude(id=g.id).exists()
 
             return JsonResponse({
@@ -1687,10 +1634,9 @@ def budgetlimit(request):
 
 # SUM TRANSACTIONS #
 def transactionsum(request, user):
-    # GET MONTH/YEAR
+
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    # budgets lookup
     budgetmap_category, adjbudgetmap_cateogory, budgetmap_type, budgetmap_total, remaining_budget = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     date_tree = builddatetree()
@@ -1724,13 +1670,11 @@ def edit_categorytype_limits(request, pk):
     user=request.user
 
     if request.method == "POST":
-        # pull from POST instead of session
         month = int(request.POST["month"])
         year = int(request.POST["year"])
 
         updated_limits = savebudgetlimit(request.POST, month, year, user)
 
-        # recalculate type totals
         budgets = Budget.objects.filter(month=month, year=year, user=user)
 
         updated_type_totals = {}
@@ -1751,11 +1695,11 @@ def edit_categorytype_limits(request, pk):
 
 
         if updated_remaining_budget == 0:
-            updated_remaining_color = "text-success"     # green
+            updated_remaining_color = "text-success"
         elif updated_remaining_budget < 0:
-            updated_remaining_color = "text-danger"      # red
+            updated_remaining_color = "text-danger"
         else:
-            updated_remaining_color = "text-warning"     # yellow
+            updated_remaining_color = "text-warning"
 
 
 
@@ -1777,10 +1721,8 @@ def edit_categorytype_limits(request, pk):
 @login_required
 def previousmonthlimit(request):
 
-    # calculate previous month
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    # get all budgets for previous month
     budgets = Budget.objects.filter(
         user=request.user,
         month=previous_month,
@@ -1830,13 +1772,12 @@ def filtertransactions(qs, user, request):
     if mode == "monthyear":
         month_val = request.POST.get("month")
         year_val = request.POST.get("year")
-        if month_val and year_val:  # only apply if both exist
+        if month_val and year_val:
             selected_month = int(month_val)
             selected_year = int(year_val)
             qs = qs.filter(date__year=selected_year, date__month=selected_month, user=user)
             appliedfilters.append(f"Month: {calendar.month_name[selected_month]} {selected_year}")
         else:
-            # If month/year not selected, ignore date filtering
             mode = None
 
     elif mode == "custom":
@@ -1847,7 +1788,7 @@ def filtertransactions(qs, user, request):
         qs = qs.filter(date__gte=from_date, date__lte=to_date, user=user)
         appliedfilters.append(f"Date: {from_date.strftime('%m-%d-%Y')} → {to_date.strftime('%m-%d-%Y')}")
 
-    # --- AMOUNT ---
+    # AMOUNT
     amountoption = request.POST.get("amountoption")
     if amountoption == "exact":
         exactamount = request.POST.get("filterexactamount")
@@ -1868,13 +1809,13 @@ def filtertransactions(qs, user, request):
             qs = qs.filter(entries__amount__lte=maxamount, user=user).distinct()
             appliedfilters.append(f"Max Amount: ${maxamount}")
 
-    # --- NOTEE ---
+    # NOTEE
     note = request.POST.get("filternote")
     if note:
         qs = qs.filter(note__icontains=note, user=user)
         appliedfilters.append(f"Note: '{note}'")
 
-    # --- CATEGORY TYPES / CATEGORIES / ACCOUNTS ---
+    # CATEGORY TYPES / CATEGORIES / ACCOUNTS
     selectedcategorytypes = request.POST.getlist("filtercategorytypechoice")
     selectedcategories = request.POST.getlist("filtercategorychoice")
     selectedaccounts = request.POST.getlist("filteraccountchoice")
@@ -1900,7 +1841,7 @@ def filtertransactions(qs, user, request):
         if len(selectedaccounts) == 1:
             one_account = True
 
-    # --- EXCLUDE REFUNDS / REIMBURSEMENTS IF EXPENSE SELECTED ---
+    # EXCLUDE REFUNDS / REIMBURSEMENTS IF EXPENSE SELECTED
     if selectedcategorytypes:
         selected_type_names = list(
             CategoryType.objects.filter(id__in=selectedcategorytypes).values_list("name", flat=True)
@@ -1909,14 +1850,14 @@ def filtertransactions(qs, user, request):
             qs = qs.exclude(type__name__iexact="Refund")
             qs = qs.exclude(type__name__iexact="Reimbursement")
 
-    # --- FINAL ORDER ---
+    # FINAL ORDER
     qs = qs.order_by('-date')
 
     return qs, appliedfilters, one_account, selectedaccounts
 
 
 
-# ATOMICITY #
+
 # FILE UPLOAD
 def uploadfile(request):
 
@@ -1948,7 +1889,6 @@ def uploadfile(request):
                 request.session["upload_data"] = file.to_json(orient="records")
                 request.session["upload_columns"] = file.columns.tolist()
 
-                # Load accounts
                 accounts = accountlist(user)
 
                 # Create Statement Upload)
@@ -1970,7 +1910,6 @@ def uploadfile(request):
                 })
 
         except Exception as e:
-            print("Error updating file", e)
             return JsonResponse({"success": False, "error": str(e)})
 
     return JsonResponse({"success": False, "error": "Invalid request"})
@@ -2001,7 +1940,7 @@ def mapcolumnsview(request):
 
 
 
-# ATOMICITY #
+
 # MAP COLUMNS #
 def processupload(request):
     if request.method != "POST":
@@ -2043,7 +1982,6 @@ def processupload(request):
                 "account": account_id,
             }
 
-            # From other view
             selected = request.session.get("selected_columns")
             upload_json = request.session.get("upload_data")
 
@@ -2061,17 +1999,14 @@ def processupload(request):
             for row in df.itertuples(index=False):
                 row_dict = row._asdict()
 
-                # Parse date field
                 raw_date = row_dict[selected["date"]]
                 try:
-                    # Automatically parse various date formats
                     parsed_date = pd.to_datetime(raw_date)
                     formatted_date = parsed_date.strftime("%b. %d, %Y")
 
                 except (AttributeError, ValueError):
                     formatted_date = str(raw_date)
 
-                # Format amount
                 amount_raw = row_dict[selected["amount"]]
                 try:
                     amount_key = Decimal(str(amount_raw).replace(",", "").strip())
@@ -2134,7 +2069,6 @@ def processupload(request):
                 })
 
         except Exception as e:
-            print("Error processing upload:", e)
             return JsonResponse({"error": f"Failed to process upload: {str(e)}"}, status=400)
 
 
@@ -2152,7 +2086,6 @@ def getpreview(request):
 
     transactions = request.session.get("uploadrows")
 
-
     return JsonResponse({"transactions": transactions})
 
 
@@ -2166,7 +2099,7 @@ def addduplicates(request):
 
 
 
-# ATOMICITY #
+
 # SUBMIT UPLOAD
 def submitupload(request):
 
@@ -2190,7 +2123,7 @@ def submitupload(request):
     try:
         with db_transaction.atomic():
             for row in uploadrows:
-                # ---- DATE ----
+                # DATE
                 try:
                     parsed_date = pd.to_datetime(row["date"])
                     date_value = parsed_date.date()
@@ -2208,7 +2141,7 @@ def submitupload(request):
                 basekey = generatebasekey(parsed_date, amount_key, account_key)
                 importkey = generateimportkey(parsed_date, amount_key, account_key, note_key, upload_key)
 
-                # ---- CREATE PendingTransaction ----
+                # CREATE PendingTransaction
                 pendingtx = PendingTransaction.objects.create(
                     note=row.get("note", ""),
                     date=date_value,
@@ -2218,14 +2151,14 @@ def submitupload(request):
                     uploadsource = upload,
                 )
 
-                # ---- AMOUNT ----
+                # AMOUNT
 
                 try:
                     amount_value = Decimal(amount_str)
                 except (InvalidOperation, ValueError, TypeError):
                     raise ValueError(f"Invalid amount: {row['amount']}")
 
-                # ---- CREATE PendingEntry ----
+                # CREATE PendingEntry
                 PendingEntry.objects.create(
                     transaction=pendingtx,
                     account=account,
@@ -2237,7 +2170,6 @@ def submitupload(request):
         return JsonResponse({"status": "ok", "redirect": "/newtransactions/"})
 
     except Exception as e:
-        # If anything fails, delete the upload and all created transactions/entries
         PendingEntry.objects.filter(transaction__uploadsource=upload).delete()
         PendingTransaction.objects.filter(uploadsource=upload).delete()
         upload.delete()
@@ -2254,15 +2186,12 @@ def start_over(request):
         upload_id = request.session.get("upload_id")
 
         if upload_id:
-            # Delete pending entries and transactions
             PendingEntry.objects.filter(transaction__uploadsource_id=upload_id).delete()
             PendingTransaction.objects.filter(uploadsource_id=upload_id).delete()
 
-            # Delete the upload
             from .models import StatementUpload
             StatementUpload.objects.filter(id=upload_id, user=user).delete()
 
-            # Clear session data
             keys_to_clear = [
                 "upload_id",
                 "upload_data",
@@ -2303,18 +2232,19 @@ def overview(request):
 
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    # Budgets for selected month/year
     budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     accounts = accountlist(user=user)
+
+    for account in accounts:
+        account.balance = abs(account.balance)
+        
     accounttypes = accounttypelist(user)
     
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
-    charts_data, incomeexpensedata, budgetexpensedata, savingsdata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, user)
-
-    netincome, netbudget, savingstotal = netcalculations(categorytype_totals, budgetmap_category)
+    charts_data, incomeexpensedata, budgetexpensedata = chartdata(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, categorytypes, category_totals, categorytype_totals, user)
 
     context = {
         "name": name,
@@ -2339,7 +2269,6 @@ def overview(request):
         "charts_data": json.dumps(charts_data),
         "incomeexpensedata": json.dumps(incomeexpensedata),
         "budgetexpensedata": json.dumps(budgetexpensedata),
-        "savingsdata": json.dumps(savingsdata),
     }
 
     return render(request, 'overview.html', context)
@@ -2355,7 +2284,6 @@ def breakdown(request):
 
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    # Budgets for selected month/year
     budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     accounts = accountlist(user=user)
@@ -2400,12 +2328,10 @@ def dashboard(request):
 
     categories = categorylist(user)
 
-    # GET MONTH/YEAR
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
     accounts = accountlist(user)
 
-    # Budgets for selected month/year
     budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
@@ -2465,9 +2391,7 @@ def newtransactions(request):
 
 
 def timed(label, fn):
-    t0 = time.perf_counter()
     result = fn()
-    print(label, time.perf_counter() - t0)
     return result
 
 
@@ -2480,37 +2404,13 @@ def alltransactions(request):
     user=request.user
     name = request.user.get_full_name()
 
-    # categories = categorylist(user=user)
-    # categorytypes = categorytypelist(user)
-    # accounts = accountlist(user=user)
-    # accounttypes = accounttypelist(user)
-
     categories = timed("categories", lambda: categorylist(user))
     categorytypes = timed("categorytypes", lambda: categorytypelist(user))
     accounts = timed("accounts", lambda: accountlist(user))
     accounttypes = timed("accounttypes", lambda: accounttypelist(user))
 
-    # transactionchron = Transaction.objects.filter(user=user).order_by('date')
-    # transactionchron = (Transaction.objects.filter(user=user).select_related("category__type").order_by("date"))
-    # pendingtransactions = PendingTransaction.objects.filter(user=user).order_by('-id')
-    # runningbalance = Decimal('0.00')
-
-    # for tx in transactionchron:
-
-    #     if tx.category.type.name.lower() == 'income':
-    #         runningbalance += tx.amount
-    #     else:
-    #         runningbalance -= tx.amount
-
-    #     # Save running balance for this transaction
-    #     tx.runningbalance = runningbalance
-
-    # transactionsdisplay = list(transactionchron)[::-1]
-
-
     t5 = time.perf_counter()
     date_tree = builddatetree(user=user)
-    print("DATE TREE:", time.perf_counter() - t5)
 
 
     month_names = {i: calendar.month_name[i] for i in range(1, 13)}
@@ -2525,23 +2425,13 @@ def alltransactions(request):
         "categorytypes": categorytypes,
         "accounts": accounts,
         "accounttypes": accounttypes,
-        # "pendingtransactions": pendingtransactions,
         "source_accounts": source_accounts,
         "final_accounts": final_accounts,
-        # "transactions": transactionsdisplay,
         "date_tree": {year: dict(months) for year, months in date_tree.items()},
         "month_names": month_names,
-        # "selectedcategories": selectedcategories,
-        # "selectedaccounts": selectedaccounts,
     }
 
-    t1 = time.perf_counter()
     response = render(request, 'alltransactions.html', context)
-    t2 = time.perf_counter()
-
-    print("VIEW TIME:", t1 - t0)
-    print("RENDER TIME:", t2 - t1)
-    print("TOTAL:", t2 - t0)
 
     return response
 
@@ -2555,35 +2445,14 @@ def alltransactions_api(request):
 
     user = request.user
 
-    # qs = (
-    #     Transaction.objects
-    #     .filter(user=user)
-    #     .select_related("category", "type")
-    #     .annotate(type_name=F("type__name"), category_name=F("category__name"), amount_value=Sum("entries__amount"))
-    #     .prefetch_related("entries__account__institution")
-    #     .order_by("-date")
-    # )
 
     qs = (
         Transaction.objects
         .filter(user=user)
         .select_related("category", "type")
+        # We still need these for basic categorization
         .annotate(type_name=F("type__name"), category_name=F("category__name"))
-        .prefetch_related("entries__account__institution")
-        .annotate(
-            positive_amount=Max(
-                Case(
-                    When(entries__amount__gt=0, then=F("entries__amount")),
-                    default=Value(None),
-                    output_field=DecimalField(max_digits=20, decimal_places=2),
-                )
-            ),
-            amount_value=Case(
-                When(positive_amount__isnull=False, then=F("positive_amount")),
-                default=Sum("entries__amount"),
-                output_field=DecimalField(max_digits=20, decimal_places=2),
-            ),
-        )
+        # We keep this because "paired" status is still a property (for now)
         .annotate(
             has_unpaired_entry=Exists(
                 Entry.objects.filter(
@@ -2607,27 +2476,23 @@ def alltransactions_api(request):
         account = Account.objects.get(id=selectedaccounts[0], user=user)
         running_balance = account.startingbalance
 
-        # Prefetch all entries for this account in a single query
         qs = qs.prefetch_related(
             Prefetch(
                 'entries',
                 queryset=Entry.objects.filter(account=account),
-                to_attr='account_entries'  # attach as `tx.account_entries`
+                to_attr='account_entries'
             )
         )
 
         # Convert to list for iteration
-        ordered_tx = list(qs.order_by('date', 'id'))  # oldest → newest
+        ordered_tx = list(qs.order_by('date', 'id'))
         for tx in ordered_tx:
-            # Sum entries in Python, no DB hits per transaction
+
             entry_sum = sum(e.amount for e in getattr(tx, 'account_entries', []))
 
             if account.type.name == "Credit Card":
             
-                # if (tx.category and tx.category.name == "CC Payment"):
                 running_balance -= entry_sum
-                # else:
-                #     running_balance -= entry_sum
             
             else: 
                 running_balance += entry_sum
@@ -2690,7 +2555,6 @@ def categories_api(request):
         expensetype = CategoryType.objects.get(name="Expense")
         expensecategories = Category.objects.filter(user=user, type=expensetype)
         
-        # Attach displaycategories to the Refund object in the list
         for ct in category_types:
             if ct.name in ["Refund", "Reimbursement"]:
                 ct.displaycategories = expensecategories
@@ -2754,12 +2618,10 @@ def budget(request):
     # GET MONTH/YEAR
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    # Budgets for selected month/year
     budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget, remaining_color, prev_budgetmap_category, prev_budgetmap_type = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(request, mode, selected_month, selected_year, selected_fromdate, selected_todate, budgetmap_category, adjbudgetmap_category, user)
 
-    # All lists you had in table
     categories = categorylist(user)
     categorytypes = categorytypelist(user)
     accounts = accountlist(user)
@@ -2810,7 +2672,6 @@ def setup(request):
         expensetype = CategoryType.objects.get(name="Expense")
         expensecategories = Category.objects.filter(user=user, type=expensetype)
         
-        # Attach displaycategories to the Refund object in the list
         for ct in categorytypes:
             if ct.name in ["Refund", "Reimburesement"]:
                 ct.displaycategories = expensecategories
@@ -2844,10 +2705,8 @@ def historicalbalance(request):
     accounttypes = accounttypelist(user)
     transactions = Transaction.objects.filter(user=user)
 
-    # Build time period from existing MonthlySummary records
     summaries = MonthlySummary.objects.filter(user=user).order_by("year", "month")
 
-    # Build structured list for the template
     historicalperiodbalance = []
     seen = set()
     for s in summaries:
@@ -2860,7 +2719,6 @@ def historicalbalance(request):
                 "label": f"{calendar.month_abbr[s.month]} {s.year}",
             })
 
-    # Lookup for easy template access
     summarymap = {f"{s.category_id}-{s.month}-{s.year}": s.amount for s in summaries}
 
     context = {
@@ -2949,7 +2807,12 @@ def goals(request):
     accounts = accountlist(user=user)
     accounttypes = accounttypelist(user)
     savingstransactions = Transaction.objects.filter(user=user, category__type__name="Savings")
-    savingstransactionscount = savingstransactions.count()
+
+    # Add a "display_amount" attribute to each transaction
+    for tx in savingstransactions:
+        # Use the absolute value of the cached_amount
+        tx.display_amount = abs(tx.cached_amount or 0)
+        savingstransactionscount = savingstransactions.count()
 
     goals = goallist(user=user)
 
@@ -2971,7 +2834,6 @@ def goals(request):
 
         goalfirsttransaction = goal.transactions.order_by('date').first()
         if goalfirsttransaction:
-            # If the field is a datetime, convert to date
             goal.startdate = goalfirsttransaction.date
             if isinstance(goal.startdate, datetime.datetime):
                 goal.startdate = goal.startdate.date()
@@ -2982,7 +2844,8 @@ def goals(request):
         goal.daysremaining = (goal.date - today).days
         goal.totaldays = (goal.date - goal.startdate).days if (goal.date - goal.startdate).days > 0 else 1
 
-        goal.saved = (Entry.objects.filter(transaction__goals=goal, amount__gt=0).aggregate(total=Sum("amount"))["total"] or 0)
+        saved_total = (Entry.objects.filter(transaction__goals=goal, amount__lt=0).aggregate(total=Sum("amount"))["total"] or 0)
+        goal.saved = abs(saved_total)
         goal.percent = (goal.saved / goal.amount * 100) if goal.amount else 0
 
         elapsed_days = (today - goal.startdate).days
@@ -2992,10 +2855,10 @@ def goals(request):
         if goal.percent >= 100:
             goal.status = "Completed"
             goal.statuscolor = "income"
-        elif goal.percent > expected_percent + 5:   # ahead if 5% more than expected
+        elif goal.percent > expected_percent + 5:
             goal.status = "Ahead"
             goal.statuscolor = "income"
-        elif goal.percent >= expected_percent - 5: # on track within ±5%
+        elif goal.percent >= expected_percent - 5:
             goal.status = "On Track"
             goal.statuscolor = "primary"
         else:
@@ -3076,7 +2939,13 @@ def signin(request):
     else:
         form = AuthenticationForm()
 
-    return render(request, "signin.html", {"form": form})
+    context = {
+        "form": form,
+        "demo_username": os.environ.get("DEMO_USERNAME"),
+        "demo_password": os.environ.get("DEMO_PASSWORD"),
+    }
+
+    return render(request, "signin.html", context)
 
 
 
@@ -3103,7 +2972,7 @@ def home(request):
 
 
 
-## --------------------LiSTS NEED UPDATING-------------------- ##
+## --------------------LISTS-------------------- ##
 def categorylist(user):
     return Category.objects.filter(user=user)
 
@@ -3118,7 +2987,6 @@ def categorytypelist(user):
     )
 
     return categorytypes
-
 
 def accountlist(user):
     return Account.objects.filter(user=user)

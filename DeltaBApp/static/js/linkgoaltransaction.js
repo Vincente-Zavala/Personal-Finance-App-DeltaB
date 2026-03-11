@@ -1,46 +1,66 @@
 // ---- Function to update progress for a goal ----
-function updateGoalProgress(goalEl, savedAmount) {
+function updateGoalProgress(goalEl) {
+    // 1. Pull data directly from dataset (The SRE "Source of Truth")
+    const savedAmount = parseFloat(goalEl.dataset.savedAmount) || 0;
+    const goalAmount = parseFloat(goalEl.dataset.goalAmount.replace(/[^0-9.-]/g, "")) || 0;
+    
+    // 2. Update the Text Label
     const savedAmountEl = goalEl.querySelector(".goal-saved-amount");
     if (savedAmountEl) {
-        savedAmountEl.textContent = `$${parseFloat(savedAmount).toFixed(2)}`;
+        savedAmountEl.textContent = `$${savedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     }
 
-    const goalAmount = parseFloat(goalEl.dataset.goalAmount.replace(/[^0-9.-]/g, ""));
+    // 3. Update the Bar
     const progressBar = goalEl.querySelector(".progress-bar");
-    
     if (progressBar && goalAmount > 0) {
         const percent = Math.min((savedAmount / goalAmount) * 100, 100);
-        progressBar.style.width = `${percent}%`;
+        
+        // Ensure the style property is applied correctly
+        progressBar.style.width = percent + "%";
         progressBar.setAttribute("aria-valuenow", percent.toFixed(0));
+        
+        // Optional: Update a percentage label if you have one
+        const percentLabel = goalEl.querySelector(".goal-percent-text");
+        if (percentLabel) percentLabel.textContent = `${percent.toFixed(0)}%`;
     }
 }
 
-// ---- Initialize all progress bars on page load ----
+// ---- Initialize all progress bars ----
 document.addEventListener("DOMContentLoaded", () => {
+    // Small delay to ensure the DOM is fully painted
     setTimeout(() => {
-        document.querySelectorAll(".goal-item").forEach(goalEl => {
+        const goals = document.querySelectorAll(".goal-item");
+        console.log(`SRE Check: Found ${goals.length} goals to process.`);
 
-            // ---- Get saved amount ----
-            const savedAmountEl = goalEl.querySelector(".goal-saved-amount");
-            if (!savedAmountEl) return;
+        goals.forEach(goalEl => {
+            // 1. Get raw numbers from dataset
+            const saved = parseFloat(goalEl.dataset.savedAmount) || 0;
+            const total = parseFloat(goalEl.dataset.goalAmount) || 0;
+            
+            console.log(`Goal ${goalEl.dataset.goalId}: Saved ${saved} / Total ${total}`);
 
-            const rawSaved = savedAmountEl.textContent.replace(/[^0-9.-]/g, "");
-            const savedAmount = parseFloat(rawSaved) || 0;
-
-            // ---- Fix dataset goal amount & validate ----
-            let rawGoalAmount = goalEl.dataset.goalAmount;
-            if (!rawGoalAmount) {
-                console.warn("Missing goal amount for goal:", goalEl);
-                return;  // Prevent crashing
+            if (total > 0) {
+                const percent = Math.min((saved / total) * 100, 100);
+                
+                // 2. Target the bar using the specific class from your HTML
+                const bar = goalEl.querySelector(".goal-progress-bar");
+                
+                if (bar) {
+                    // Force the width update
+                    bar.style.width = percent + "%";
+                    bar.setAttribute("aria-valuenow", percent.toFixed(0));
+                    
+                    // Update the text label just in case it's blank
+                    const savedText = goalEl.querySelector(".goal-saved-amount");
+                    if (savedText) {
+                        savedText.textContent = `$${saved.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                    }
+                } else {
+                    console.error("SRE Alert: Could not find .goal-progress-bar inside .goal-item");
+                }
             }
-
-            rawGoalAmount = rawGoalAmount.replace(/,/g, ""); 
-            goalEl.dataset.goalAmount = rawGoalAmount;
-
-            // ---- Update progress bar ----
-            updateGoalProgress(goalEl, savedAmount);
         });
-    }, 10);
+    }, 100); // 100ms delay for stability
 });
 
 
@@ -69,12 +89,6 @@ document.querySelectorAll('input[name="selectedtransactions"]').forEach(checkbox
 
             const data = await response.json();
 
-            if (!response.ok || data.status !== "success") {
-                alert("Something went wrong updating this transaction.");
-                this.checked = !isChecked;
-                return;
-            }
-
             // ---- Update saved amount & progress bar for the current goal ----
             const currentGoalEl = document.querySelector(`.goal-item[data-goal-id='${data.goal_id}']`);
             if (currentGoalEl) {
@@ -100,7 +114,7 @@ document.querySelectorAll('input[name="selectedtransactions"]').forEach(checkbox
 
         } catch (err) {
             console.error(err);
-            alert("Error updating transaction");
+            // alert("Error updating transaction");
             this.checked = !isChecked;
         }
     });

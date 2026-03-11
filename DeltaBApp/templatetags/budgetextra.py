@@ -29,3 +29,8 @@ def monthname(monthnumber):
 def month_name(month_number):
 
         return calendar.month_name[int(month_number)]
+
+
+@register.filter
+def abs_val(value):
+    return abs(value)

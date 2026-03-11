@@ -5,7 +5,6 @@ from .models import Transaction, Account, AccountBalanceHistory, Entry
 
 
 def recalculatebalance(account, from_date, user):
-    # Wipe history from the recalculation date forward
     print("Within signals.py")
     AccountBalanceHistory.objects.filter(
         account=account, user=user, date__gte=from_date
@@ -62,7 +61,7 @@ def recalculatebalance(account, from_date, user):
     account.save()
 
 
-# ---- FIXED SIGNALS ---- #
+# ---- SIGNALS ---- #
 
 @receiver(post_save, sender=Entry)
 def update_balance_on_entry_save(sender, instance, created, **kwargs):

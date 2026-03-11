@@ -8,17 +8,16 @@ jobs:
   deploy-job:
     runs-on: ubuntu-latest
     
-    # These satisfy your config.py validation
     env:
-      SECRET_KEY: "ci-secret-key"
-      DATABASE_URL: "postgres://user:password@localhost:5432/project_db"
-      SUPABASE_URL: "https://xyz.supabase.co"
-      SUPABASE_PUBLIC_KEY: "mock-key"
-      SUPABASE_SERVICE_KEY: "mock-key"
-      APP_ENV: "staging"
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLIC_KEY: ${{ secrets.SUPABASE_PUBLIC_KEY }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      APP_ENV: ${{ vars.APP_ENV }}
+      DEBUG: ${{ vars.DEBUG }}
 
     services:
-      # This creates the actual DB for the tests to talk to
       postgres:
         image: postgres:15
         env:
@@ -43,20 +42,23 @@ jobs:
           python-version: '3.11'
 
       - name: Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify Migration Integrity
+        run: python manage.py makemigrations --check --dry-run
 
       - name: Run Django Tests
         run: python manage.py test
 
-      - name: Health Check (With Cold Start Support)
+      - name: Health Check (Cold Start Support)
         run: |
-          echo "Waking up the Free Tier instance..."
-          # --connect-timeout 60 gives it a full minute to spin up from sleep
-          # --retry 3 tries again if the connection is refused during boot
+          echo "Waking up the staging instance..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 60 --retry 3 --retry-delay 5 https://deltab-staging.onrender.com/health/)
           
           if [ "$RESPONSE" -eq 200 ]; then
-            echo "Health Check Passed: App is awake and responding."
+            echo "Health Check Passed."
           else
             echo "Health Check Failed with status: $RESPONSE"
             exit 1

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from . models import CategoryType, Category, AccountType, Account, Transaction, Budget, AccountBalanceHistory, CustomUser, PendingTransaction
 
-# Register your models here.
+# Models
 admin.site.register(CategoryType)
 admin.site.register(Category)
 admin.site.register(AccountType)

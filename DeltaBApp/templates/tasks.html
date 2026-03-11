@@ -16,27 +16,6 @@
 
                     {% include "partials/page_titles.html" %}
                     
-                    <div class="d-flex align-items-center ms-auto gap-2">
-                        <!-- Active Goals -->
-                        <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fa fa-hourglass-half fa-lg text-primary"></i>
-                                <div class="text-start">
-                                    <p class="mb-0 text-muted small">Reminders</p>
-                                    <h6 class="m-0 fw-bold">##</h6>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="category-card category-border border border-light card rounded-2 p-2 small-card">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fa fa-clipboard-list fa-lg text-primary"></i>
-                                <div class="text-start">
-                                    <p class="mb-0 text-muted small">Tasks</p>
-                                    <h6 class="m-0 fw-bold">##</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -87,7 +66,6 @@
                         <div class="bill-card category-border border border-light position-relative p-3 rounded-3 bg-dark shadow-sm">
                             <!-- Checkbox on the left -->
                             <div class="d-flex align-items-center gap-3">
-                                <!-- <input type="checkbox" class="form-check-input m-0"> -->
                             
                                 <!-- Bill Info -->
                                 <div class="d-flex flex-column flex-grow-1">
@@ -115,9 +93,6 @@
                     </div>
                     {% endfor %}
                 </div>
-                <!-- <div class="section-divider my-4">
-                    <span class="divider-label">Completed</span>
-                </div>  -->
                 </div>
             </div>
             <!-- Bill Tracker End -->
@@ -200,8 +175,6 @@
 {% endblock %}
 
 {% block scripts %}
-
-    <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 
 
@@ -218,18 +191,13 @@
         ]
     </script>      
     <script src="{% static 'js/fullcalendar.js' %}"></script>
-
     <script src="{% static 'js/iconcolorstyling.js' %}"></script> 
-
     <script src="{% static 'js/tasks.js' %}"></script>
     <script>const taskCompleteUrl = "{% url 'taskcomplete' %}";</script>
     <script src="{% static 'js/taskcheckbox.js' %}"></script>
-
-    <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> 
     <script src="{% static 'js/flatpickr.js' %}"></script> 
-
-    <!-- Template Javascript -->
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/guest_user_warning.js' %}"></script>
 
 {% endblock %}
