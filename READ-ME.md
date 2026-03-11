@@ -1,6 +1,6 @@
 # Deltab — Production Personal Finance System
 
-Deltab is a production-grade personal finance web application that allows users to import bank transactions, track spending, manage account balances, set category-based budgets, and monitor financial activity over time with strong data integrity guarantees.
+Deltab is a production-grade personal finance web application that allows users to import bank transactions, track spending, manage account balances, set category based budgets, and monitor financial activity over time with strong data integrity guarantees.
 
 This project was intentionally designed to demonstrate **production system ownership**: deployment, database safety, observability, failure handling, and recovery.
 
