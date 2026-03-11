@@ -1,6 +1,3 @@
-// -------------------------
-// GLOBAL CACHE
-// -------------------------
 import {
     CATEGORY_TYPES,
     ACCOUNTS,
@@ -11,7 +8,6 @@ import {
 } from "./categories_accounts.js";
 
 
-// Categories that require a destination account
 const categoriesRequiringDestination = [
     "savings",
     "investment",
@@ -21,13 +17,10 @@ const categoriesRequiringDestination = [
 ];
 
 
-// -------------------------
-// BUILD DESTINATION ACCOUNT SELECT
-// -------------------------
 function buildDestinationSelect(tx) {
     const td = document.createElement("td");
     td.className = "destination-cell";
-    td.style.display = "none"; // hidden by default
+    td.style.display = "none";
 
     const select = document.createElement("select");
     select.className = "form-select form-select-sm rounded-pill account-select";
@@ -40,7 +33,7 @@ function buildDestinationSelect(tx) {
     ACCOUNTS.forEach(acct => {
         const option = document.createElement("option");
         option.value = acct.id;
-        option.textContent = acct.name; // or acct.account_display if available
+        option.textContent = acct.name;
         select.appendChild(option);
     });
 
@@ -87,7 +80,6 @@ function renderPendingTransactions(transactions) {
         tr.classList.add("transaction-row");
         tr.dataset.type = tx.type_name;
 
-        // Basic columns
         tr.innerHTML = `
             <td class="editcol" hidden>
                 <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
@@ -128,9 +120,6 @@ function renderPendingTransactions(transactions) {
 }
 
 
-// -------------------------
-// EVENT DELEGATION FOR CATEGORY CHANGE
-// -------------------------
 document.addEventListener("change", function(e) {
     const target = e.target;
 
@@ -140,7 +129,6 @@ document.addEventListener("change", function(e) {
         const accountSelect = document.getElementById(`accountchoice_${transactionId}`);
         const destinationCell = accountSelect?.closest(".destination-cell");
     
-        // If user selects default "Select Type", hide category dropdown AND destination account
         if (!target.value) {
             const hiddenSelect = buildCategorySelect({id: transactionId, category_name: ""}, null);
             categoryTd.innerHTML = "";
@@ -158,18 +146,15 @@ document.addEventListener("change", function(e) {
             return;
         }
     
-        // Build category select only for this type
         const newCategorySelect = buildCategorySelect({id: transactionId, category_name: ""}, target.value);
         categoryTd.innerHTML = "";
         categoryTd.appendChild(newCategorySelect);
     
-        // Show the category dropdown
         newCategorySelect.style.display = "inline-block";
         return;
     }
     
 
-    // Category changed → show/hide destination account
     if (target.classList.contains("category-select")) {
         const selectedOption = target.options[target.selectedIndex];
         const categoryType = (selectedOption.dataset.categorytype || "").toLowerCase();
@@ -193,8 +178,6 @@ document.addEventListener("change", function(e) {
     }
 
 
-    // Destination set
-    // Destination account changed
     if (target.classList.contains("account-select")) {
         updatePendingSubmitVisibility();
     }
@@ -205,9 +188,6 @@ document.addEventListener("change", function(e) {
 
 
 
-// -------------------------
-// DOM READY
-// -------------------------
 document.addEventListener("DOMContentLoaded", () => {
     if (typeof PENDING_TRANSACTIONS_API_URL === "undefined") {
         console.error("PENDING_TRANSACTIONS_API_URL is not defined!");

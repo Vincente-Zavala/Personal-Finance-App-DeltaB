@@ -5,41 +5,38 @@
     color: #fff;
   }
   
-/* remove default today highlight and ensure relative positioning */
 .flatpickr-day.today {
   border: none;
   color: inherit;
   position: relative;
 }
 
-/* red triangle pointing to the bottom-right corner */
 .flatpickr-day.today::after {
   content: "";
   position: absolute;
   right: 4px;
   bottom: 4px;
-  width: 10px;    /* adjust size */
-  height: 10px;   /* adjust size */
+  width: 10px;
+  height: 10px;
   background: var(--primary);
-  clip-path: polygon(100% 0, 0 100%, 100% 100%); /* triangle with apex at bottom-right */
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
   pointer-events: none;
   z-index: 2;
 }
 
-/* Hover effect: square blue outline */
+
 .flatpickr-day:hover,
 .flatpickr-day:focus {
-  border-radius: 0 !important; /* square corners */
-  border: 1px solid var(--primary);   /* blue outline on hover */
-  background: transparent;     /* keep background clear */
+  border-radius: 0 !important;
+  border: 1px solid var(--primary);
+  background: transparent;
   color: var(--primary);
 }
 
-/* Selected day: solid red square with white text and black border */
 .flatpickr-day.selected,
 .flatpickr-day.selected:hover {
-  border-radius: 0 !important; /* square */
-  background: var(--primary) !important;  /* red box */
-  color: var(--primesec) !important;     /* white text */
-  border: 1px solid black !important; /* black border */
+  border-radius: 0 !important;
+  background: var(--primary) !important;
+  color: var(--primesec) !important;
+  border: 1px solid black !important;
 }  

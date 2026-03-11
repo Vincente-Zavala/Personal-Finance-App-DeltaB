@@ -341,7 +341,6 @@
     border-bottom-color: var(--primary);
 }
 
-/* Ensure Tempus Dominus widget appears above dropdowns/modals */
 .bootstrap-datetimepicker-widget {
     z-index: 200105 !important;
 }
@@ -378,14 +377,12 @@
     border-color: var(--primary);
 }
 
-/* Date filter input styling - sits on dark modal/card but remains interactive */
 .date-filter-input {
-    background-color: #2b2b2b; /* slightly lighter than modal background */
+    background-color: #2b2b2b;
     color: #ffffff;
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: .25rem;
     padding: .375rem .75rem;
-    /* allow native appearance so browser calendar popup works */
     cursor: text;
     pointer-events: auto;
 }
@@ -393,29 +390,25 @@
     outline: 0;
     box-shadow: 0 0 0 .2rem rgba(13,110,253,0.15);
 }
-/* Keep the native calendar picker visible and usable */
+
 .date-filter-input::-webkit-calendar-picker-indicator {
     filter: invert(1) hue-rotate(180deg) brightness(0.9);
     opacity: 0.9;
 }
 
-/* Label styling for From/To to match the dark card */
 .date-filter-label {
     background-color: #2b2b2b;
     color: #ffffff;
     border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Container to constrain the date filter area so buttons align nicely */
 .date-filter-container {
     max-width: 640px;
-    margin: 0 auto; /* center container */
+    margin: 0 auto;
 }
 
-/* Red filter buttons to match theme primary color */
 .date-filter-container .btn-filter-red,
 .btn.btn-filter-red {
-    /* Solid primary button by default (filled red) */
     background: var(--primary) !important;
     border: 1px solid var(--primary) !important;
     color: #fff !important;
@@ -424,30 +417,25 @@
 .btn.btn-filter-red:hover,
 .date-filter-container .btn-filter-red:focus,
 .btn.btn-filter-red:focus {
-    /* Slightly darker on hover/focus to look like a pressed button */
     background: #c30f0f !important;
     border-color: #c30f0f !important;
     color: #fff !important;
 }
 
-/* Remove default bullets */
 ul, #myUL {
     list-style-type: none;
   }
   
-  /* Remove margins and padding from the parent ul */
   #myUL {
     margin: 0;
     padding: 0;
   }
   
-  /* Style the caret/arrow */
   .caret {
     cursor: pointer;
-    user-select: none; /* Prevent text selection */
+    user-select: none;
   }
   
-  /* Create the caret/arrow with a unicode, and style it */
   .caret::before {
     content: "\25B6";
     color: black;
@@ -455,74 +443,69 @@ ul, #myUL {
     margin-right: 6px;
   }
   
-  /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
   .caret-down::before {
     transform: rotate(90deg);
   }
   
-  /* Hide the nested list */
   .nested {
     display: none;
   }
   
-  /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
   .active {
     display: block;
   }
 
 
-/* Hide but keep clickable */
     input[type="date"]::-webkit-calendar-picker-indicator {
-        opacity: 0;          /* make it invisible */
-        position: absolute;  /* take it out of normal flow */
-        width: 100%;         /* cover entire input */
+        opacity: 0;
+        position: absolute;
+        width: 100%;
         height: 100%;
-        cursor: pointer;     /* still clickable */
+        cursor: pointer;
     }
 
     .custom-date-input,
     .custom-date-input.flatpickr-input {
-      display: inline-block;       /* shrink to content */
-      width: 104px;                 /* let it fit text */
-      min-width: 0;                /* remove bootstrap min-width */
-      padding: 0.25rem 0.5rem;     /* optional: adjust padding */
-      border: 1px solid var(--primary);  /* match your border color */
+      display: inline-block;
+      width: 104px;
+      min-width: 0;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--primary);
       border-radius: 0.25rem;
       background-color: transparent;
-      color: var(--primesec) !important;                /* text color */
-      font-size: 0.875rem;         /* match form-select-sm */
+      color: var(--primesec) !important;
+      font-size: 0.875rem;
     }
   
-  /* Make Flatpickr wrapper also shrink */
     .flatpickr-wrapper {
       display: inline-block;
       width: auto !important;
     }
 
   .custom-date-input {
-    width: 13ch; /* fits MM-DD-YYYY exactly */
+    width: 13ch;
 }
 
 .custom-date-input::placeholder {
-    color: var(--primesec); /* your theme color */
-    opacity: 1; /* ensures it’s not faded out */
+    color: var(--primesec);
+    opacity: 1;
 }
 
 .transaction-date-input {
-    display: inline-block;       /* shrink to content */
-    width: 104px;                 /* let it fit text */
-    min-width: 0;                /* remove bootstrap min-width */
-    padding: 0.25rem 0.5rem;     /* optional: adjust padding */
-    border: 1px solid var(--d);  /* match your border color */
+    display: inline-block;
+    width: 104px;
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--d);
     border-radius: 0.25rem;
     background-color: var(--dark);
-    color: var(--light) !important;                /* text color */
-    width: 13ch; /* fits MM-DD-YYYY exactly */   
+    color: var(--light) !important;
+    width: 13ch;  
 }
 
 .transaction-date-input::placeholder {
-    color: var(--light); /* your theme color */
-    opacity: 1; /* ensures it’s not faded out */
+    color: var(--light);
+    opacity: 1;
 }
 
 .profile-dropdown {
@@ -537,10 +520,10 @@ ul, #myUL {
 }
 
 .profile-dropdown-toggle::before {
-    content: "\f107"; /* Font Awesome down arrow */
+    content: "\f107";
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
-    font-size: 1rem; /* same as .dropdown-toggle::after */
+    font-size: 1rem;
     color: var(--primesec);
     margin-left: 10px;
     vertical-align: middle;
@@ -548,7 +531,6 @@ ul, #myUL {
     display: inline-block;
 }
 
-/* Rotate arrow when dropdown is open */
 .profile-dropdown[aria-expanded="true"] .profile-dropdown-toggle::before {
     transform: rotate(-180deg);
 }
@@ -569,7 +551,7 @@ ul, #myUL {
   }
   
   .account-icon-wrapper i {
-    color: #e50914; /* red accent */
+    color: #e50914;
     font-size: 20px;
   }
   
@@ -602,18 +584,6 @@ ul, #myUL {
     margin-top: 10px;
     margin-bottom: 50px;
   }
-  
-   
-
-  /* .section-divider.top-only {
-    margin-top: 1px;
-    margin-bottom: 10px;
-  }
-  
-  .section-divider.bottom-only {
-    margin-top: 10px;
-    margin-bottom: 50px;
-  } */
   
   .section-divider-account {
     height: 2px;
@@ -683,16 +653,15 @@ background: transparent;
 }
 
 #transactionstable tbody tr:nth-child(odd) {
-    background-color: var(--dark) !important; /* dark gray */
+    background-color: var(--dark) !important;
 }
 
 #transactionstable tbody tr:nth-child(even) {
-    background-color: var(--light) !important; /* slightly lighter gray */
+    background-color: var(--light) !important;
 }
 
-/* Hover effect */
 #transactionstable tbody tr:hover {
-    background-color: #343a40 !important; /* darker hover */
+    background-color: #343a40 !important;
     transition: background-color 0.2s ease-in-out !important;
 }
 
@@ -751,8 +720,8 @@ background: transparent;
   
 
 #billCalendar {
-background-color: var(--secondary); /* dark background */
-color: #fff; /* make text white for contrast */
+background-color: var(--secondary);
+color: #fff;
 border-radius: 12px;
 padding: 1rem;
 }
@@ -765,17 +734,13 @@ padding: 1rem;
 
 .fc-day-today .fc-daygrid-day-number {
     color: white !important;
-    font-weight: 600; /* optional for emphasis */
+    font-weight: 600;
   }
 
 .fc-day-other {
-    background-color: var(--dark) !important; /* or any darker shade */
-    opacity: 0.7; /* optional slight fade */
+    background-color: var(--dark) !important;
+    opacity: 0.7;
 }
-
-  
-  /* ===== Toolbar testing ===== */
-
   
   .fc-button {
     background-color: rgba(255, 255, 255, 0.1) !important;
@@ -790,13 +755,11 @@ padding: 1rem;
     transform: translateY(-1px);
   }
   
-  /* Active button (like "Today") */
   .fc-button-active {
     background-color: (var(--primesec)) !important;
     color: #fff !important;
   }
   
-  /* ===== Events testing ===== */
   .fc .fc-event {
     border: 2px solid currentColor;
     border-radius: 8px;
@@ -809,8 +772,6 @@ padding: 1rem;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   } 
   
-
-/* Task Card Styles */
 .billtask-card {
     cursor: grab;
     transition: all 0.2s ease-in-out;
@@ -820,20 +781,17 @@ padding: 1rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-/* Checked task */
 .billtask-card input:checked + .task-text {
     text-decoration: line-through;
     opacity: 0.6;
 }
 
-/* Task container spacing */
 .billtask-container {
     max-height: 400px;
     overflow-y: auto;
     padding-right: 5px;
 }
 
-/* Scrollbar styling */
 .billtask-container::-webkit-scrollbar {
     width: 6px;
 }
@@ -843,8 +801,8 @@ padding: 1rem;
 }
 
 .fc-daygrid-day {
-    height: 120px;      /* Adjust this value as needed */
-    min-height: 120px;  /* Ensures it doesn’t shrink */
+    height: 120px;
+    min-height: 120px;
 }
 
 .bill-card {
@@ -868,7 +826,7 @@ padding: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem; /* space between text and lines */
+    gap: 1rem;
     width: 100%;
     margin: 1.5rem 0;
   }
@@ -876,7 +834,7 @@ padding: 1rem;
   .section-divider::before,
   .section-divider::after {
     content: "";
-    flex: 1; /* makes both sides equal width */
+    flex: 1;
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
   }
@@ -911,20 +869,17 @@ padding: 1rem;
     transition: all 0.25s ease;
 }
 
-/* Subtle divider */
 .goal-item hr {
     border-color: rgba(255, 255, 255, 0.08);
     margin: 0.75rem 0 1rem;
 }
 
-/* Headings and status */
 .goal-item h6 {
     font-weight: 600;
     color: #e5e7eb;
     letter-spacing: 0.3px;
 }
 
-/* Progress bar */
 .progress {
     background-color: rgba(255, 255, 255, 0.07);
     height: 8px;
@@ -936,7 +891,6 @@ padding: 1rem;
     transition: width 0.6s ease;
 }
 
-/* Toggle button */
 .toggle-transactions {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
@@ -962,14 +916,12 @@ padding: 1rem;
     margin: 0;
 }
 
-/* Collapsible card (for transactions) */
 .card.bg-dark {
     background: #131313 !important;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Table Styling */
 .table-dark {
     background-color: transparent !important;
     color: #e2e8f0;
@@ -1050,8 +1002,6 @@ padding: 1rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
   
-
-
   .accounts-divider {
     display: flex;
     align-items: center;
@@ -1081,9 +1031,9 @@ padding: 1rem;
 
   #monthyearsection select,
   #customsection input {
-    width: 140px; /* or whatever fits your layout */
-    border: 1px solid var(--dark); /* or use a color like #0d6efd */
-    border-radius: 6px; /* optional: smooth corners */
+    width: 140px;
+    border: 1px solid var(--dark);
+    border-radius: 6px;
   }
 
   .bg-bs-dark {
@@ -1103,8 +1053,6 @@ padding: 1rem;
   
 .category-border {
     --accent-color: var(--bs-primary);
-    /* border: 2px solid var(--primesec); */
-    /* border-radius: 0.75rem; */
     transform: translateY(-2px);
 }
 
@@ -1113,12 +1061,12 @@ padding: 1rem;
   }
 
   .category-border tfoot tr {
-    background-color: transparent; /* no fill */
+    background-color: transparent;
     color: var(--accent-color);
   }
   
   .category-border tfoot tr td {
-    border-color: rgba(255, 255, 255, 0.2); /* optional subtle border */
+    border-color: rgba(255, 255, 255, 0.2);
   }
   
   .account-border {
@@ -1134,7 +1082,7 @@ padding: 1rem;
   }  
 
   .badge {
-    background-color: var(--bs-dark); /* faint tint */
+    background-color: var(--bs-dark);
     color: var(--accent-color);
     border: 1px solid rgba(var(--accent-rgb), 0.3);
   }
@@ -1175,18 +1123,17 @@ padding: 1rem;
 
 .text-expense { color: var(--expense) !important; }
 
-/* Amount text: normal primary, white when row selected */
 .amount-cell {
-  color: var(--bs-primary) !important; /* normal state */
+  color: var(--bs-primary) !important;
 }
 
 .selected-row {
-  background-color: var(--bs-primary) !important; /* row background */
-  color: white !important; /* text in row */
+  background-color: var(--bs-primary) !important;
+  color: white !important;
 }
 
 .selected-row .amount-cell {
-  color: white !important; /* amount text when selected */
+  color: white !important;
 }
 
 .btn-outline-primesec{
@@ -1207,24 +1154,22 @@ padding: 1rem;
 }
 
 .separator {
-  font-size: 1.2rem;  /* Adjust size as needed */
-  padding: 0 10px;    /* Space out the separator */
-  color: var(--primesec);     /* Match color with buttons or make it lighter */
+  font-size: 1.2rem;
+  padding: 0 10px;
+  color: var(--primesec);
   font-weight: bold;
   padding-left: 0px;
 }
 
-/* FULL WIDTH ROW */
 .notification-wrapper {
   width: 100%;
   display: flex;
-  justify-content: center;   /* <-- center relative to sidebar */
+  justify-content: center;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-/* Circular icons */
 .notify-icon {
   width: 42px;
   height: 42px;
@@ -1241,13 +1186,11 @@ padding: 1rem;
   transition: 0.2s ease;
 }
 
-/* Hover */
 .notify-icon:hover {
   background-color: var(--dark);
   color: #fff;
 }
 
-/* Badge */
 .notify-icon .badge {
   position: absolute;
   top: 4px;
@@ -1286,14 +1229,12 @@ padding: 1rem;
   border-spacing: 0;
 }
 
-/* Remove all borders */
 #allTransactionsTable, 
 #allTransactionsTable th, 
 #allTransactionsTable td {
   border: none !important;
 }
 
-/* Sticky header */
 #allTransactionsTable thead tr {
   position: sticky;
   top: 0;
@@ -1301,62 +1242,51 @@ padding: 1rem;
   box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
 }
 
-/* Default header alignment */
 #allTransactionsTable thead th {
   padding: 1rem 1.5rem;
   font-weight: 600;
   text-align: center;
 }
 
-/* Date header – LEFT */
 #allTransactionsTable thead th.date-col {
   text-align: left;
 }
 
-/* Amount header – RIGHT */
 #allTransactionsTable thead th.amount-col {
   text-align: right;
 }
 
-/* Chevron header – tiny */
 #allTransactionsTable thead th.chevron-col {
   width: 28px;
 }
 
-
-/* Card style rows stacked with no gaps */
 #allTransactionsTable tbody tr {
-  border-radius: 12px 12px 0 0; /* Rounded top corners only for the first row */
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
   display: table-row;
   cursor: pointer;
-  border-bottom: 1px solid #e2e8f0; /* subtle separator line */
+  border-bottom: 1px solid #e2e8f0;
   transition: box-shadow 0.3s ease;
 }
 
-/* Remove border-bottom on last row and add bottom radius */
 #allTransactionsTable tbody tr:last-child {
   border-bottom: none;
-  border-radius: 0 0 12px 12px; /* Rounded bottom corners on last row */
+  border-radius: 0 0 12px 12px;
 }
 
-/* Hover effect on rows */
 #allTransactionsTable tbody tr:hover {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* Padding inside cells */
 #allTransactionsTable tbody td {
   padding: 1rem 1.5rem;
   vertical-align: middle;
 }
 
-/* Checkbox column width */
 #allTransactionsTable tbody td:first-child {
   width: 40px;
 }
 
-/* Responsive horizontal scroll */
 #allTransactionsTable {
   overflow-x: auto;
   display: block;
@@ -1368,17 +1298,15 @@ padding: 1rem;
   white-space: nowrap;
 }
 
-/* Remove padding from the chevron column td */
 #allTransactionsTable tbody td.chevron-col {
   padding: 0;
-  width: 40px;        /* adjust as needed */
+  width: 40px;
   min-width: 40px;
   text-align: center;
   vertical-align: middle;
   white-space: nowrap;
 }
 
-/* Remove padding/margin from inner div/button */
 #allTransactionsTable tbody td.chevron-col .tx-chevron {
   padding: 0.5rem;
   margin: 0;
@@ -1387,25 +1315,21 @@ padding: 1rem;
   justify-content: center;
 }
 
-/* Default body cell alignment */
 #allTransactionsTable tbody td {
   vertical-align: middle;
   text-align: center;
 }
 
-/* Date column – LEFT aligned */
 #allTransactionsTable tbody td.date-col {
   text-align: left;
   white-space: nowrap;
 }
 
-/* Amount column – RIGHT aligned */
 #allTransactionsTable tbody td.amount-col {
   text-align: right;
   white-space: nowrap;
 }
 
-/* Chevron column – tight + centered */
 #allTransactionsTable tbody td.chevron-col {
   width: 28px;
   min-width: 28px;
@@ -1428,7 +1352,6 @@ padding: 1rem;
   table-layout: fixed;
 }
 
-/* FINAL chevron override */
 #allTransactionsTable th.chevron-col,
 #allTransactionsTable td.chevron-col {
   width: 20px !important;
@@ -1458,19 +1381,16 @@ padding: 1rem;
   line-height: 1;
 }
 
-/* Force the table to the edge of the DeltaB container */
 #allTransactionsTable {
   width: 100% !important;
-  table-layout: fixed; /* Prevents columns from jumping around */
+  table-layout: fixed;
 }
 
-/* Force the Note column to absorb all extra space */
 #allTransactionsTable th:nth-child(6), 
 #allTransactionsTable td:nth-child(6) {
   width: auto; 
   min-width: 200px;
 }
 
-/* Keep functional columns compact */
 .date-col { width: 110px; }
 .amount-col { width: 100px; }

@@ -25,16 +25,14 @@ document.addEventListener("DOMContentLoaded", function () {
     
 
     function processDuplicateConfirmation() {
-        // 1. Hide the modal
+
         const modalEl = document.getElementById("manualduplicatesModal");
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
     
-        // 2. Clear duplicate rows for future submissions
         document.getElementById("manualduplicatesTableBody").innerHTML = "";
         document.getElementById("manualduplicateCount").textContent = "0";
     
-        // 3. Trigger final AJAX submit to addtransaction
         sendFormAJAX("/addtransaction/", true);
     }
     
@@ -67,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-                // If these were pending transactions submitted, append them to All Transactions
+                // Append them to All Transactions
                 if (isSubmitNew && data.add_transactions) {
                     data.add_transactions.forEach(tx => {
                         const tr = document.createElement("tr");
@@ -87,7 +85,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         addTransactionsBody.prepend(tr);
                     });
 
-                    // --- Clear form inputs except transaction type ---
                     const fieldsToKeep = ["inputtransaction"];
                     Array.from(form.elements).forEach(el => {
                         if (!fieldsToKeep.includes(el.name)) {
@@ -98,7 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                     el.checked = false;
                                 }
                             } else if (el.tagName === "SELECT") {
-                                el.selectedIndex = 0; // reset to first option
+                                el.selectedIndex = 0;
                             } else if (el.tagName === "TEXTAREA") {
                                 el.value = "";
                             }
@@ -107,17 +104,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 }
 
-                // --- Update account balances ---
+
                 fetchAccountBalances();
 
                 console.log("AJAX action successful:", data.deleted_ids);
 
 
             } else if (data.status === "duplicates") {
-                // -------------------------------
-                // Handle duplicates modal
-                // -------------------------------
-                // Attach inside duplicates block
 
 
                 const tbody = document.getElementById("manualduplicatesTableBody");
@@ -128,7 +121,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 data.groups.forEach(group => {
                     totalDuplicates++;
 
-                    // NEW ROW
                     const newTx = group.new;
                     tbody.insertAdjacentHTML("beforeend", `
                         <tr class="table-warning transaction-row">
@@ -140,7 +132,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         </tr>
                     `);
 
-                    // EXISTING MATCHES
                     group.existing.forEach(ex => {
                         tbody.insertAdjacentHTML("beforeend", `
                             <tr class="table-danger">
@@ -153,16 +144,13 @@ document.addEventListener("DOMContentLoaded", function () {
                         `);
                     });
 
-                    // Add small space between groups
                     tbody.insertAdjacentHTML("beforeend", `
                         <tr><td colspan="5" class="bg-dark border-0" style="height: 8px;"></td></tr>
                     `);
                 });
 
-                // Update duplicate counter
                 document.getElementById("manualduplicateCount").textContent = totalDuplicates;
 
-                // Show duplicates modal
                 const modalEl = document.getElementById("manualduplicatesModal");
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();

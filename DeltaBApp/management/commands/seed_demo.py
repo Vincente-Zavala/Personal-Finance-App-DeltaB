@@ -28,7 +28,8 @@ class Command(BaseCommand):
             f"Starting demo data seed... {'[DRY RUN]' if is_dry_run else ''}"
         ))
 
-        # 1. Setup Demo User
+
+        # Setup Demo User
         user, created = User.objects.get_or_create(
             username='demo_user',
             defaults={
@@ -42,11 +43,13 @@ class Command(BaseCommand):
             user.set_password('DemoPassword123')
             user.save()
 
-        # 2. Fetch Preset Types
+
+        # Fetch Preset Types
         cat_types = {ct.name: ct for ct in CategoryType.objects.all()}
         acc_types = {at.name: at for at in AccountType.objects.all()}
 
-        # 3. Setup Institutions and Accounts (All Types)
+
+        # Setup Institutions and Accounts (All Types)
         account_configs = [
             {"bank": "Chase", "name": "Checking", "type": acc_types["Checking Account"], "start": 2500},
             {"bank": "Chase", "name": "Savings", "type": acc_types["Savings Account"], "start": 10000},
@@ -73,7 +76,8 @@ class Command(BaseCommand):
             )
             accounts_map[config["name"]] = acc
 
-        # 4. Setup Categories and Budgets (All Category Types)
+
+        # Setup Categories and Budgets (All Category Types)
         categories_data = [
             ("Salary", cat_types["Income"], 6000),
             ("Interest", cat_types["Income"], 40),
@@ -112,7 +116,8 @@ class Command(BaseCommand):
                     else:
                         curr_date = curr_date.replace(month=curr_date.month + 1)
 
-        # 5. Generate Transactions (Efficient History & Gap Filling)
+
+        # Generate Transactions (Efficient History & Gap Filling)
         self.stdout.write("Checking for missing transaction data...")
         
         last_tx = Transaction.objects.filter(user=user).order_by('-date').first()
@@ -157,10 +162,10 @@ class Command(BaseCommand):
                 else:
                     amt = Decimal(random.uniform(15, 150)).quantize(Decimal('0.01'))
                 
-                # Final calculation for the cached field
+
                 final_amount = amt if is_income else -amt
 
-                # Create the transaction record with cached_amount to satisfy NOT NULL constraint
+
                 trans = Transaction.objects.create(
                     user_note=fake.sentence(nb_words=3).replace('.', ''),
                     date=curr_date,
@@ -168,10 +173,10 @@ class Command(BaseCommand):
                     type=selected_cat.type,
                     user=user,
                     base_key=fake.uuid4()[:12],
-                    cached_amount=final_amount  # <--- Added to fix IntegrityError
+                    cached_amount=final_amount
                 )
 
-                # Create the financial entry
+
                 Entry.objects.create(
                     transaction=trans,
                     account=target_acc,
@@ -189,7 +194,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("System is already up to date."))
 
         
-        # 6. Tasks, Goals, and Reminders
+        # Tasks, Goals, and Reminders
         self.stdout.write("Checking Tasks, Goals, and Reminders...")
         
         # Tasks
@@ -199,7 +204,6 @@ class Command(BaseCommand):
             Task.objects.get_or_create(name=t_name, user=user)
 
         # Goals
-        # We use get_or_create here so the ID stays the same if it already exists
         emergency_goal, created = Goal.objects.get_or_create(
             name="Emergency Fund 15k",
             user=user,
@@ -209,15 +213,12 @@ class Command(BaseCommand):
             }
         )
 
-        # LINKING LOGIC:
-        # We only need to link transactions if the goal was just created 
-        # or to ensure new savings are caught.
+
         savings_txs = Transaction.objects.filter(
             user=user, 
             category=category_objs["Emergency Savings"]
         )
 
-        # .add() in Django is smart—it won't create duplicate links if they already exist
         for tx in savings_txs:
             emergency_goal.transactions.add(tx)
         
@@ -241,14 +242,14 @@ class Command(BaseCommand):
                 }
             )
 
-        # 6. Force Balance Sync
+        # Force Balance Sync
         self.stdout.write("Recalculating all account balances...")
         for acc in Account.objects.filter(user=user):
             totals = Entry.objects.filter(account=acc).aggregate(sum=models.Sum('amount'))['sum'] or Decimal('0.00')
             acc.balance = acc.startingbalance + totals
             acc.save()
 
-        # 7. Pending Transactions
+        # Pending Transactions
         self.stdout.write("Adding pending items...")
         for _ in range(5):
             amt = Decimal(random.uniform(5, 50)).quantize(Decimal('0.01'))
@@ -262,7 +263,7 @@ class Command(BaseCommand):
                 transaction=pt, account=accounts_map["Gold Card"], user=user, amount=-amt
             )
 
-        # 8. Handle Dry Run Rollback
+        # Handle Dry Run Rollback
         if is_dry_run:
             self.stdout.write(self.style.WARNING("\n[PDB] Data is ready. Inspect then type 'c' to rollback."))
             breakpoint()

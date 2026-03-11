@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    // When year is checked -> check all months/days under it
+
     document.querySelectorAll(".year-check").forEach(yearBox => {
         yearBox.addEventListener("change", function () {
             const year = this.dataset.year;
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // When month is checked -> check all days under it
+
     document.querySelectorAll(".month-check").forEach(monthBox => {
         monthBox.addEventListener("change", function () {
             const year = this.dataset.year;

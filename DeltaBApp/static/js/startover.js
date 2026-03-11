@@ -17,7 +17,6 @@ function startOver() {
     .catch(err => console.error(err));
 }
 
-// Helper to get CSRF token from cookies
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {

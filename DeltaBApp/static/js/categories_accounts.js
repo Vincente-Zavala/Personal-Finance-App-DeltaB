@@ -1,11 +1,7 @@
-// categories_accounts.js
-
 export let CATEGORY_TYPES = [];
 export let ACCOUNTS = [];
 
-// -------------------------
-// LOADERS
-// -------------------------
+
 export function loadCategories() {
     if (typeof CATEGORIES_API_URL === "undefined") return Promise.resolve();
 
@@ -26,9 +22,7 @@ export function loadAccounts() {
         });
 }
 
-// -------------------------
-// BUILD TYPE SELECT (SHARED)
-// -------------------------
+
 export function buildTypeSelect(tx) {
     const select = document.createElement("select");
     select.className = "form-select form-select-sm rounded-pill type-select";
@@ -48,9 +42,7 @@ export function buildTypeSelect(tx) {
     return select;
 }
 
-// -------------------------
-// BUILD CATEGORY SELECT (SHARED)
-// -------------------------
+
 export function buildCategorySelect(tx, type = null) {
     const select = document.createElement("select");
     select.className = "form-select form-select-sm rounded-pill category-select tx-input";

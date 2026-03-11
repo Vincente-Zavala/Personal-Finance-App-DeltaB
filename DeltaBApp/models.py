@@ -170,7 +170,6 @@ class Transaction(models.Model):
 
 
     def update_cached_values(self):
-        # 1. Fetch entries with related data to avoid N+1 during the update
         entries = list(self.entries.select_related('account__institution').all())
         
         # --- AMOUNT LOGIC ---
@@ -202,7 +201,6 @@ class Transaction(models.Model):
                     f"{e.account.institution.name} - {e.account.name}" for e in entries
                 )
         
-        # Save both fields at once
         self.save(update_fields=['cached_amount', 'cached_account_display'])
 
 
@@ -228,7 +226,6 @@ class Entry(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Tell the parent transaction to recalculate
         self.transaction.update_cached_values()
 
     def delete(self, *args, **kwargs):

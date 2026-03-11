@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     
-    // ONLY listen for category changes inside pending table
     pendingTable.addEventListener('change', function (e) {
         if (e.target.classList.contains('category-select')) {
             checkPendingSelections();
@@ -29,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const deleteBtn = document.getElementById("deletetransactions");
         if (!deleteBtn) return;
     
-        // Look for any checked checkboxes in both tables
         const anyChecked = document.querySelectorAll(
             '#pendingTransactionsBody input[name="selectedtransactions"]:checked, ' +
             '#allTransactionsBody input[name="selectedtransactions"]:checked'

@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const completed = e.target.checked;
             const text = item.querySelector('.task-text');
 
-            // ✅ Update UI instantly
             if (completed) {
                 text.classList.add('task-completed');
                 document.getElementById('completedtasks').appendChild(item);
@@ -15,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('activetasks').appendChild(item);
             }
 
-            // ✅ Update DB
             await fetch(taskCompleteUrl, {
                 method: "POST",
                 headers: {

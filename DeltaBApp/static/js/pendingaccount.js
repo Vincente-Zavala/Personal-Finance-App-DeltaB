@@ -1,4 +1,3 @@
-//removing from all transactions
 document.addEventListener("DOMContentLoaded", function() {
     const categoriesRequiringDestination = ["savings", "investment", "debt", "transfer", "retirement"];
     const destinationHeader = document.getElementById("destinationHeader");
@@ -34,6 +33,5 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Initialize header state
     updateHeaderVisibility();
 });

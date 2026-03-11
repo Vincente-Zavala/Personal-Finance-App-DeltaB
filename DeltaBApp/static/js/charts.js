@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // === 1️⃣ Load chart data ===
     const dataEl = document.getElementById("charts-data");
     if (!dataEl) return console.error("No charts-data element found.");
   
@@ -14,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chartsData.forEach((obj, i) => console.log(`Chart ${i}:`, obj));
 
 
-    // === 2️⃣ Helper: Color palette ===
     const makeColors = (n) => {
       const palette = [
         "#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1", "#5f27cd",
@@ -24,7 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
 
-    // === 3️⃣ Render a single chart ===
     function renderChart(type, chartObj) {
       console.warn("Type", type);
       const canvas = document.getElementById(`chart-${type.toLowerCase()}`);
@@ -36,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const ctx = canvas.getContext("2d");
       const colors = makeColors(chartObj.data.length);
   
-      // Destroy existing chart instance
       if (canvas._chartInstance instanceof Chart) {
         canvas._chartInstance.destroy();
       }
@@ -63,12 +59,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   
-    // === 4️⃣ Render all charts ===
     chartsData.forEach((chartObj) => {
       renderChart(chartObj.type, chartObj);
     });
   
-    // === 5️⃣ Optional: expose helper to render one manually ===
+
     window.renderChartByType = function (typeName) {
       const chartObj = chartsData.find(
         (obj) => obj.type.toLowerCase() === typeName.toLowerCase()

@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = JSON.parse(dataScript.textContent);
 
     var xValues = ["Italy", "France", "Spain", "USA", "Argentina"];
-    //var yValues = [55, 49, 44, 24, 15];
     var barColors = [
         "rgba(235, 22, 22, .7)",
         "rgba(235, 22, 22, .6)",

@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.querySelectorAll(".parent-checkbox").forEach(function(parent) {
     parent.addEventListener("change", function() {
-        // Find all child checkboxes inside the same <li>
         const nestedCheckboxes = parent.closest("li").querySelectorAll(".child-checkbox");
         nestedCheckboxes.forEach(cb => cb.checked = parent.checked);
     });

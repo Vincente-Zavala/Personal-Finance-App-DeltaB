@@ -1,6 +1,3 @@
-// -------------------------
-// GLOBAL CACHE
-// -------------------------
 import {
     CATEGORY_TYPES,
     ACCOUNTS,
@@ -54,7 +51,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 pendingContainer.style.display = "none";
             }
 
-            // Close the modal after rendering
             const filterModalEl = document.getElementById("filterModalTransactions");
             const filterModal = bootstrap.Modal.getInstance(filterModalEl);
             if (filterModal) {
@@ -79,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            tbody.innerHTML = ""; // clear loading row
+            tbody.innerHTML = "";
 
             if (!data.transactions || !data.transactions.length) {
                 tbody.innerHTML = `
@@ -100,7 +96,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const linkable = isLinkableType(tx.type_name);
 
 
-                // Basic columns
                 tr.innerHTML = `
 
                 <td class="editcol" hidden>
@@ -145,7 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 dateDisplay.textContent = tx.formatted_date;
                 
                 const dateInput = document.createElement("input");
-                dateInput.type = "text"; // ← required for flatpickr
+                dateInput.type = "text";
                 dateInput.value = tx.date_iso;
                 dateInput.className = "form-control form-control-sm all-tx-input d-none tx-date-input";
                 dateInput.name = "date";
@@ -195,7 +190,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 categoryDisplay.textContent = tx.category_name;
                 categoryDisplay.dataset.type = typeKey;
 
-                // store original category ID and name
                 categoryTd.dataset.originalCategoryId = String(tx.category_id);
                 categoryTd.dataset.originalCategoryName = tx.category_name;
 
@@ -288,7 +282,6 @@ document.addEventListener("click", (e) => {
     const cancelBtn = e.target.closest(".tx-cancel");
     const saveBtn = e.target.closest(".tx-check");
 
-    // ---- EDIT BUTTON CLICK ----
     if (editBtn) {
         const row = editBtn.closest(".transaction-row");
         if (!row) return;
@@ -298,7 +291,6 @@ document.addEventListener("click", (e) => {
         const buttons = row.querySelectorAll(".tx-cancel, .tx-check");
         const editButton = row.querySelector(".edit-tx");
 
-        // Close any other row in edit mode
         document.querySelectorAll(".transaction-row").forEach(r => {
             if (r !== row && r.dataset.editing === "true") {
                 r.querySelectorAll(".all-tx-input").forEach(i => i.classList.add("d-none"));
@@ -309,7 +301,6 @@ document.addEventListener("click", (e) => {
             }
         });
 
-        // Enter edit mode
         inputs.forEach(i => i.classList.remove("d-none"));
         displays.forEach(d => d.classList.add("d-none"));
         buttons.forEach(b => b.classList.remove("d-none"));
@@ -401,18 +392,16 @@ document.addEventListener("click", (e) => {
         const typeDisplay = row.querySelector('.tx-display');
         if (typeSelect && typeDisplay) {
             typeSelect.value = row.dataset.originalType;
-            typeSelect.classList.add("d-none"); // hide input
+            typeSelect.classList.add("d-none");
             typeDisplay.textContent = row.dataset.originalType;
-            typeDisplay.classList.remove("d-none"); // show display
+            typeDisplay.classList.remove("d-none");
         }
     
         // --- Restore CATEGORY ---
         const categoryTd = row.querySelector('.category-col');
-        // Remove old select
         const oldSelect = categoryTd.querySelector('select[name^="category"]');
         if (oldSelect) categoryTd.removeChild(oldSelect);
     
-        // Rebuild original category select
         const restoredCategorySelect = allTxsBuildCategorySelect({
             id: oldSelect?.dataset.transactionId || "",
             category_name: row.dataset.originalCategoryName
@@ -454,7 +443,6 @@ document.addEventListener("click", (e) => {
             dateInput.value = row.dataset.originalDateValue;
             dateDisplay.textContent = row.dataset.originalDateText;
 
-            // Sync flatpickr UI
             if (dateInput._flatpickr) {
                 dateInput._flatpickr.setDate(row.dataset.originalDateValue, false);
             }
@@ -496,7 +484,6 @@ document.addEventListener("click", (e) => {
         updateAllDestinationHeaderVisibility();
 
     
-        // --- Exit edit mode ---
         row.dataset.editing = "false";
     }
     
@@ -525,9 +512,6 @@ document.addEventListener("click", (e) => {
         
     
         
-    // -------------------------
-    // UPDATE TRANSACTIONS
-    // -------------------------
     function updateTransactions(changes, row) {
         const formData = new FormData();
 
@@ -559,72 +543,14 @@ document.addEventListener("click", (e) => {
     }
        
 
-
-    // -------------------------
-    // RENDER FILTERED TRANSACTIONS
-    // -------------------------
     function renderAllTransactions(transactions, appliedFilters = [], oneAccount = false) {
 
-        // const tbody = document.getElementById("allTransactionsBody");
-        // const theadRow = document.getElementById("allTransactionsHeader");
-        
-        // if (!tbody || !theadRow) return;
-    
-        // // Clear table rows
-        // tbody.innerHTML = "";
-
-        // // Add running balance header dynamically
-        // if (oneAccount && !document.getElementById("runningBalanceHeader")) {
-        //     const th = document.createElement("th");
-        //     th.id = "runningBalanceHeader";
-        //     th.textContent = "Running Balance";
-        //     theadRow.appendChild(th);
-        // } else if (!oneAccount && document.getElementById("runningBalanceHeader")) {
-        //     // Remove column if not one account
-        //     document.getElementById("runningBalanceHeader").remove();
-        // }
-    
-        // if (!transactions.length) {
-        //     tbody.innerHTML = `
-        //         <tr>
-        //             <td colspan="7" class="text-center text-muted py-4">
-        //                 No transactions found.
-        //             </td>
-        //         </tr>
-        //     `;
-        // } else {
-        //     const fragment = document.createDocumentFragment();
-    
-        //     transactions.forEach(tx => {
-        //         const tr = document.createElement("tr");
-        //         tr.classList.add("transaction-row");
-        //         tr.dataset.type = tx.type_name;
-    
-        //         tr.innerHTML = `
-        //             <td class="editcol" hidden>
-        //                 <input class="form-check-input" type="checkbox" name="selectedtransactions" value="${tx.id}">
-        //             </td>
-        //             <td>${tx.formatted_date}</td>
-        //             <td class="category-cell">${tx.type_name}</td>
-        //             <td>${tx.category_name || ""}</td>
-        //             <td class="destination-col" style="display: none;">${tx.destination_account_display || ""}</td>
-        //             <td class="text-truncate" style="max-width:400px;" title="${tx.user_note || ""}">${tx.user_note || ""}</td>
-        //             <td>${tx.account_display}</td>
-        //             <td class="text-end fw-semibold text-primary">$${tx.amount}</td>
-        //             ${oneAccount ? `<td class="text-end fw-semibold text-white">$${tx.running_balance}</td>` : ""}
-        //         `;
-        //         fragment.appendChild(tr);
-        //     });
-    
-        //     tbody.appendChild(fragment);
-        // }
         const tbody = document.getElementById("allTransactionsBody");
         const theadRow = document.getElementById("allTransactionsHeader");
         if (!tbody || !theadRow) return;
     
         tbody.innerHTML = "";
     
-        // Toggle Running Balance Header
         let balanceHeader = document.getElementById("runningBalanceHeader");
         if (oneAccount) {
             if (!balanceHeader) {
@@ -673,10 +599,8 @@ document.addEventListener("click", (e) => {
     
         tbody.appendChild(fragment);
     
-        // IMPORTANT: Re-run the color styling script after injecting new rows
         applyCategoryStyles(".category-border", categoryTypeStyles);
     
-        // Render applied filters
         const filtersContainer = document.getElementById("appliedFiltersContainer");
         if (filtersContainer) {
             filtersContainer.innerHTML = "";
@@ -766,7 +690,7 @@ document.addEventListener("click", (e) => {
     function buildAllDestinationSelect(tx) {
         const td = document.createElement("td");
         td.classList.add("destination-col");
-        td.style.display = "none"; // hidden by default
+        td.style.display = "none";
     
         const display = document.createElement("span");
         display.className = "tx-display";
@@ -839,7 +763,6 @@ document.addEventListener("click", (e) => {
             .includes(typeName);
     }
     
-    // Helper to get styled Type HTML
     function getTypeHTML(typeName) {
         const typeKey = typeName.toLowerCase().replace(/\s+/g, "");
         const style = categoryTypeStyles[typeKey];
@@ -852,7 +775,6 @@ document.addEventListener("click", (e) => {
         return `<span>${typeName}</span>`;
     }
 
-    // Helper to get styled Category HTML
     function getCategoryHTML(tx, typeKey) {
         return `<span class="tx-display badge fw-semibold" data-type="${typeKey}">
                     ${tx.category_name || ""}

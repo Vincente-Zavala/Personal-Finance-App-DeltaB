@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
 
     // ---------------------------------
-    // MARK ROWS FOR UPDATE (REPLACES .changed)
+    // MARK ROWS FOR UPDATE
     // ---------------------------------
     document.addEventListener('change', function (e) {
         const row = e.target.closest('tr');
@@ -61,41 +61,29 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log("Set transaction type:", categoryType);
             }
 
-            // mark row for UPDATE
             row.dataset.update = "true";
             console.log("Marked row for UPDATE:", row);
         }
 
-        // Any editable input should also mark update
         if (e.target.classList.contains('tx-input')) {
             row.dataset.update = "true";
             console.log("Marked row for UPDATE:", row);
         }
     });
 
-    // ---------------------------------
-    // DELETE BUTTON
-    // ---------------------------------
     deleteButton.addEventListener("click", function (e) {
         e.preventDefault();
         sendFormAJAX(deleteButton.getAttribute("formaction"), false);
     });
 
-    // ---------------------------------
-    // SUBMIT BUTTON
-    // ---------------------------------
     submitButton.addEventListener("click", function (e) {
         e.preventDefault();
         sendFormAJAX(submitButton.getAttribute("formaction"), true);
     });
 
-    // ---------------------------------
-    // SUBMIT / DELETE LOGIC
-    // ---------------------------------
     function sendFormAJAX(actionUrl, isSubmitPending) {
         const formData = new FormData();
     
-        // Always include CSRF token
         formData.append(
             'csrfmiddlewaretoken',
             form.querySelector('[name=csrfmiddlewaretoken]').value
@@ -119,13 +107,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             });
         
-            // Optional safety: prevent empty submits
             if (validRowCount === 0) {
                 alert("Please complete at least one transaction before submitting.");
                 return;
             }
         } else {
-            // DELETE → send checked transactions
             const checked = form.querySelectorAll(
                 "input[name='selectedtransactions']:checked"
             );

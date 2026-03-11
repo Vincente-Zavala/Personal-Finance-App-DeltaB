@@ -1,6 +1,6 @@
 function showDuplicateModal(duplicates) {
     const tbody = document.querySelector("#duplicateTable tbody");
-    tbody.innerHTML = ""; // clear old rows
+    tbody.innerHTML = "";
 
     duplicates.forEach(tx => {
         const row = document.createElement("tr");
@@ -13,12 +13,10 @@ function showDuplicateModal(duplicates) {
         tbody.appendChild(row);
     });
 
-    // Show modal
     const modal = new bootstrap.Modal(document.getElementById('duplicateModal'));
     modal.show();
 
     document.getElementById("confirmImport").onclick = function() {
-        // Call backend to import anyway
         fetch("/import_transactions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -30,7 +28,6 @@ function showDuplicateModal(duplicates) {
     };
 }
 
-// Example: after submitting a transaction
 fetch("/check_transaction", {
     method: "POST",
     body: JSON.stringify(transactionData),

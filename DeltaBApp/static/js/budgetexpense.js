@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const dataEl = document.getElementById("budgetexpense-chart-data");
     const chartData = JSON.parse(dataEl.textContent);
 
-    // Extract labels and datasets
     const labels = chartData.map(d => d.category);
     const spentData = chartData.map(d => d.spent);
     const budgetData = chartData.map(d => d.budget);

@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // Create Flatpickr instances and store references
+
   const fromPicker = flatpickr("#fromdate", {
     dateFormat: "m-d-Y",
     allowInput: true
@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", function () {
     allowInput: true
   });
 
-  // Make setPreset available globally for button onclicks
   window.setPreset = function (type) {
     const today = new Date();
     let from, to;
@@ -23,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (type === "last7") {
       to = new Date(today);
       from = new Date(today);
-      from.setDate(today.getDate() - 6); // last 7 days
+      from.setDate(today.getDate() - 6);
     }
 
     if (type === "thismonth") {
@@ -37,8 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     if (type === "yeartodate") {
-      from = new Date(today.getFullYear(), 0, 1); // Jan 1st of current year
-      to = new Date(today); // today's date
+      from = new Date(today.getFullYear(), 0, 1);
+      to = new Date(today);
     }
 
     if (from && to) {

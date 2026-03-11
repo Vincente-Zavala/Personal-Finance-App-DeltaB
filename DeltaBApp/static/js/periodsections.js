@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // now the DOM is loaded, function will work when called
     window.togglePeriodSections = function(mode) {
         const monthSection = document.getElementById('monthyearsection');
         const customSection = document.getElementById('customsection');

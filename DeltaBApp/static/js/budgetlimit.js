@@ -3,8 +3,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     saveButtons.forEach(btn => {
         btn.addEventListener("click", function(e) {
-            e.preventDefault(); // prevent normal form submit
-            const form = btn.closest("form"); // get the parent form
+            e.preventDefault();
+            const form = btn.closest("form");
             const formData = new FormData(form);
             const actionUrl = form.getAttribute("action");
 
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === "ok") {
-                    // update table values
+
                     for (const [categoryId, limit] of Object.entries(data.updated_limits)) {
                         const input = form.querySelector(`input[name='limit_${categoryId}']`);
                         const span = input.closest("td").querySelector(".limit-text");
@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (card) card.textContent = `$${total}`;
                     }
 
-                    // --- UPDATE TOP SUMMARY VALUES ---
                     // Update Budgeted total
                     const budgetedElem = document.querySelector("#budgeted-total");
                     if (budgetedElem) {
@@ -47,29 +46,24 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (remainingElem) {
                         remainingElem.textContent = `$${data.updated_remaining_budget}`;
 
-                        // Remove old color classes (red/green/yellow)
                         remainingElem.classList.remove("text-danger", "text-success", "text-warning");
 
-                        // Add updated color class
                         if (data.updated_remaining_color) {
                             remainingElem.classList.add(data.updated_remaining_color);
                         }
                     }
 
 
-                    // --- TOGGLE BUTTONS AND INPUTS BACK ---
                     const tableId = btn.dataset.target;
                     const table = document.getElementById(tableId);
 
-                    // hide input, show spans
                     table.querySelectorAll(".limit-input").forEach(input => input.classList.add("d-none"));
                     table.querySelectorAll(".limit-text").forEach(span => span.classList.remove("d-none"));
 
-                    // toggle buttons
-                    btn.classList.add("d-none"); // hide Save
+                    btn.classList.add("d-none");
                     form.querySelector(".cancel-btn").classList.add("d-none");
-                    form.querySelector(".previous-btn").classList.add("d-none"); // hide Cancel
-                    form.querySelector(".edit-btn").classList.remove("d-none"); // show Edit
+                    form.querySelector(".previous-btn").classList.add("d-none");
+                    form.querySelector(".edit-btn").classList.remove("d-none");
 
                     console.log("Budget limits updated successfully!");
                 } else {

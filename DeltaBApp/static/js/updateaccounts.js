@@ -1,4 +1,3 @@
-// Updates account balances on the page
 function updateAccountBalances(balances) {
     console.log("Within updateAccountBalances");
     for (const [accountId, balance] of Object.entries(balances)) {
@@ -7,9 +6,8 @@ function updateAccountBalances(balances) {
     }
 }
 
-// Fetches balances from server and calls updateAccountBalances
 function fetchAccountBalances() {
-    fetch("/updateaccounts/")  // make sure this URL matches your urls.py
+    fetch("/updateaccounts/")
         .then(res => res.json())
         .then(data => {
             if (data.status === "ok" && data.balances) {

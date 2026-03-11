@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
     rows.forEach(row => {
         row.addEventListener("click", function () {
 
-            // Add highlight to clicked row
             this.classList.add("selected-row");
         });
     });

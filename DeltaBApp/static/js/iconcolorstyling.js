@@ -26,11 +26,9 @@ const categoryTypeStyles = {
 
 function applyCategoryStyles(selector, stylesMap) {
   document.querySelectorAll(selector).forEach(card => {
-    // Try to get type from data-type (preferred for reminders)
     const badge = card.querySelector(".badge[data-type]");
     let type = badge?.dataset.type?.toLowerCase()?.trim();
 
-    // If not found, fall back to text from <p> or <h5>
     if (!type) {
       const typeEl = card.querySelector("p, h5");
       type = typeEl?.innerText?.toLowerCase()?.trim()?.replace(/\s+/g, "");
@@ -40,29 +38,21 @@ function applyCategoryStyles(selector, stylesMap) {
 
     const style = stylesMap[type];
     if (style) {
-      // Progress Bar
       card.style.setProperty("--accent-color", style.color);
-      // Set accent color CSS variables
       card.style.setProperty("--accent-color", style.color);
       const rgb = style.color.match(/[A-Fa-f0-9]{2}/g)
         .map(x => parseInt(x, 16))
         .join(", ");
       card.style.setProperty("--accent-rgb", rgb);
 
-      // Apply color to icon
       const icon = card.querySelector("i");
       if (icon) icon.style.color = style.color;
 
-      // // Apply color to badge if exists
-      // if (badge) {
-      //   badge.style.backgroundColor = style.color;
-      // }
     }
   });
 }
 
 
-// Run on page load
 document.addEventListener("DOMContentLoaded", () => {
   applyCategoryStyles(".category-border", categoryTypeStyles);
   console.log("After applycategorystyles")

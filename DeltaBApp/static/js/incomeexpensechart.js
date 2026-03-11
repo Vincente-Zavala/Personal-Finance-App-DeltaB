@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log("Income vs Expense raw data:", chartsData);
 
-    // Use the first object directly
     const chartObj = chartsData[0];
 
     const canvas = document.getElementById("incomeexpenses-bar");
@@ -24,10 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
     new Chart(ctx, {
         type: "bar",
         data: {
-            labels: chartObj.labels,   // ["Income", "Expense"]
+            labels: chartObj.labels,
             datasets: [{
                 label: "Total",
-                data: chartObj.data,   // [incometotal, expensetotal]
+                data: chartObj.data,
                 backgroundColor: ["#1dd1a1", "#ff6b6b"]
             }]
         },

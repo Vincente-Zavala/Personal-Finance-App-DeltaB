@@ -1,15 +1,12 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Handle clicking "Previous Month Budgets"
     document.querySelectorAll(".previous-btn").forEach(btn => {
         btn.addEventListener("click", function (e) {
-            e.preventDefault(); // prevent form submission
+            e.preventDefault();
 
-            // Find the table this button belongs to
             const tableId = btn.dataset.target;
             const table = document.getElementById(tableId);
             if (!table) return;
 
-            // Fetch previous month limits from Django
             fetch("/previousmonthlimit/", {
                 method: "GET",
                 headers: {
@@ -25,7 +22,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const previousLimits = data.previous_limits;
 
-                // Populate inputs inside this table only
                 table.querySelectorAll(".limit-input").forEach(input => {
                     const match = input.name.match(/limit_(\d+)/);
                     if (!match) return;
@@ -35,7 +31,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     input.value = previousLimits[categoryId] ?? "";
                 });
 
-                // Update span text live
                 table.querySelectorAll(".limit-input").forEach(input => {
                     const span = input.closest("td").querySelector(".limit-text");
                     if (span) span.textContent = `$${input.value || "—"}`;

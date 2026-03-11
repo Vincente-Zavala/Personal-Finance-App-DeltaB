@@ -30,7 +30,6 @@ class PerformanceMiddleware(MiddlewareMixin):
         if start:
             duration_ms = (time.perf_counter() - start) * 1000
             
-            # Defensive check for the user
             current_user = getattr(request, 'user', None)
             user_display = current_user.username if current_user and current_user.is_authenticated else "Anonymous"
             
@@ -39,9 +38,10 @@ class PerformanceMiddleware(MiddlewareMixin):
                 extra={
                     'request_id': request_id, 
                     'duration_ms': duration_ms,
-                    'user': user_display # Pass the string to avoid serialization issues
+                    'user': user_display
                 }
             )
+
         # SQL Analysis
         before = getattr(request, "_queries_before", 0)
         query_count = len(connection.queries) - before

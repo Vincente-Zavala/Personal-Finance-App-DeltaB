@@ -50,7 +50,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const transactionType = document.getElementById("inputtransaction");
 
-  // HIDE ALL FIELDS
   function hideAllFields() {
     allFieldIds.forEach((id) => {
       const el = document.getElementById(id);
@@ -65,7 +64,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const categories = container.querySelectorAll(".radio-card");
 
-    // For refunds, show expense categories
     const effectiveType = (type === "refund" || type === "reimbursement") ? "expense" : type;
 
     categories.forEach(cat => {
@@ -116,10 +114,9 @@ document.addEventListener("DOMContentLoaded", function () {
 }
 
 
-  // INITIAL HIDE
   hideAllFields();
 
-  // CHANGE LISTENER
+ 
   if (transactionType) {
       transactionType.addEventListener("change", function () {
           showFieldsForType(this.value);

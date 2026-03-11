@@ -88,6 +88,7 @@ class Config:
         if missing:
             raise ValueError(f"Critical Configuration Missing: {', '.join(missing)}")
 
+
 # Validate configuration
 Config.validate()
 
@@ -129,6 +130,7 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -201,6 +203,7 @@ if ENV not in ALLOWED_ENVS:
 
 
 ALLOW_REGISTRATION = False
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

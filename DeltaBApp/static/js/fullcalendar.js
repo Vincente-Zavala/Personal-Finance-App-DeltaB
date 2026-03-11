@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", function() {
       const amount = info.event.extendedProps.amount;
       const name = info.event.extendedProps.name;
 
-      // Compact, minimal layout
       const innerHtml = `
         <div style="
           display: flex;

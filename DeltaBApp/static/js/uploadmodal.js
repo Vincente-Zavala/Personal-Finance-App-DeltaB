@@ -1,7 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // -------------------------------
-    // CSRF Helper
-    // -------------------------------
+
     function getCSRF() {
         const cookie = document.cookie.split("; ").find(row => row.startsWith("csrftoken="));
         return cookie ? cookie.split("=")[1] : "";
@@ -11,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function showModal(selector) {
         const modalEl = document.querySelector(selector);
         if (!modalEl) return;
-        const modal = new bootstrap.Modal(modalEl); // always create new instance
+        const modal = new bootstrap.Modal(modalEl);
         modal.show();
     }
     
@@ -31,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -------------------------------
-    // 1. Upload File
+    // Upload File
     // -------------------------------
     const uploadInput = document.getElementById("uploadfileinput");
     if (uploadInput) {
@@ -63,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // -------------------------------
-    // 2. Map Columns → Check Polarity / Preview
+    // Map Columns → Check Polarity / Preview
     // -------------------------------
     const mapForm = document.getElementById("mapcolumns_form");
     if (mapForm) {
@@ -80,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .then(data => {
                 if (data.status === "preview_ready") {
                     console.log("Within preview")
-                    // Polarity exists → show preview
                     loadUploadPreview()
                     hideModal("#mapcolumns");
                 } else if (data.status === "duplicates") {
@@ -127,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -------------------------------
-    // 4. Show Preview
+    // Show Preview
     // -------------------------------
     function loadUploadPreview() {
         console.log("Debug: within loaduploadpreview")
@@ -138,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
                 
                 const tbody = document.getElementById("previewTableBody");
-                tbody.innerHTML = ""; // clear old rows
+                tbody.innerHTML = "";
     
                 data.transactions.forEach(tx => {
                     const row = `
@@ -155,7 +152,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     tbody.insertAdjacentHTML("beforeend", row);
                 });
     
-                // show preview modal
                 showModal("#uploadpreview");
             })
             .catch(err => {
@@ -200,11 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const newTx = group.new;
             const existing = group.existing;
     
-            if (existing.length === 0) return; // skip non-duplicates
+            if (existing.length === 0) return;
     
             totalDuplicates++;
     
-            // NEW ROW HEADER
             tbody.insertAdjacentHTML("beforeend", `
                 <tr class="table-warning transaction-row">
                     <td>${newTx.date}</td>
@@ -215,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </tr>
             `);
     
-            // EXISTING MATCHES
             existing.forEach(ex => {
                 tbody.insertAdjacentHTML("beforeend", `
                     <tr class="table-danger">
@@ -228,13 +222,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 `);
             });
     
-            // Add small space between groups
+
             tbody.insertAdjacentHTML("beforeend", `
                 <tr><td colspan="5" class="bg-dark border-0" style="height: 8px;"></td></tr>
             `);
         });
     
-        // Update UI counter
+
         document.getElementById("duplicateCount").textContent = totalDuplicates;
     
         showModal("#duplicatesModal");
@@ -265,9 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // -------------------------------
-    // Bootstrap modal helpers
-    // -------------------------------
+
     function showModal(selector) {
         const modalEl = document.querySelector(selector);
         const modal = new bootstrap.Modal(modalEl);
