@@ -1,7 +1,7 @@
 # --- Core Web Framework ---
 Django==4.2.19
 asgiref==3.9.1
-pytz==2024.1
+pytz==2021.3
 tzdata==2025.1
 
 # --- API & Data Handling ---
