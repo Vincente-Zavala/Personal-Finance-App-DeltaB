@@ -1,4 +1,4 @@
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.contrib import messages
 from functools import wraps

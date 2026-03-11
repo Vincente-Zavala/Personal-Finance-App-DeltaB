@@ -9,8 +9,6 @@ import os
 import logging
 from dotenv import load_dotenv
 from pythonjsonlogger import jsonlogger
-from django.db import connections
-from django.db.utils import OperationalError
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 logger = logging.getLogger(__name__)

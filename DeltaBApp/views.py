@@ -1,45 +1,50 @@
-from django.shortcuts import render, redirect, get_object_or_404
-import datetime
-from decimal import Decimal
-from django.utils import timezone
-from . models import Category, CategoryType, Account, AccountType, Transaction, Budget, AccountBalanceHistory, PendingTransaction, PendingEntry, Task, Goal, Reminder, MonthlySummary, Institution, Entry, StatementUpload
-from django.db.models import Q, Sum
-from collections import defaultdict
-from django.db import models
+# Standard Library Imports
 import calendar
-from decimal import InvalidOperation
-from dateutil.relativedelta import relativedelta
+import datetime
 import json
-import os
-from dotenv import load_dotenv
-load_dotenv()
-from .decorators import demo_read_only
-from django.http import JsonResponse
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
-import pandas as pd
-from django.db.models import Prefetch
-from django.contrib.auth import logout
-from django.contrib.auth import get_user_model
-from django.db.models.functions import TruncDate
-from django.views.decorators.csrf import csrf_exempt
-from django.db.models.functions import Abs
-import pytz
-from django.db.models import Exists, OuterRef
 import logging
-import time
-from django.db import transaction as db_transaction
+import os
+from collections import defaultdict
+from datetime import timedelta
+from decimal import Decimal, InvalidOperation
+
+# Third-Party Libraries
+import pandas as pd
+import pytz
+from dateutil.relativedelta import relativedelta
+from dotenv import load_dotenv
+
+# Django Core Imports
+from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.db import models, transaction as db_transaction
+from django.db.models import (
+    Exists, F, OuterRef, 
+    Prefetch, Sum
+)
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+# Django REST Framework
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db.models import F, Value
-from django.db.models import Max, Case, When, DecimalField
-from .serializers import TransactionSerializer, PendingTransactionSerializer
-from django.views.decorators.http import require_POST
-from datetime import timedelta
-import traceback
-from django.http import HttpResponse
+
+# Local App Imports
+from .models import (
+    Account, AccountBalanceHistory, AccountType, Budget, Category, 
+    CategoryType, Entry, Goal, Institution, MonthlySummary, 
+    PendingEntry, PendingTransaction, Reminder, StatementUpload, 
+    Task, Transaction
+)
+from .serializers import PendingTransactionSerializer, TransactionSerializer
+
+# Initialize environment
+load_dotenv()
 
 
 User = get_user_model()
@@ -594,7 +599,7 @@ def newuser(request):
 
             return redirect("signin")
 
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to create new user profile")
             return redirect("signup")
 
@@ -886,7 +891,7 @@ def create_bulk_transactions(*, user, inputtype, amount, note, date, category, c
                         )
 
 
-    except Exception as e:
+    except Exception:
         logger.exception(
             f"Import failure for user {user.username} | Account: {source_account} | Amount: {amount}"
         )
@@ -1228,7 +1233,7 @@ def deletetransactions(request):
                     ptx.delete()
 
         
-        except Exception as e:
+        except Exception:
             return JsonResponse({"status": "error", "message": "An error occurred while deleting transactions."})
 
     return JsonResponse({
@@ -1359,7 +1364,7 @@ def updatetransactions(request):
                 "updated_transaction_fields": updated_tx_fields,
             })
 
-    except Exception as e:
+    except Exception:
         return JsonResponse({"error": "Failed to update transaction. Please try again."}, status=500)
 
 
@@ -2399,7 +2404,6 @@ def timed(label, fn):
 @login_required
 def alltransactions(request):
 
-    t0 = time.perf_counter()
 
     user=request.user
     name = request.user.get_full_name()
@@ -2409,7 +2413,6 @@ def alltransactions(request):
     accounts = timed("accounts", lambda: accountlist(user))
     accounttypes = timed("accounttypes", lambda: accounttypelist(user))
 
-    t5 = time.perf_counter()
     date_tree = builddatetree(user=user)
 
 

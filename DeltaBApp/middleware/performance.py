@@ -24,7 +24,6 @@ class PerformanceMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         request_id = getattr(request, '_request_id', 'unknown')
         start = getattr(request, "_start_time", None)
-        user = getattr(request.user, 'username', 'anon') if request.user.is_authenticated else 'anon'
         
         logger.info(f"HTTP {request.method} {request.path} -> {response.status_code} (ID: {request_id})")
 

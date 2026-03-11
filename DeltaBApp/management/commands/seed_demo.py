@@ -265,7 +265,7 @@ class Command(BaseCommand):
         # 8. Handle Dry Run Rollback
         if is_dry_run:
             self.stdout.write(self.style.WARNING("\n[PDB] Data is ready. Inspect then type 'c' to rollback."))
-            import pdb; pdb.set_trace()
+            breakpoint()
             transaction.set_rollback(True)
             self.stdout.write(self.style.SUCCESS("Dry run successful: Changes rolled back."))
         else:
