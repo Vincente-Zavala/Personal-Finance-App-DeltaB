@@ -1048,6 +1048,7 @@ padding: 1rem;
     height: 100%;
     transition: 0.2s ease;
     transform: translateY(-2px);
+    font-size: 1.0rem;
   }
   
   
@@ -1394,3 +1395,13 @@ padding: 1rem;
 
 .date-col { width: 110px; }
 .amount-col { width: 100px; }
+
+.type-select, .category-select, option {
+  background-color: #2b2b3b !important;
+  color: #ffffff !important;
+}
+
+select option {
+  background-color: #2b2b3b;
+  color: white;
+}

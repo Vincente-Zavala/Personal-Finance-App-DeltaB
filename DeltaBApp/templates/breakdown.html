@@ -118,9 +118,9 @@
                     <tr class="text-muted text-uppercase">
                       <th>Category</th>
                       <th>Budget</th>
-                      {% if mode == "custom" %}
+                      <!-- {% if mode == "custom" %}
                       <th>Adj. Budget</th>
-                      {% endif %}
+                      {% endif %} -->
                       {% if categorytype.name == "Income" %}
                       <th>Earned</th>
                       {% elif categorytype.name == "Expense" %}
@@ -141,9 +141,9 @@
                     <tr class="border-bottom border-light">
                       <td><span class="badge fw-semibold">{{ category.name }}</span></td>
                       <td>${{ budgetmap_category|getitem:category.id|default:"—" }}</td>
-                      {% if mode == "custom" %}
+                      <!-- {% if mode == "custom" %}
                       <td>${{ adjbudgetmap|getitem:category.id|default:"—" }}</td>
-                      {% endif %}
+                      {% endif %} -->
                       <td>${{ category_totals|getitem:category.id|default:"0" }}</td>
                       <td>${{ category_remaining|getitem:category.id|default:"—" }}</td>
                       <td class="text-center" style="min-width: 110px;">
@@ -164,9 +164,9 @@
                     <tr class="fw-bold">
                       <td>Total</td>
                       <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"budget" }}</td>
-                      {% if mode == "custom" %}
+                      <!-- {% if mode == "custom" %}
                       <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"adjbudget" }}</td>
-                      {% endif %}
+                      {% endif %} -->
                       <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"spent" }}</td>
                       <td>${{ categorytype_totals|getitem:categorytype.id|getitem:"remaining" }}</td>
                       <td class="text-center">

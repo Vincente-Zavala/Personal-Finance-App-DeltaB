@@ -331,13 +331,36 @@ def categorysummarytotal(user, mode, categories, selected_month, selected_year, 
     summary_map = {s.category_id: (s.amount or 0) for s in summaries}
 
     if mode == "custom" and selected_fromdate and selected_todate:
+        # print("s_month, s_year, s_from, s_to", selected_month, selected_year, selected_fromdate, selected_todate)
+        # fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
+        # todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
+
+        # days_in_month = calendar.monthrange(selected_year, selected_month)[1]
+        # month_start = datetime.date(selected_year, selected_month, 1)
+        # month_end = datetime.date(selected_year, selected_month, days_in_month)
+
+        # overlap_start = max(fromdate, month_start)
+        # overlap_end = min(todate, month_end)
+
+        # if overlap_start > overlap_end:
+        #     prorate_factor = 0
+        # else:
+        #     overlap_days = (overlap_end - overlap_start).days + 1
+        #     prorate_factor = overlap_days / days_in_month
+
+        # for cat_id in summary_map:
+        #     summary_map[cat_id] *= prorate_factor\
         fromdate = datetime.datetime.strptime(selected_fromdate, "%m-%d-%Y").date()
         todate = datetime.datetime.strptime(selected_todate, "%m-%d-%Y").date()
 
-        # PRE-CALCULATE OVERLAP ONCE (SRE Performance Win)
-        days_in_month = calendar.monthrange(selected_year, selected_month)[1]
-        month_start = datetime.date(selected_year, selected_month, 1)
-        month_end = datetime.date(selected_year, selected_month, days_in_month)
+        # Use the dates themselves to define the month context if selected_month is missing
+        calc_year = selected_year or fromdate.year
+        calc_month = selected_month or fromdate.month
+
+        # Calculate the proration factor based on how the range overlaps THIS month
+        days_in_month = calendar.monthrange(calc_year, calc_month)[1]
+        month_start = datetime.date(calc_year, calc_month, 1)
+        month_end = datetime.date(calc_year, calc_month, days_in_month)
 
         overlap_start = max(fromdate, month_start)
         overlap_end = min(todate, month_end)
@@ -348,9 +371,9 @@ def categorysummarytotal(user, mode, categories, selected_month, selected_year, 
             overlap_days = (overlap_end - overlap_start).days + 1
             prorate_factor = overlap_days / days_in_month
 
-        # APPLY PRORATE
+        # Apply the factor to the map we pulled at the start of the function
         for cat_id in summary_map:
-            summary_map[cat_id] *= prorate_factor
+            summary_map[cat_id] = float(summary_map[cat_id] or 0) * prorate_factor
 
     return summary_map
 
@@ -509,14 +532,16 @@ def getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selecte
 
             dayrange = (enddate - startdate).days + 1
             adjmonthlimit = round(dayrange * dailylimit, 2)
-            adjbudgetmap_category[b.category_id] += adjmonthlimit
+
+            cat_id_int = int(b.category_id)
+            adjbudgetmap_category[cat_id_int] += adjmonthlimit
 
 
-            if b.category_id in budgetmap_category:
-                budgetmap_category[b.category_id] += b.limit
+            if cat_id_int in budgetmap_category:
+                budgetmap_category[cat_id_int] += b.limit
 
             else:
-                budgetmap_category[b.category_id] = b.limit
+                budgetmap_category[cat_id_int] = b.limit
 
     incometype_id = CategoryType.objects.get(name="Income").id
     budgetmap_total = sum(amount for t_id, amount in budgetmap_type.items() if t_id != incometype_id)
@@ -1642,19 +1667,20 @@ def transactionsum(request, user):
 
     mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, monthname, yearname, fromname, toname = getselecteddate(request)
 
-    budgetmap_category, adjbudgetmap_cateogory, budgetmap_type, budgetmap_total, remaining_budget = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
+    budgetmap_category, adjbudgetmap_category, budgetmap_type, budgetmap_total, remaining_budget = getbudgetmap(mode, selected_month, selected_year, selected_fromdate, selected_todate, previous_month, previous_year, user)
 
     date_tree = builddatetree()
 
     categorytypes, category_totals, category_remaining, category_percentages, categorytype_totals = calculatecategorytotals(selected_month, selected_year, budgetmap_category, user)
 
 
-
+    print("debug", adjbudgetmap_category)
 
 
     context = {
         "accounts": Account.objects.filter(user=user),
         "categorytypes": CategoryType.objects.prefetch_related("category_set"),
+        "adjbudgetmap": adjbudgetmap_category,
         "budgetmap_category": budgetmap_category,
         "category_totals": category_totals,
         "category_remaining": category_remaining,

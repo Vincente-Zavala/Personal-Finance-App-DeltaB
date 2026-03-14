@@ -18,7 +18,7 @@ SOURCE_TOKEN = os.environ.get("SOURCE_TOKEN")
 if ENV != 'production':
     load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-LOGGING_LEVEL = logging.DEBUG if ENV != "production" else logging.INFO
+LOGGING_LEVEL = logging.INFO if ENV != "production" else logging.INFO
 
 
 LOGGING = {
