@@ -7,6 +7,7 @@ from pathlib import Path
 import dj_database_url
 import os
 import logging
+import time
 from dotenv import load_dotenv
 from pythonjsonlogger import jsonlogger
 
@@ -190,10 +191,25 @@ WSGI_APPLICATION = "DeltaB.wsgi.application"
 DATABASES = {
     "default": dj_database_url.parse(
         Config.DATABASE_URL,
-        conn_max_age=300,
+        conn_max_age=0, 
+        conn_health_checks=True,
         ssl_require=True,
     )
 }
+
+MAX_RETRIES = 3
+for i in range(MAX_RETRIES):
+    try:
+        # Your DB Config here...
+        break
+    except Exception as e:
+        if i < MAX_RETRIES - 1:
+            # This is better than print() because it marks it as a WARNING
+            logger.warning(f"Database connection attempt {i+1} failed. Retrying...")
+            time.sleep(5)
+        else:
+            logger.error("Database connection failed after maximum retries.")
+            raise e
 
 
 ALLOWED_ENVS = ("staging", "production", "development")
