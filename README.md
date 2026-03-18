@@ -1,4 +1,4 @@
-# DeltaB – Budget & Transaction Management System
+# DeltaB – Personal Finance Platform with Automated Infrastructure
 
 ## Overview ##
 
@@ -97,7 +97,6 @@ These failures validate that the system fails fast and safely.
 ### Recovery
 
 - Application recovery via redeploy
-- Git-based rollback supported
 - Weekly PostgreSQL backups (Database successfully restored from backup without data corruption)
 
 ---
@@ -135,7 +134,6 @@ The database schema is intentionally strict to enforce data integrity.
 ### Migrations
 
 - All schema changes are managed via Django migrations
-- No manual schema changes are made in production
 - Migrations are tested in staging before being deployed to production
 
 Even if the application encounters errors, the database schema prevents invalid or inconsistent financial data.
@@ -207,7 +205,7 @@ Features a seed_demo.py utility that populates a view-only environment. This all
 - Environment-based configuration (staging vs production)
 
 ### Logging
-- BetterStack
+- Better Stack
 - JSON Structured logs
 
 ---
