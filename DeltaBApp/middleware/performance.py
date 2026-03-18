@@ -22,36 +22,45 @@ class PerformanceMiddleware(MiddlewareMixin):
         logger.exception(f"Exception at {request.path}", extra={'request_id': request_id})
 
     def process_response(self, request, response):
-        request_id = getattr(request, '_request_id', 'unknown')
-        start = getattr(request, "_start_time", None)
-        
-        logger.info(f"HTTP {request.method} {request.path} -> {response.status_code} (ID: {request_id})")
+            request_id = getattr(request, '_request_id', 'unknown')
+            start = getattr(request, "_start_time", None)
+            
+            user_display = "Anonymous"
+            if hasattr(request, '_cached_user'):
+                user = request.user
+                if user.is_authenticated:
+                    user_display = user.username
 
-        if start:
-            duration_ms = (time.perf_counter() - start) * 1000
-            
-            current_user = getattr(request, 'user', None)
-            user_display = current_user.username if current_user and current_user.is_authenticated else "Anonymous"
-            
-            logger.info(
-                f"Performance: {duration_ms:.2f}ms | User: {user_display}", 
-                extra={
-                    'request_id': request_id, 
-                    'duration_ms': duration_ms,
-                    'user': user_display
-                }
-            )
 
-        # SQL Analysis
-        before = getattr(request, "_queries_before", 0)
-        query_count = len(connection.queries) - before
-        if query_count > 0:
-            logger.info(f"SQL: {query_count} queries executed",
-                        extra={'request_id': request_id, 'query_count': query_count})
-            
-            for q in connection.queries[before:]:
-                ms = float(q.get("time", 0)) * 1000
-                if ms > self.SLOW_QUERY_THRESHOLD_MS:
-                    logger.warning(f"SLOW SQL: {ms:.2f}ms | {q['sql']}",
-                                   extra={'request_id': request_id})
-        return response
+            if start:
+                duration_ms = (time.perf_counter() - start) * 1000
+                logger.info(
+                    f"Performance: {duration_ms:.2f}ms | User: {user_display}", 
+                    extra={
+                        'request_id': request_id, 
+                        'duration_ms': duration_ms,
+                        'user': user_display
+                    }
+                )
+
+            try:
+                before = getattr(request, "_queries_before", 0)
+                queries = connection.queries[before:]
+                query_count = len(queries)
+                
+                if query_count > 0:
+                    logger.info(f"SQL: {query_count} queries executed",
+                                extra={'request_id': request_id, 'query_count': query_count})
+                    
+                    for q in queries:
+                        try:
+                            ms = float(q.get("time", 0)) * 1000
+                            if ms > self.SLOW_QUERY_THRESHOLD_MS:
+                                logger.warning(f"SLOW SQL: {ms:.2f}ms | {q['sql']}",
+                                            extra={'request_id': request_id})
+                        except (TypeError, ValueError):
+                            continue
+            except Exception as e:
+                logger.error(f"Error in SQL analysis: {e}")
+
+            return response
