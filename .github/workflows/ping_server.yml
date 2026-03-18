@@ -9,8 +9,8 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Wake up Deltab Production
+      - name: Wake up DeltaB
         run: |
           curl -sI https://deltab-staging.onrender.com/health/ | head -n 1
           curl -sI https://deltab.onrender.com/health/ | head -n 1
-          echo "Production pinged at $(date)"
+          echo "Sites pinged at $(date)"
