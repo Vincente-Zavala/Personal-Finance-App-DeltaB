@@ -25,12 +25,7 @@ class PerformanceMiddleware(MiddlewareMixin):
             request_id = getattr(request, '_request_id', 'unknown')
             start = getattr(request, "_start_time", None)
             
-            user_display = "Anonymous"
-            if hasattr(request, '_cached_user'):
-                user = request.user
-                if user.is_authenticated:
-                    user_display = user.username
-
+            user_display = "Active_User"
 
             if start:
                 duration_ms = (time.perf_counter() - start) * 1000
@@ -53,6 +48,7 @@ class PerformanceMiddleware(MiddlewareMixin):
                                 extra={'request_id': request_id, 'query_count': query_count})
                     
                     for q in queries:
+                        # Some DB backends return 'time' as a string, some as a float
                         try:
                             ms = float(q.get("time", 0)) * 1000
                             if ms > self.SLOW_QUERY_THRESHOLD_MS:
