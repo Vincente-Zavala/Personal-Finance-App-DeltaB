@@ -2,9 +2,7 @@
 
 A personal finance application built as a production-style system: deployed across isolated environments, instrumented for debugging, broken on purpose, and recovered.
 
-**Live:** [deltab.onrender.com](https://deltab.onrender.com) · **Staging:** [deltab-staging.onrender.com](https://deltab-staging.onrender.com)
-
-The demo account is read-only. It has seeded accounts, transactions, budgets, and goals so the full dashboard is explorable without signing up.
+> The hosted environments are no longer running. Everything below describes the system as it was built and operated between September 2025 and March 2026, and every claim is traceable to code in this repository.
 
 ---
 
@@ -88,12 +86,12 @@ Three workflows in [`.github/workflows/`](.github/workflows/).
 
 1. **Migration safety gate.** `makemigrations --check --dry-run` fails the build if models and migrations have drifted, which prevents deploying code whose schema was never generated.
 2. **Test step** against a `postgres:15` service container (see Known gaps).
-3. **Cold-start health check.** `curl` against staging `/health/` with `--connect-timeout 60` and retries, because Render's free tier sleeps. A non-200 fails the build.
+3. **Cold-start health check.** `curl` against the staging `/health/` endpoint with `--connect-timeout 60` and retries, because Render's free tier sleeps between requests. A non-200 fails the build before anything deploys.
 4. **Deploy hook** fired only on success.
 
 **[`lint.yml`](.github/workflows/lint.yml)** — Ruff on every push and pull request.
 
-**[`ping_server.yml`](.github/workflows/ping_server.yml)** — scheduled warm-up every 14 minutes during business hours, so a recruiter or reviewer hitting the live link doesn't wait through a cold start.
+**[`ping_server.yml`](.github/workflows/ping_server.yml)** — scheduled warm-up every 14 minutes during business hours, to keep free-tier instances from cold-starting for a visitor.
 
 ---
 
@@ -102,9 +100,9 @@ Three workflows in [`.github/workflows/`](.github/workflows/).
 [`tf-infra/`](tf-infra/) provisions both halves of the stack:
 
 - **Supabase provider** — the PostgreSQL project, region, and organization
-- **Render provider** — the web service, its full environment variable set, and deploy triggers (`auto_deploy = false`; deploys are gated by the pipeline above)
+- **Render provider** — the web service, its full environment variable set, and deploy triggers (`auto_deploy = false`; deploys were gated by the pipeline above)
 
-Staging and production are fully isolated: separate databases, separate credentials, separate secrets. Schema changes land in staging first. A staging failure cannot reach production data.
+Staging and production were fully isolated: separate databases, separate credentials, separate secrets. Schema changes landed in staging first, and a staging failure could not reach production data.
 
 [`k8s/`](k8s/) holds a 3-replica `Deployment` and a `LoadBalancer` `Service` for running the containerized app on a cluster.
 
@@ -126,7 +124,9 @@ python manage.py seed_demo            # seed accounts, transactions, budgets, go
 python manage.py seed_demo --dry-run  # same, rolled back at the end
 ```
 
-The seeder runs under `@transaction.atomic`, so `--dry-run` genuinely leaves the database untouched. Read-only enforcement for the demo account is a decorator, [`demo_read_only`](DeltaBApp/decorators.py), which rejects `POST`/`PUT`/`PATCH`/`DELETE` from `demo_user` with a 403 for AJAX calls and a redirect plus warning for form posts.
+The seeder runs under `@transaction.atomic`, so `--dry-run` genuinely leaves the database untouched.
+
+The project also ships a read-only demo mode, used when the app was publicly reachable. [`demo_read_only`](DeltaBApp/decorators.py) rejects `POST`/`PUT`/`PATCH`/`DELETE` from the `demo_user` account with a 403 for AJAX calls and a redirect plus warning for form posts, so a seeded environment can be explored without being modified.
 
 ---
 
@@ -147,11 +147,12 @@ The seeder runs under `@transaction.atomic`, so `--dry-run` genuinely leaves the
 Listed because a project that claims to be production-style should be honest about where it isn't.
 
 - **No automated test coverage.** `DeltaBApp/tests.py` is empty. The pipeline's test step and its `postgres:15` service container are scaffolding waiting for a suite — right now the step passes because there is nothing to run. This is the top item.
-- **The Dockerfile runs Django's development server.** `CMD` is `manage.py runserver`, not `gunicorn`. Render's start command uses gunicorn, so production is fine, but the container image is not production-grade and the build is single-stage.
+- **The Dockerfile runs Django's development server.** `CMD` is `manage.py runserver`, not `gunicorn`. The Render start command used gunicorn, so the deployed app was fine, but the container image is not production-grade and the build is single-stage.
 - **Log level does not vary by environment.** The ternary in `settings.py` resolves to `INFO` on both branches.
 - **The database retry loop in `settings.py` is dead code** — its `try` block is empty and breaks immediately.
-- **Backups are the Supabase platform default**, not a tested, scheduled restore procedure of my own. One manual restore has been performed and verified.
+- **Backups were the Supabase platform default**, not a tested, scheduled restore procedure of my own. One manual restore was performed and verified.
 - **One postmortem.** More failure classes are worth documenting in the same format.
+- **The pipeline assumes live hosting.** `deploy.yml`'s health check and `ping_server.yml`'s warm-up both target environments that no longer exist, so both will fail until the hosting is restored or those steps are removed.
 
 ---
 
