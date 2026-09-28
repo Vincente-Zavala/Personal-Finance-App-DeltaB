@@ -1,228 +1,160 @@
-# DeltaB – Personal Finance Platform with Automated Infrastructure
+# DeltaB
 
-## Overview ##
+A personal finance application built as a production-style system: deployed across isolated environments, instrumented for debugging, broken on purpose, and recovered.
 
-DeltaB is a personal finance web application that allows users to track bank transactions, account balances, budgets, and financial goals. This system emphasizes data integrity, observability, and operational discipline, and was intentionally designed to be deployed, broken, recovered, and documented like a real production service.
+**Live:** [deltab.onrender.com](https://deltab.onrender.com) · **Staging:** [deltab-staging.onrender.com](https://deltab-staging.onrender.com)
 
-**Production URL:** https://deltab.onrender.com  
-**Staging URL:** https://deltab-staging.onrender.com
-
------
-
-## Why This Project Matters
-
-DeltaB was designed not just as a budgeting application, but as a **production-style system**. The project focuses on:
-
-- Infrastructure reliability
-- Observability and operational debugging
-- Strict database integrity
-- Safe transaction processing
-
-The goal was to build a system that could be **deployed, broken, diagnosed, and recovered** like a real service.
+The demo account is read-only. It has seeded accounts, transactions, budgets, and goals so the full dashboard is explorable without signing up.
 
 ---
 
-## Key Engineering Highlights
+## Why it exists
 
-- **Infrastructure as Code:** Entire cloud stack provisioned with Terraform for reproducible environments.
-- **CI/CD Safety Gates:** GitHub Actions pipeline validates migrations, runs tests against ephemeral PostgreSQL containers, and verifies service health before deployment.
-- **Structured Observability:** JSON structured logging with request IDs, latency tracking, SQL query metrics, and memory profiling.
-- **Atomic Financial Transactions:** Multi-step financial writes protected by `transaction.atomic()` to guarantee data consistency.
-- **Staging/Production Parity:** Fully isolated environments with separate databases, credentials, and environment configs.
+Most side projects are built to work. This one was built to be operated. The budgeting features are real and usable, but the point of the project was the operational layer around them: structured logging you can actually trace a request through, a schema that refuses to hold inconsistent financial data, and a deployment path where failures surface at startup instead of in production.
 
----
-
-## CI/CD Pipeline & Automated Validation
-
-Every push to main triggers a robust GitHub Actions pipeline designed to prevent regression and deployment failure:
-
-- Migration Safety Gate: Uses makemigrations --check --dry-run to ensure the local schema matches the codebase before deployment.
-- Ephemeral Testing: Spins up a PostgreSQL 15 service container in the runner to execute the test suite in a clean environment.
-- Cold-Start Health Checks: A custom curl-based health check wakes up the staging instance and verifies a 200 OK from the /health/ endpoint before the final production deploy hook is triggered.
-
----
-
-## Infrastructure as Code (IaC)
-
-The entire cloud stack is managed via Terraform, ensuring environment parity:
-
-- Supabase Provider: Manages the relational database lifecycle and organization settings.
-- Render Provider: Defines the web service configuration, environment variables, and manual deployment triggers.
-
----
-
-## Containerization & Local Development
-
-- Docker: Multi-stage builds for a slim production-ready image.
-- Kubernetes (K8s): Ready-to-deploy manifests including a 3-replica Deployment for high availability and a LoadBalancer Service.
-- One-Command Setup: A setup.sh script automates the entire local bring-up, including Docker Compose builds and automatic database migrations.
+Django · PostgreSQL (Supabase) · Render · Terraform · Docker · Kubernetes · Better Stack
 
 ---
 
 ## Observability
 
-### Logging
+The two middleware classes in [`DeltaBApp/middleware/`](DeltaBApp/middleware/) are where most of the debugging value lives. Both attach a UUID request ID and emit structured JSON, shipped to Better Stack via `logtail`.
 
-- Structured JSON logs
-- Request/response logging with user context
-- Unique request IDs for traceability
-- Persistent logs across restarts
+**[`performance.py`](DeltaBApp/middleware/performance.py)** records per request:
 
-### Performance Telemetry
+- Wall-clock duration in milliseconds
+- SQL query count, by diffing `connection.queries` across the request
+- Any individual query over a 50 ms threshold, logged at `WARNING` with the statement text
+- Unhandled exceptions, with the request ID attached via `process_exception`
 
-Custom middleware records:
+**[`memory_usage.py`](DeltaBApp/middleware/memory_usage.py)** records the RSS delta across each request using `psutil`, so memory-heavy request paths are visible rather than inferred.
 
-- Request latency
-- SQL query count per request
-- Slow SQL queries (>50ms)
-- Memory usage changes per request
-
-These metrics allow rapid identification of slow endpoints, inefficient queries, and memory-heavy request paths.
+Together these answer the three questions that actually come up when an endpoint is slow: is it the database, is it the number of round trips, or is it the application. Logging is configured in [`DeltaB/settings.py`](DeltaB/settings.py) using `python-json-logger`, with a console handler and a Better Stack handler on the root logger.
 
 ---
 
-## Failure Testing & Recovery
+## Data integrity
 
-### Intentional Failures Tested
+The schema is deliberately strict. The goal is that invalid financial state is rejected by PostgreSQL, not caught by application code.
 
-- **Application killed during database write**
-  - Result: transaction rollback, no partial data committed
-- **Broken database connection**
-  - Result: application fails to start
-- **Bad configuration deployment**
-  - Result: application fails to start
+**Constraints** in [`DeltaBApp/models.py`](DeltaBApp/models.py):
 
-These failures validate that the system fails fast and safely.
+- `CheckConstraint` on `Budget.limit` (`limit >= 0`) — negative budgets cannot be stored
+- Uniqueness on `Category` (`user`, `type`, `name`), `Budget` (`month`, `year`, `category`), and `AccountBalanceHistory` (`account`, `date`)
+- Foreign keys throughout with deliberate `CASCADE` / `SET_NULL` behavior — ownership relationships cascade, provenance links (`uploadsource`, `institution` on a statement) null out so history survives a parent delete
+- `NOT NULL` on every required relation
 
-### Recovery
+**Atomicity.** Any operation that writes both a `Transaction` and its `Entry` rows runs inside `transaction.atomic()`. There are nine such blocks in [`DeltaBApp/views.py`](DeltaBApp/views.py). The bank statement flow is the important one:
 
-- Application recovery via redeploy
-- Weekly PostgreSQL backups (Database successfully restored from backup without data corruption)
-
----
-
-## Configuration Discipline
-
-- All sensitive values (DB credentials, Django secret key, environment flags) are supplied via environment variables
-- Invalid database credentials or missing critical configurations cause the application to fail at startup rather than at runtime
-- Logging levels differ by environment (DEBUG in staging, INFO in production)
-
----
-
-## Database Design & Safety
-
-The database schema is intentionally strict to enforce data integrity.
-
-### Schema Integrity
-
-- **NOT NULL constraints** on required fields
-- **UNIQUE constraints** where appropriate:
-  - Category names per user and type
-  - Monthly budgets per category
-  - Account balance history per account/date
-- **Foreign keys** used throughout with intentional cascade behavior
-- **Check constraints** (e.g., budget limits must be non-negative)
-
-### Key Models
-
-- Users (custom user model)
-- Bank Institutions > Accounts
-- Transactions > Entries (supports transfers and multi-entry transactions)
-- Budgets, Monthly Summaries (Budget History), Account Balance History
-- Tasks, Reminders, Goals
-
-### Migrations
-
-- All schema changes are managed via Django migrations
-- Migrations are tested in staging before being deployed to production
-
-Even if the application encounters errors, the database schema prevents invalid or inconsistent financial data.
-
----
-
-## Transaction Safety
-
-Several multi-step write operations are wrapped in `transaction.atomic()` blocks.
-
-### Example: Bank Statement Upload → Final Transaction
-
-1. Bank statement upload creates a `PendingTransaction` and `PendingEntry`
+1. Upload creates `PendingTransaction` and `PendingEntry` rows
 2. User assigns category and transaction type
-3. System deletes pending records
-4. System creates a finalized `Transaction`
-5. Corresponding `Entry` records are created
-6. Account balances are updated
-7. Transfers are detected and paired automatically when applicable
+3. Pending records are deleted, finalized `Transaction` and `Entry` rows are created, account balances are updated, and transfers are paired
 
-All steps occur inside atomic transactions. If any step fails, no partial data is committed, ensuring consistency.
+All of that is one transaction. A failure at step 6 leaves no trace of steps 3 through 5.
 
 ---
 
-## Environments
+## Incident postmortem
 
-Two fully isolated environments are maintained:
+[`docs/POSTMORTEM_001.md`](docs/POSTMORTEM_001.md) documents a real data-consistency bug and its fix.
 
-- Each environment uses its own database, credentials, and secrets
-- Environment behavior is controlled via environment variables
-- Changes are validated in staging before posting to production
-- Any failures in staging do not impact production data or availability
+Bulk statement imports of 20+ rows ran in autocommit inside a loop. A network drop mid-loop committed transaction headers without their corresponding entries, leaving account balances wrong with no error surfaced. Root cause was three-part: no atomicity, N+1 round trips to Supabase, and transfer-matching `SELECT`s inside the loop. The fix was a bulk refactor wrapped in `transaction.atomic()`, stateful transfer pairing inside the same block, and replacing bare `except` clauses with real tracebacks so a failing row identifies itself.
 
----
-
-## Demo Mode Logic
-
-Features a seed_demo.py utility that populates a view-only environment. This allows recruiters to explore the full dashboard and transaction history while a custom permission layer blocks write actions, protecting the integrity of the demo environment.
+The prevention item from that postmortem is now a rule the codebase follows: any function writing both a `Transaction` and an `Entry` is wrapped in `atomic()`.
 
 ---
 
-## Core Features
+## Failure testing and recovery
 
-- User-managed financial accounts and institutions
-- Transaction Upload (manual and bank statement upload)
-- Pending transactions workflow before committing to reporting
-- Double-entry style transaction modeling
-- Budgeting per category and month
-- Bills, reminders, tasks, and savings goals
+Failures were induced deliberately to confirm the system fails safely rather than silently.
 
----
+| Induced failure | Expected | Observed |
+|---|---|---|
+| Process killed mid-write | Full rollback, no partial commit | Confirmed — no orphaned transaction headers |
+| Invalid database credentials | Startup failure | App refuses to start |
+| Missing critical config | Startup failure | `Config.validate()` raises before Django initializes |
+| Unrecognized `APP_ENV` | Startup failure | `RuntimeError` at import time |
+| Database restore from backup | No corruption | Restored cleanly |
 
-## System Architecture
-
-### Application Layer
-- Django (Python)
-- REST-style CRUD endpoints
-- Custom user model
-- Middleware-based logging and performance procedures
-
-### Data Layer
-- PostgreSQL (Supabase)
-- Separate databases for staging and production
-- Strict relational schema with foreign keys and uniqueness constraints
-
-### Hosting & Deployment
-- Render (application hosting)
-- Supabase (managed PostgreSQL + file storage)
-- Environment-based configuration (staging vs production)
-
-### Logging
-- Better Stack
-- JSON Structured logs
+Fail-fast is enforced in [`DeltaB/settings.py`](DeltaB/settings.py): `Config.validate()` checks `SECRET_KEY`, `DATABASE_URL`, and all three Supabase keys before anything else loads, and an `APP_ENV` outside `staging | production | development` raises immediately. A misconfigured deploy dies at boot with a named cause instead of throwing 500s under traffic.
 
 ---
 
-## Postmortems
+## CI/CD
 
-Formal postmortems are planned as part of ongoing operational maturity improvements. Future work includes documenting:
-- Failure timeline
-- Detection methods
-- Root cause
-- Preventative actions
+Three workflows in [`.github/workflows/`](.github/workflows/).
+
+**[`deploy.yml`](.github/workflows/deploy.yml)** — on push to `main`:
+
+1. **Migration safety gate.** `makemigrations --check --dry-run` fails the build if models and migrations have drifted, which prevents deploying code whose schema was never generated.
+2. **Test step** against a `postgres:15` service container (see Known gaps).
+3. **Cold-start health check.** `curl` against staging `/health/` with `--connect-timeout 60` and retries, because Render's free tier sleeps. A non-200 fails the build.
+4. **Deploy hook** fired only on success.
+
+**[`lint.yml`](.github/workflows/lint.yml)** — Ruff on every push and pull request.
+
+**[`ping_server.yml`](.github/workflows/ping_server.yml)** — scheduled warm-up every 14 minutes during business hours, so a recruiter or reviewer hitting the live link doesn't wait through a cold start.
 
 ---
 
-## Future Improvements
+## Infrastructure and environments
 
-- Automated backup and restore testing
-- Formalized postmortem documentation
-- Error aggregation (e.g., Sentry)
-- CI-based migration checks
+[`tf-infra/`](tf-infra/) provisions both halves of the stack:
+
+- **Supabase provider** — the PostgreSQL project, region, and organization
+- **Render provider** — the web service, its full environment variable set, and deploy triggers (`auto_deploy = false`; deploys are gated by the pipeline above)
+
+Staging and production are fully isolated: separate databases, separate credentials, separate secrets. Schema changes land in staging first. A staging failure cannot reach production data.
+
+[`k8s/`](k8s/) holds a 3-replica `Deployment` and a `LoadBalancer` `Service` for running the containerized app on a cluster.
+
+---
+
+## Running it locally
+
+```bash
+cp .env.example .env     # fill in database and Supabase values
+./setup.sh               # docker compose up --build, then migrate
+```
+
+Then visit `http://localhost:8000`.
+
+To populate a database with realistic data:
+
+```bash
+python manage.py seed_demo            # seed accounts, transactions, budgets, goals
+python manage.py seed_demo --dry-run  # same, rolled back at the end
+```
+
+The seeder runs under `@transaction.atomic`, so `--dry-run` genuinely leaves the database untouched. Read-only enforcement for the demo account is a decorator, [`demo_read_only`](DeltaBApp/decorators.py), which rejects `POST`/`PUT`/`PATCH`/`DELETE` from `demo_user` with a 403 for AJAX calls and a redirect plus warning for form posts.
+
+---
+
+## Features
+
+- Accounts grouped under institutions, with typed account categories
+- Manual transaction entry and bank statement upload
+- A pending-transaction review step before anything enters reporting
+- Double-entry style modeling: a `Transaction` header with one or more `Entry` rows, supporting transfers and multi-entry splits
+- Automatic transfer detection and pairing
+- Per-category monthly budgets with historical summaries
+- Account balance history, bills, reminders, tasks, and savings goals
+
+---
+
+## Known gaps
+
+Listed because a project that claims to be production-style should be honest about where it isn't.
+
+- **No automated test coverage.** `DeltaBApp/tests.py` is empty. The pipeline's test step and its `postgres:15` service container are scaffolding waiting for a suite — right now the step passes because there is nothing to run. This is the top item.
+- **The Dockerfile runs Django's development server.** `CMD` is `manage.py runserver`, not `gunicorn`. Render's start command uses gunicorn, so production is fine, but the container image is not production-grade and the build is single-stage.
+- **Log level does not vary by environment.** The ternary in `settings.py` resolves to `INFO` on both branches.
+- **The database retry loop in `settings.py` is dead code** — its `try` block is empty and breaks immediately.
+- **Backups are the Supabase platform default**, not a tested, scheduled restore procedure of my own. One manual restore has been performed and verified.
+- **One postmortem.** More failure classes are worth documenting in the same format.
+
+---
+
+## Architecture diagram
+
+See [`SYSTEM_ARCHITECHTURE.md`](SYSTEM_ARCHITECHTURE.md).
