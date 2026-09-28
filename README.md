@@ -2,8 +2,6 @@
 
 A personal finance application built as a production-style system: deployed across isolated environments, instrumented for debugging, broken on purpose, and recovered.
 
-> The hosted environments are no longer running. Everything below describes the system as it was built and operated between September 2025 and March 2026, and every claim is traceable to code in this repository.
-
 ---
 
 ## Why it exists
